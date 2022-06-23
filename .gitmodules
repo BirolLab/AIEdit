@@ -1,0 +1,9 @@
+[submodule "vendor/btllib"]
+	path = vendor/btllib
+	url = git@github.com:bcgsc/btllib.git
+[submodule "vendor/argparse"]
+	path = vendor/argparse
+	url = https://github.com/p-ranav/argparse.git
+[submodule "vendor/json"]
+	path = vendor/json
+	url = https://github.com/nlohmann/json.git
