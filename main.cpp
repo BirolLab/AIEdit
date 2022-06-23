@@ -7,8 +7,6 @@
 #include <btllib/seq_reader.hpp>
 #include <fstream>
 
-const unsigned H = 4, B = 500 * 1024 * 1024;
-
 int
 main(int argc, char** argv)
 {
@@ -51,12 +49,12 @@ main(int argc, char** argv)
     seq_reader_flags = btllib::SeqReader::Flag::SHORT_MODE;
   }
   btllib::SeqReader reader(args.get_input_path(), seq_reader_flags);
+  std::ofstream out("out.txt");
   for (const auto& record : reader) {
     logger.print("Working on " + record.id + "... ", Verbosity::DETAILED, "");
     timer.start();
     ai_edit::Observer observer(
       record.seq, args.get_seeds(), args.get_num_frames(), bf);
-    std::ofstream out("out/dists_" + record.id + ".txt");
     while (observer.next()) {
       unsigned d;
       ai_edit::Pattern q = db.query(observer.get_current_pattern(), d);
