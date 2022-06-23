@@ -73,8 +73,8 @@ main(int argc, char** argv)
     while (observer.next()) {
       unsigned d;
       ai_edit::Pattern q = db.query(observer.get_current_pattern(), d);
-      out << observer.get_position() << "\t" << ai_edit::bool_vec_to_str(q)
-          << "\t" << d << std::endl;
+      out << "\"" << record.id << "\"\t" << observer.get_position() << "\t"
+          << ai_edit::bool_vec_to_str(q) << "\t" << d << std::endl;
     }
     logger.print("DONE (" + timer.to_string() + ")", Verbosity::DETAILED);
     bytes_read += record.id.size() + record.seq.size();
