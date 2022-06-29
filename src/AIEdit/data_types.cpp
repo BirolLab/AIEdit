@@ -34,7 +34,7 @@ ai_edit::Signature::predict(const Pattern& pattern,
     for (unsigned i_seed = 0; i_seed < seeds.size(); i_seed++) {
       seed_value = (seeds[i_seed][seeds[i_seed].size() - 1 - slide] == '1');
       pattern_value = pattern[slide];
-      data.set(slide, i_seed, seed_value && pattern_value);
+      data.set(slide, i_seed, !(seed_value && pattern_value));
     }
   }
   return data;
