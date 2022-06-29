@@ -50,8 +50,14 @@ ai_edit::PatternDatabase::populate(const unsigned window_size,
   for (unsigned p = 0; p < (1 << window_size); p++) {
     std::string pattern_str = std::bitset<64>(p).to_string();
     std::reverse(pattern_str.begin(), pattern_str.end());
-    pattern_str = pattern_str.substr(0, window_size);
-    Pattern pattern = str_to_bool_vec(pattern_str);
+    Pattern pattern(window_size);
+    for (unsigned i = 0; i < window_size; i++) {
+      if (pattern_str[i] == '1') {
+        pattern.set(i, Pattern::PatternValue::MISMATCH);
+      } else {
+        pattern.set(i, Pattern::PatternValue::CLEAN);
+      }
+    }
     Signature frame_data = Signature::predict(pattern, frame_size, seeds);
     db.emplace_back(pattern, frame_data);
   }
@@ -62,7 +68,7 @@ ai_edit::PatternDatabase::to_json()
 {
   nlohmann::json db_json;
   for (auto& entry : db) {
-    auto key = ai_edit::bool_vec_to_str(entry.get_pattern());
+    auto key = entry.get_pattern().to_string();
     auto value = entry.get_frame_data().to_string_vec();
     db_json[key] = value;
   }

@@ -7,38 +7,71 @@
 
 namespace ai_edit {
 
-using Pattern = std::vector<bool>;
 using SpacedSeed = std::string;
+
+class Pattern
+{
+public:
+  enum PatternValue : bool
+  {
+    CLEAN = false,
+    MISMATCH = true
+  };
+
+  explicit Pattern(const unsigned window_size)
+    : window_size(window_size)
+    , values(new PatternValue[window_size])
+  {}
+
+  void set(size_t i, PatternValue x) { values[i] = x; }
+  [[nodiscard]] PatternValue get(size_t i) const { return values[i]; }
+  [[nodiscard]] std::string to_string() const;
+
+private:
+  PatternValue* values;
+  const unsigned window_size;
+};
 
 class Signature
 {
-private:
-  std::deque<bool*> values;
-  const unsigned frame_size, num_seeds;
-
 public:
+  enum SignatureValue : bool
+  {
+    HIT = true,
+    MISS = false
+  };
+
   Signature(const unsigned frame_size, const unsigned num_seeds)
     : frame_size(frame_size)
     , num_seeds(num_seeds)
   {
     for (unsigned i = 0; i < frame_size; i++) {
-      values.push_back(new bool[num_seeds]());
+      values.push_back(new SignatureValue[num_seeds]);
     }
   }
 
   [[nodiscard]] unsigned get_frame_size() const { return frame_size; }
   [[nodiscard]] unsigned get_num_seeds() const { return num_seeds; }
-  [[nodiscard]] bool get(unsigned i, unsigned j) { return values[i][j]; }
+  [[nodiscard]] SignatureValue get(unsigned i, unsigned j) const
+  {
+    return values[i][j];
+  }
 
   [[nodiscard]] std::vector<std::string> to_string_vec() const;
 
-  void set(unsigned i, unsigned j, bool value) { values[i][j] = value; }
-  void push(bool* x);
+  void set(unsigned i, unsigned j, SignatureValue value)
+  {
+    values[i][j] = value;
+  }
+  void push(SignatureValue* x);
 
   static Signature predict(const Pattern& pattern,
                            unsigned frame_size,
                            const std::vector<SpacedSeed>& seeds);
 
+private:
+  std::deque<SignatureValue*> values;
+  const unsigned frame_size, num_seeds;
 };
 
 }

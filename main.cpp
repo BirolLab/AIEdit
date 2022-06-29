@@ -74,7 +74,7 @@ main(int argc, char** argv)
       unsigned d;
       auto q = db.query(observer.get_current_pattern(), d);
       out << "\"" << record.id << "\"\t" << observer.get_position() << "\t"
-          << ai_edit::bool_vec_to_str(q.get_pattern()) << "\t" << d
+          << q.get_pattern().to_string() << "\t" << d
           << std::endl;
       std::cout << "Observed:" << std::endl;
       for (const auto& s : observer.get_current_pattern().to_string_vec()) {

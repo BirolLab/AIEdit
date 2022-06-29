@@ -24,9 +24,11 @@ ai_edit::Observer::update_signature()
   for (size_t i = 0; i < frame_size; i++) {
     for (unsigned j = 0; j < seeds.size(); j++) {
       if (!hash_fns[j]->roll()) {
-        signature.set(i, j, false);
+        signature.set(i, j, Signature::SignatureValue::HIT);
+      } else if (filter.contains(hash_fns[j]->hashes())) {
+        signature.set(i, j, Signature::SignatureValue::HIT);
       } else {
-        signature.set(i, j, filter.contains(hash_fns[j]->hashes()));
+        signature.set(i, j, Signature::SignatureValue::MISS);
       }
     }
   }
