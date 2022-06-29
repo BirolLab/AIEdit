@@ -14,16 +14,16 @@ class DatabaseEntry
 {
 private:
   Pattern pattern;
-  Signature frame_data;
+  Signature signature;
 
 public:
   DatabaseEntry(Pattern pattern, Signature frame_data)
     : pattern(std::move(pattern))
-    , frame_data(std::move(frame_data))
+    , signature(std::move(frame_data))
   {}
 
   [[nodiscard]] const Pattern& get_pattern() { return pattern; }
-  [[nodiscard]] Signature get_frame_data() { return frame_data; }
+  [[nodiscard]] Signature get_frame_data() { return signature; }
 };
 
 class PatternDatabase
@@ -53,8 +53,8 @@ public:
    * @param observed Observed hit/miss values from the data.
    * @return The most similar mismatch pattern in the database.
    */
-  [[nodiscard]] const Pattern& query(const Signature& observed,
-                                             unsigned& out_distance);
+  [[nodiscard]] const DatabaseEntry& query(const Signature& observed,
+                                           unsigned& out_distance);
 
   /**
    * Get the JSON representation of the database.
