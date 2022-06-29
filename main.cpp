@@ -27,9 +27,9 @@ main(int argc, char** argv)
   Logger logger(args.get_verbosity());
   Timer timer{};
 
-  logger.print("Using " + std::to_string(args.get_seeds().size()) + " seeds:");
+  logger.print(std::to_string(args.get_seeds().size()) + " seed(s):");
   for (const auto& seed : args.get_seeds()) {
-    logger.print(seed + "(" + std::to_string(seed.size()) + "bps)");
+    logger.print(seed + " (" + std::to_string(seed.size()) + "bps)");
   }
 
   logger.print("Populating database... ", Verbosity::NORMAL, "");

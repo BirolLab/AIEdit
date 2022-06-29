@@ -31,6 +31,11 @@ ai_edit::Observer::update_signature()
       }
     }
   }
+  for (unsigned i = 0; i < seeds.size(); i++) {
+    for (unsigned j = 0; j < seeds[i].size() - frame_size; j++) {
+      hash_fns[i]->roll();
+    }
+  }
 }
 
 size_t
