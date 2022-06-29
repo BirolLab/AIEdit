@@ -27,6 +27,11 @@ main(int argc, char** argv)
   Logger logger(args.get_verbosity());
   Timer timer{};
 
+  logger.print("Using " + std::to_string(args.get_seeds().size()) + " seeds:");
+  for (const auto& seed : args.get_seeds()) {
+    logger.print(seed + "(" + std::to_string(seed.size()) + "bps)");
+  }
+
   logger.print("Populating database... ", Verbosity::NORMAL, "");
   timer.start();
   const unsigned w = args.get_window_size(), n = args.get_num_frames();
@@ -74,8 +79,7 @@ main(int argc, char** argv)
       unsigned d;
       auto q = db.query(observer.get_current_pattern(), d);
       out << "\"" << record.id << "\"\t" << observer.get_position() << "\t"
-          << q.get_pattern().to_string() << "\t" << d
-          << std::endl;
+          << q.get_pattern().to_string() << "\t" << d << std::endl;
     }
     logger.print("DONE (" + timer.to_string() + ")", Verbosity::DETAILED);
     bytes_read += record.id.size() + record.seq.size();
