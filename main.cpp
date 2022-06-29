@@ -72,9 +72,18 @@ main(int argc, char** argv)
       record.seq, args.get_seeds(), args.get_num_frames(), bf);
     while (observer.next()) {
       unsigned d;
-      ai_edit::Pattern q = db.query(observer.get_current_pattern(), d);
+      auto q = db.query(observer.get_current_pattern(), d);
       out << "\"" << record.id << "\"\t" << observer.get_position() << "\t"
-          << ai_edit::bool_vec_to_str(q) << "\t" << d << std::endl;
+          << ai_edit::bool_vec_to_str(q.get_pattern()) << "\t" << d
+          << std::endl;
+      std::cout << "Observed:" << std::endl;
+      for (const auto& s : observer.get_current_pattern().to_string_vec()) {
+        std::cout << s << std::endl;
+      }
+      std::cout << "Closest:" << std::endl;
+      for (const auto& s : q.get_frame_data().to_string_vec()) {
+        std::cout << s << std::endl;
+      }
     }
     logger.print("DONE (" + timer.to_string() + ")", Verbosity::DETAILED);
     bytes_read += record.id.size() + record.seq.size();

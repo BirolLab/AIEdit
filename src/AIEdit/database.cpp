@@ -25,16 +25,16 @@ ai_edit::PatternDatabase::distance(Signature observed, Signature from_db)
   return distance;
 }
 
-const ai_edit::Pattern&
+const ai_edit::DatabaseEntry&
 ai_edit::PatternDatabase::query(const Signature& observed,
                                 unsigned& out_distance)
 {
-  const Pattern* result = nullptr;
+  const DatabaseEntry* result = nullptr;
   unsigned min_dist = std::numeric_limits<unsigned>::max();
   for (auto& entry : db) {
     unsigned dist = distance(observed, entry.get_frame_data());
     if (result == nullptr || dist <= min_dist) {
-      result = &(entry.get_pattern());
+      result = &entry;
       min_dist = dist;
     }
   }
