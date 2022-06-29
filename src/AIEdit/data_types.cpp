@@ -5,7 +5,7 @@ ai_edit::Pattern::to_string() const
 {
   std::string str;
   for (size_t i = 0; i < window_size; i++) {
-    str.append(values[i] == PatternValue::MISMATCH ? "M" : "-");
+    str.append(values[i] == PatternValue::MISMATCH ? "X" : "-");
   }
   return str;
 }

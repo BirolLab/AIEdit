@@ -12,16 +12,20 @@ using SpacedSeed = std::string;
 class Pattern
 {
 public:
-  enum PatternValue : bool
+  enum PatternValue
   {
-    CLEAN = false,
-    MISMATCH = true
+    CLEAN,
+    MISMATCH
   };
 
   explicit Pattern(const unsigned window_size)
     : window_size(window_size)
     , values(new PatternValue[window_size])
-  {}
+  {
+    for (size_t i = 0; i < window_size; i++) {
+      values[i] = PatternValue::CLEAN;
+    }
+  }
 
   void set(size_t i, PatternValue x) { values[i] = x; }
   [[nodiscard]] PatternValue get(size_t i) const { return values[i]; }
@@ -35,10 +39,10 @@ private:
 class Signature
 {
 public:
-  enum SignatureValue : bool
+  enum SignatureValue
   {
-    HIT = true,
-    MISS = false
+    HIT,
+    MISS
   };
 
   Signature(const unsigned frame_size, const unsigned num_seeds)
