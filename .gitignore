@@ -1,4 +1,4 @@
 # IDE/Editor related files
-cmake-build-debug
+build
 .idea
 .vscode
