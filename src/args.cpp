@@ -29,6 +29,10 @@ ProgramArguments::parse(int argc, char** argv)
     .default_value(false)
     .implicit_value(true);
 
+  parser.add_argument("--out-path", "-o")
+    .help("Path to output directory for storing results")
+    .default_value(".");
+
   parser.add_argument("--num-frames", "-n")
     .help("Number of frames in each pattern")
     .default_value(10U)
@@ -55,6 +59,7 @@ ProgramArguments::parse(int argc, char** argv)
   this->asm_path = parser.get("-a");
   this->bf_path = parser.get("-b");
   this->long_mode = parser.get<bool>("--long-mode");
+  this->out_path = parser.get("-o");
   this->frame_size = parser.get<unsigned>("-n");
   this->verbosity = Verbosity(parser.get<int>("-v"));
   this->window_size = parser.get<unsigned>("-w");

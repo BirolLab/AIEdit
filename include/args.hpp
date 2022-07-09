@@ -19,6 +19,7 @@ private:
   std::string asm_path;
   std::string bf_path;
   std::string db_path;
+  std::string out_path;
   Verbosity verbosity{};
   unsigned frame_size{};
   unsigned window_size{};
@@ -39,6 +40,7 @@ public:
   [[nodiscard]] const std::string& get_input_path() const { return asm_path; }
   [[nodiscard]] const std::string& get_filter_path() const { return bf_path; }
   [[nodiscard]] const std::string& get_db_path() const { return db_path; }
+  [[nodiscard]] const std::string& get_out_path() const { return out_path; }
   [[nodiscard]] Verbosity get_verbosity() const { return verbosity; }
   [[nodiscard]] unsigned get_num_frames() const { return frame_size; }
   [[nodiscard]] unsigned get_window_size() const { return window_size; }

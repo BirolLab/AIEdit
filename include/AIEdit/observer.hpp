@@ -43,7 +43,7 @@ public:
    */
   bool next();
 
-  [[nodiscard]] const Signature& get_current_pattern() { return signature; }
+  [[nodiscard]] const Signature& get_signature() { return signature; }
   [[nodiscard]] size_t get_position();
 };
 
