@@ -17,6 +17,7 @@ private:
   const btllib::BloomFilter& filter;
   const std::vector<std::string>& seeds;
   std::vector<btllib::SeedNtHash*> hash_fns;
+  size_t position;
 
   void update_signature();
 
@@ -30,7 +31,9 @@ public:
     , frame_size(frame_size)
     , filter(filter)
   {
+    position = 0;
     for (const auto& seed : seeds) {
+      position = std::max(position, seed.size());
       auto* nth = new btllib::SeedNtHash(
         seq, { seed }, filter.get_hash_num(), seed.size());
       hash_fns.push_back(nth);
@@ -44,7 +47,7 @@ public:
   bool next();
 
   [[nodiscard]] const Signature& get_signature() { return signature; }
-  [[nodiscard]] size_t get_position();
+  [[nodiscard]] size_t get_position() const { return position; }
 };
 
 }

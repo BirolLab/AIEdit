@@ -14,6 +14,7 @@ ai_edit::Observer::next()
         return true;
       }
     }
+    ++position;
   }
 }
 
@@ -36,14 +37,4 @@ ai_edit::Observer::update_signature()
       hash_fns[i]->roll();
     }
   }
-}
-
-size_t
-ai_edit::Observer::get_position()
-{
-  size_t position = 0;
-  for (const auto& hash_fn : hash_fns) {
-    position = std::max(position, hash_fn->get_pos() + hash_fn->get_k());
-  }
-  return position;
 }
