@@ -32,8 +32,8 @@ public:
   [[nodiscard]] std::string to_string() const;
 
 private:
-  PatternValue* values;
   const unsigned window_size;
+  PatternValue* values;
 };
 
 class Signature

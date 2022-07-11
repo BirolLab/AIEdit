@@ -12,10 +12,10 @@ namespace ai_edit {
 class Observer
 {
 private:
-  Signature signature;
+  const std::vector<std::string>& seeds;
   const unsigned frame_size;
   const btllib::BloomFilter& filter;
-  const std::vector<std::string>& seeds;
+  Signature signature;
   std::vector<btllib::SeedNtHash*> hash_fns;
   size_t position;
 
@@ -26,10 +26,10 @@ public:
            const std::vector<std::string>& seeds,
            const unsigned frame_size,
            const btllib::BloomFilter& filter)
-    : signature(frame_size, seeds.size())
-    , seeds(seeds)
+    : seeds(seeds)
     , frame_size(frame_size)
     , filter(filter)
+    , signature(frame_size, seeds.size())
   {
     position = 0;
     for (const auto& seed : seeds) {
