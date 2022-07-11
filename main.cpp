@@ -62,7 +62,7 @@ main(int argc, char** argv)
   std::ofstream out_tsv(out_path / tsv_path);
   out_tsv << "SequenceID\tPosition\tPattern\tDistance" << std::endl;
 
-  log.normal("Polishing " + args.get_input_path());
+  log.normal("Polishing " + args.get_input_path() + "... ", false);
   timer.start();
   for (const auto& record : reader) {
     ai_edit::Observer obs(record.seq, args.get_seeds(), n, bf);
