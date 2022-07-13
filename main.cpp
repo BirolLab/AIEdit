@@ -19,14 +19,24 @@ main(int argc, char** argv)
   Logger log(args.get_verbosity());
   Timer timer{};
 
-  log.normal(std::to_string(args.get_seeds().size()) + " seed(s):");
-  for (const auto& seed : args.get_seeds()) {
-    log.normal(seed + " (" + std::to_string(seed.size()) + "bps)");
+  log.normal("Loading Bloom filter... ", false);
+  timer.start();
+  btllib::SeedBloomFilter bf(args.get_filter_path());
+  timer.stop();
+  log.normal("DONE (" + timer.to_string() + ")");
+
+  log.normal("Bloom filter info:");
+  log.normal("\tSize (bytes = " + std::to_string(bf.get_bytes()));
+  log.normal("Num. hashes per seed = " +
+             std::to_string(bf.get_hash_num_per_seed()));
+  log.normal("\t" + std::to_string(bf.get_seeds().size()) + " seed(s):");
+  for (const auto& seed : bf.get_seeds()) {
+    log.normal("\t\t" + seed + " (" + std::to_string(seed.size()) + "bps)");
   }
 
   log.normal("Populating database... ", false);
   timer.start();
-  ai_edit::PatternDatabase db(w, n, args.get_seeds());
+  ai_edit::PatternDatabase db(w, n, bf.get_seeds());
   timer.stop();
   log.normal("DONE (" + timer.to_string() + ")");
   log.detailed("Database dump:");
@@ -42,12 +52,6 @@ main(int argc, char** argv)
     timer.stop();
     log.normal("DONE (" + timer.to_string() + ")");
   }
-
-  log.normal("Loading Bloom filter... ", false);
-  timer.start();
-  btllib::BloomFilter bf(args.get_filter_path());
-  timer.stop();
-  log.normal("DONE (" + timer.to_string() + ")");
 
   unsigned seq_reader_flags;
   if (args.is_long_mode()) {
@@ -65,7 +69,7 @@ main(int argc, char** argv)
   log.normal("Polishing " + args.get_input_path() + "... ", false);
   timer.start();
   for (const auto& record : reader) {
-    ai_edit::Observer obs(record.seq, args.get_seeds(), n, bf);
+    ai_edit::Observer obs(record.seq, bf, n);
     while (obs.next()) {
       ai_edit::Signature observed = obs.get_signature();
       unsigned position = obs.get_position(), distance;

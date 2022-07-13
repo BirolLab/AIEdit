@@ -15,7 +15,6 @@ class ProgramArguments
 private:
   ProgramArguments() = default;
 
-  std::vector<std::string> seeds;
   std::string asm_path;
   std::string bf_path;
   std::string db_path;
@@ -30,11 +29,6 @@ public:
   {
     static ProgramArguments instance;
     return instance;
-  }
-
-  [[nodiscard]] const std::vector<std::string>& get_seeds() const
-  {
-    return seeds;
   }
 
   [[nodiscard]] const std::string& get_input_path() const { return asm_path; }

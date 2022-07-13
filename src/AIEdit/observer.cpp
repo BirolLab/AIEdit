@@ -22,7 +22,7 @@ void
 ai_edit::Observer::update_signature()
 {
   for (size_t i = 0; i < frame_size; i++) {
-    for (unsigned j = 0; j < seeds.size(); j++) {
+    for (unsigned j = 0; j < filter.get_seeds().size(); j++) {
       if (!hash_fns[j]->roll()) {
         signature.set(i, j, Signature::SignatureValue::HIT);
       } else if (filter.contains(hash_fns[j]->hashes())) {
@@ -32,8 +32,8 @@ ai_edit::Observer::update_signature()
       }
     }
   }
-  for (unsigned i = 0; i < seeds.size(); i++) {
-    for (unsigned j = 0; j < seeds[i].size() - frame_size; j++) {
+  for (unsigned i = 0; i < filter.get_seeds().size(); i++) {
+    for (unsigned j = 0; j < filter.get_seeds()[i].size() - frame_size; j++) {
       hash_fns[i]->roll();
     }
   }

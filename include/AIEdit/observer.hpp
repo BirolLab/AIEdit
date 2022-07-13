@@ -12,9 +12,8 @@ namespace ai_edit {
 class Observer
 {
 private:
-  const std::vector<std::string>& seeds;
+  const btllib::SeedBloomFilter& filter;
   const unsigned frame_size;
-  const btllib::BloomFilter& filter;
   Signature signature;
   std::vector<btllib::SeedNtHash*> hash_fns;
   size_t position;
@@ -23,16 +22,14 @@ private:
 
 public:
   Observer(const std::string& seq,
-           const std::vector<std::string>& seeds,
-           const unsigned frame_size,
-           const btllib::BloomFilter& filter)
-    : seeds(seeds)
+           const btllib::SeedBloomFilter& filter,
+           const unsigned frame_size)
+    : filter(filter)
     , frame_size(frame_size)
-    , filter(filter)
-    , signature(frame_size, seeds.size())
+    , signature(frame_size, filter.get_seeds().size())
   {
     position = 0;
-    for (const auto& seed : seeds) {
+    for (const auto& seed : filter.get_seeds()) {
       position = std::max(position, seed.size());
       auto* nth = new btllib::SeedNtHash(
         seq, { seed }, filter.get_hash_num(), seed.size());

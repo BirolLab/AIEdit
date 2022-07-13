@@ -14,11 +14,7 @@ ProgramArguments::parse(int argc, char** argv)
     .required();
 
   parser.add_argument("--bloom", "-b")
-    .help("Path to btllib-format Bloom filter containing filtered reads")
-    .required();
-
-  parser.add_argument("--seeds", "-s")
-    .help("Input spaced seeds separated by commas (e.g. 11011,1011011)")
+    .help("Path to btllib SeedBloomFilter populated with reads and seeds")
     .required();
 
   parser.add_argument("--database", "-d")
@@ -70,9 +66,4 @@ ProgramArguments::parse(int argc, char** argv)
     this->db_path = "";
   }
 
-  std::istringstream ss(parser.get("-s"));
-  std::string seed_string;
-  while (std::getline(ss, seed_string, ',')) {
-    this->seeds.push_back(seed_string);
-  }
 }
