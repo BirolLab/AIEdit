@@ -47,7 +47,7 @@ ai_edit::PatternDatabase::populate(const unsigned window_size,
                                    const unsigned int frame_size,
                                    const std::vector<SpacedSeed>& seeds)
 {
-  for (unsigned p = 0; p < (1 << window_size); p++) {
+  for (unsigned p = 0; p < (1U << window_size); p++) {
     std::string pattern_str = std::bitset<64>(p).to_string();
     std::reverse(pattern_str.begin(), pattern_str.end());
     Pattern pattern(window_size);
