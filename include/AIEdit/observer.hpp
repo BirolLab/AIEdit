@@ -12,25 +12,27 @@ namespace ai_edit {
 class Observer
 {
 private:
+  const btllib::SeedBloomFilter& filter;
+  const unsigned frame_size, window_size;
   Signature signature;
-  const unsigned frame_size;
-  const btllib::BloomFilter& filter;
-  const std::vector<std::string>& seeds;
   std::vector<btllib::SeedNtHash*> hash_fns;
+  size_t position;
 
   void update_signature();
 
 public:
   Observer(const std::string& seq,
-           const std::vector<std::string>& seeds,
+           const btllib::SeedBloomFilter& filter,
            const unsigned frame_size,
-           const btllib::BloomFilter& filter)
-    : signature(frame_size, seeds.size())
-    , seeds(seeds)
+           const unsigned window_size)
+    : filter(filter)
     , frame_size(frame_size)
-    , filter(filter)
+    , window_size(window_size)
+    , signature(frame_size, filter.get_seeds().size())
   {
-    for (const auto& seed : seeds) {
+    position = 0;
+    for (const auto& seed : filter.get_seeds()) {
+      position = std::max(position, seed.size());
       auto* nth = new btllib::SeedNtHash(
         seq, { seed }, filter.get_hash_num(), seed.size());
       hash_fns.push_back(nth);
@@ -43,8 +45,8 @@ public:
    */
   bool next();
 
-  [[nodiscard]] const Signature& get_current_pattern() { return signature; }
-  [[nodiscard]] size_t get_position();
+  [[nodiscard]] const Signature& get_signature() { return signature; }
+  [[nodiscard]] size_t get_position() const { return position; }
 };
 
 }

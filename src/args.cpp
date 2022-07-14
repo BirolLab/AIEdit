@@ -14,11 +14,7 @@ ProgramArguments::parse(int argc, char** argv)
     .required();
 
   parser.add_argument("--bloom", "-b")
-    .help("Path to btllib-format Bloom filter containing filtered reads")
-    .required();
-
-  parser.add_argument("--seeds", "-s")
-    .help("Input spaced seeds separated by commas (e.g. 11011,1011011)")
+    .help("Path to btllib SeedBloomFilter populated with reads and seeds")
     .required();
 
   parser.add_argument("--database", "-d")
@@ -28,6 +24,10 @@ ProgramArguments::parse(int argc, char** argv)
     .help("Optimize seq. reader for long data (>5kbp)")
     .default_value(false)
     .implicit_value(true);
+
+  parser.add_argument("--out-path", "-o")
+    .help("Path to output directory for storing results")
+    .default_value(".");
 
   parser.add_argument("--num-frames", "-n")
     .help("Number of frames in each pattern")
@@ -55,6 +55,7 @@ ProgramArguments::parse(int argc, char** argv)
   this->asm_path = parser.get("-a");
   this->bf_path = parser.get("-b");
   this->long_mode = parser.get<bool>("--long-mode");
+  this->out_path = parser.get("-o");
   this->frame_size = parser.get<unsigned>("-n");
   this->verbosity = Verbosity(parser.get<int>("-v"));
   this->window_size = parser.get<unsigned>("-w");
@@ -65,9 +66,4 @@ ProgramArguments::parse(int argc, char** argv)
     this->db_path = "";
   }
 
-  std::istringstream ss(parser.get("-s"));
-  std::string seed_string;
-  while (std::getline(ss, seed_string, ',')) {
-    this->seeds.push_back(seed_string);
-  }
 }

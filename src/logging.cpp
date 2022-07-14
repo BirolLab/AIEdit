@@ -2,12 +2,18 @@
 #include <iostream>
 
 void
-Logger::print(const std::string& message,
-              const Verbosity& level,
-              const std::string& endl)
+Logger::normal(const std::string& message, bool endl)
 {
-  if (level <= this->verbosity) {
-    std::cout << message << endl << std::flush;
+  if (this->verbosity >= Verbosity::NORMAL) {
+    std::cout << message << (endl ? "\n" : "") << std::flush;
+  }
+}
+
+void
+Logger::detailed(const std::string& message, bool endl)
+{
+  if (this->verbosity >= Verbosity::DETAILED) {
+    std::cout << message << (endl ? "\n" : "") << std::flush;
   }
 }
 

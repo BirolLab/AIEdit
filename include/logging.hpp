@@ -21,9 +21,8 @@ public:
     : verbosity(verbosity)
   {}
 
-  void print(const std::string& message,
-             const Verbosity& level = Verbosity::NORMAL,
-             const std::string& endl = "\n");
+  void normal(const std::string& message, bool endl = true);
+  void detailed(const std::string& message, bool endl = true);
 };
 
 class Timer

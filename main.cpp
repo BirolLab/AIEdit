@@ -5,101 +5,108 @@
 #include "logging.hpp"
 #include <btllib/bloom_filter.hpp>
 #include <btllib/seq_reader.hpp>
-#include <sys/stat.h>
-
-unsigned long long
-get_file_size(const std::string& file_path)
-{
-  struct stat64 file_info
-  {};
-  if (stat64(file_path.data(), &file_info) == 0) {
-    return file_info.st_size;
-  }
-  return 0;
-}
+#include <filesystem>
 
 int
 main(int argc, char** argv)
 {
+  Timer total_time{};
+  total_time.start();
+
   auto args = ProgramArguments::get_instance();
   args.parse(argc, argv);
 
-  Logger logger(args.get_verbosity());
+  const unsigned n = args.get_num_frames();
+  const unsigned w = args.get_window_size();
+
+  Logger log(args.get_verbosity());
   Timer timer{};
 
-  logger.print("Populating database... ", Verbosity::NORMAL, "");
-  timer.start();
-  const unsigned w = args.get_window_size(), n = args.get_num_frames();
-  ai_edit::PatternDatabase db(w, n, args.get_seeds());
-  timer.stop();
-  logger.print("DONE (" + timer.to_string() + ")");
-  logger.print("Database dump:", Verbosity::DETAILED);
-  logger.print(db.to_string(), Verbosity::DETAILED);
+  log.normal(LOGO, false);
+  log.normal(std::string("\tv") + std::string(VERSION) + "\n");
 
-  if (!args.get_db_path().empty() && ai_edit::file_exists(args.get_db_path())) {
-    std::string msg = "Saving database (" + args.get_db_path() + ")... ";
-    logger.print(msg, Verbosity::NORMAL, "");
+  std::filesystem::path out_path(args.get_out_path());
+
+  log.normal("Loading Bloom filter... ", false);
+  timer.start();
+  btllib::SeedBloomFilter bf(args.get_filter_path());
+  timer.stop();
+  log.normal("DONE (" + timer.to_string() + ")");
+  log.normal("- Path                = " + args.get_filter_path());
+  log.normal("- Size (bytes)        = " + std::to_string(bf.get_bytes()));
+  log.normal("- False positive rate = " + std::to_string(bf.get_fpr()));
+  log.normal("- Occupancy           = " + std::to_string(bf.get_occupancy()));
+  log.normal("- Hashes per seed     = " +
+             std::to_string(bf.get_hash_num_per_seed()));
+  log.normal("- Number of seeds     = " +
+             std::to_string(bf.get_seeds().size()));
+  for (const auto& seed : bf.get_seeds()) {
+    log.normal("\t- " + seed + " (" + std::to_string(seed.size()) + "bps)");
+  }
+  log.normal("");
+
+  log.normal("Populating database... ", false);
+  timer.start();
+  ai_edit::PatternDatabase db(w, n, bf.get_seeds());
+  timer.stop();
+  log.normal("DONE (" + timer.to_string() + ")");
+  log.normal("");
+
+  std::string db_file_path = out_path / std::filesystem::path("db.json");
+  std::ofstream out_db(db_file_path);
+  if (!ai_edit::file_exists(db_file_path)) {
+    log.normal("Saving database... ", false);
     timer.start();
-    std::ofstream db_json_file(args.get_db_path());
-    db_json_file << db.to_json();
+    std::ofstream db_json_file(db_file_path);
+    db_json_file << db.to_string();
     db_json_file.flush();
     timer.stop();
-    logger.print("DONE (" + timer.to_string() + ")");
+    log.normal("DONE (" + timer.to_string() + ")");
+    log.normal("");
   }
 
-  logger.print("Loading Bloom filter... ", Verbosity::NORMAL, "");
-  timer.start();
-  btllib::BloomFilter bf(args.get_filter_path());
-  timer.stop();
-  logger.print("DONE (" + timer.to_string() + ")");
-
-  logger.print("Polishing " + args.get_input_path());
   unsigned seq_reader_flags;
   if (args.is_long_mode()) {
     seq_reader_flags = btllib::SeqReader::Flag::LONG_MODE;
+    log.normal("SeqReader will optimize for long sequences\n");
   } else {
     seq_reader_flags = btllib::SeqReader::Flag::SHORT_MODE;
+    log.normal("SeqReader will optimize for short sequences\n");
   }
   btllib::SeqReader reader(args.get_input_path(), seq_reader_flags);
-  std::ofstream out("out.txt");
-  unsigned long long file_size = get_file_size(args.get_input_path());
-  unsigned long long bytes_read = 0;
-  uint8_t percentage = 0;
+
+  std::ofstream out_tsv(out_path / std::filesystem::path("mismatches.tsv"));
+  out_tsv << "SequenceID\tPosition\tPattern\tDistance" << std::endl;
+
+  uint64_t num_edits = 0, num_patterns = 0;
+  log.normal("Signature length (-n) = " +
+             std::to_string(args.get_num_frames()));
+  log.normal("Window size      (-w) = " +
+             std::to_string(args.get_window_size()));
+  log.normal("Polishing " + args.get_input_path() + "... ", false);
   timer.start();
   for (const auto& record : reader) {
-    logger.print("Working on " + record.id + "... ", Verbosity::DETAILED, "");
-    ai_edit::Observer observer(
-      record.seq, args.get_seeds(), args.get_num_frames(), bf);
-    while (observer.next()) {
-      unsigned d;
-      auto q = db.query(observer.get_current_pattern(), d);
-      out << "\"" << record.id << "\"\t" << observer.get_position() << "\t"
-          << ai_edit::bool_vec_to_str(q.get_pattern()) << "\t" << d
-          << std::endl;
-      std::cout << "Observed:" << std::endl;
-      for (const auto& s : observer.get_current_pattern().to_string_vec()) {
-        std::cout << s << std::endl;
-      }
-      std::cout << "Closest:" << std::endl;
-      for (const auto& s : q.get_frame_data().to_string_vec()) {
-        std::cout << s << std::endl;
-      }
-    }
-    logger.print("DONE (" + timer.to_string() + ")", Verbosity::DETAILED);
-    bytes_read += record.id.size() + record.seq.size();
-    auto p = (uint8_t)((double)bytes_read / (double)file_size * 100.0);
-    if (p > percentage) {
-      percentage = p;
-      std::string msg = "Progress: ";
-      msg.append(std::to_string(percentage) + "%");
-      timer.stop();
-      long double elapsed = timer.elapsed_seconds();
-      long double eta = (100.0 - percentage) * elapsed / percentage;
-      eta /= 60.0;
-      msg.append(", Estimated time left: " + std::to_string((int)eta) + "min");
-      logger.print(msg, Verbosity::NORMAL, "\r");
+    ai_edit::Observer obs(record.seq, bf, n, w);
+    while (obs.next()) {
+      ai_edit::Signature observed = obs.get_signature();
+      unsigned position = obs.get_position(), distance;
+      ai_edit::DatabaseEntry result = db.query(observed, distance);
+      ai_edit::Pattern pattern = result.get_pattern();
+      out_tsv << "\"" << record.id << "\"\t" << position << "\t"
+              << pattern.to_string() << "\t" << distance << std::endl;
+      ++num_patterns;
+      num_edits += pattern.get_num_edits();
     }
   }
+  timer.stop();
+  log.normal("DONE (" + timer.to_string() + ")");
+  log.normal("- Number of detected patterns = " + std::to_string(num_patterns));
+  log.normal("- Number of edits             = " + std::to_string(num_edits));
+  log.normal("Results saved to " + args.get_out_path());
+  log.normal("");
+
+  total_time.stop();
+  log.normal("Total run time = " + total_time.to_string());
 
   return 0;
 }
