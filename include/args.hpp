@@ -3,7 +3,7 @@
 
 #define PROGRAM "AIEdit"
 #define VERSION "0.0.1"
-#define DESCRIPTION ""
+#define DESCRIPTION "Artificially-intelligent long read genome polisher"
 #define LOGO                                                                   \
   "           _____ ______    _ _ _            \n"                             \
   "     /\\   |_   _|  ____|  | /_\\ |          \n"                             \
