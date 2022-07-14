@@ -4,6 +4,13 @@
 #define PROGRAM "AIEdit"
 #define VERSION "0.0.1"
 #define DESCRIPTION ""
+#define LOGO                                                                   \
+  "           _____ ______    _ _ _            \n"                             \
+  "     /\\   |_   _|  ____|  | /_\\ |          \n"                             \
+  "    /  \\    | | | |__   __| | | |_         \n"                             \
+  "   / /\\ \\   | | |  __| / _` | | __|       \n"                             \
+  "  / ____ \\ _| |_| |___| (_| | | |_         \n"                             \
+  " /_/    \\_\\_____|______\\__,_|_|\\__|"
 
 #include "logging.hpp"
 #include <string>

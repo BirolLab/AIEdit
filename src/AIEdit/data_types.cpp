@@ -53,3 +53,15 @@ ai_edit::Signature::predict(const Pattern& pattern,
   }
   return data;
 }
+
+unsigned
+ai_edit::Pattern::get_num_edits() const
+{
+  unsigned num_edits = 0;
+  for (size_t i = 0; i < window_size; i++) {
+    if (values[i] != PatternValue::CLEAN) {
+      ++num_edits;
+    }
+  }
+  return num_edits;
+}

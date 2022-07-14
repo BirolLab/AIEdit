@@ -30,6 +30,7 @@ public:
   void set(size_t i, PatternValue x) { values[i] = x; }
   [[nodiscard]] PatternValue get(size_t i) const { return values[i]; }
   [[nodiscard]] std::string to_string() const;
+  [[nodiscard]] unsigned get_num_edits() const;
 
 private:
   const unsigned window_size;
