@@ -1,0 +1,70 @@
+# AIEdit: Artificially-intelligent long read genome polisher
+
+```
+           _____ ______    _ _ _            
+     /\   |_   _|  ____|  | /_\ |          
+    /  \    | | | |__   __| | | |_         
+   / /\ \   | | |  __| / _` | | __|       
+  / ____ \ _| |_| |___| (_| | | |_         
+ /_/    \_\_____|______\__,_|_|\__|
+ ```
+
+# Compilation
+
+First, clone the repo and `cd` into the created directory:
+
+```shell
+git clone --recurse-submodules git@github.com:bcgsc/AIEdit.git
+cd AIEdit
+```
+
+Create a directory named `build` for compiling and installing AIEdit:
+
+```shell
+meson build
+```
+
+Finally, build the project:
+
+```shell
+cd build
+ninja
+```
+
+This will create an executable `ai-edit` in the `build` directory.
+
+# Usage
+
+```
+Usage: AIEdit [options] 
+
+Optional arguments:
+-a --assembly    	Path to assembly file [required]
+-b --bloom       	Path to btllib SeedBloomFilter populated with reads and seeds [required]
+-d --database    	Path to load database json file, or save to if file does not exist
+--long-mode      	Optimize seq. reader for long data (>5kbp) [default: false]
+-o --out-path    	Path to output directory for storing results [default: "."]
+-n --num-frames  	Number of frames in each pattern [default: 10]
+-v --verbosity   	Verbosity level (0: none, 1: normal, 2: detailed) [default: 1]
+-w --window-size 	Number of bases to scan for mismatches [default: 5]
+```
+
+Use [ntHits](https://github.com/bcgsc/ntHits/tree/refactor) to generate the Bloom filter (`-b`).
+
+AIEdit will read the necessary parameters, such as the spaced seed patterns, from the Bloom filter file.
+
+Example:
+
+```shell
+ntHits -h 1 -c 1 --outbloom -s 111001101100111,101010101010101,111100101001111,1100101111010011 reads_1.fa reads_2.fa
+ai-edit -a draft.fa -b repeats_k16.bf
+```
+
+# Output
+
+Information about the Bloom filter and the time elapsed for each step of the algorithm are printed to stdout.
+
+In the output folder (specified by `-o`), the following files are created:
+
+- `mismatches.tsv` containing all the detected mismatch patterns
+- `db.json` which is a dump of the pattern database in JSON format
