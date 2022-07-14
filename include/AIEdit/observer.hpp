@@ -13,7 +13,7 @@ class Observer
 {
 private:
   const btllib::SeedBloomFilter& filter;
-  const unsigned frame_size;
+  const unsigned frame_size, window_size;
   Signature signature;
   std::vector<btllib::SeedNtHash*> hash_fns;
   size_t position;
@@ -23,9 +23,11 @@ private:
 public:
   Observer(const std::string& seq,
            const btllib::SeedBloomFilter& filter,
-           const unsigned frame_size)
+           const unsigned frame_size,
+           const unsigned window_size)
     : filter(filter)
     , frame_size(frame_size)
+    , window_size(window_size)
     , signature(frame_size, filter.get_seeds().size())
   {
     position = 0;

@@ -33,7 +33,8 @@ ai_edit::Observer::update_signature()
     }
   }
   for (unsigned i = 0; i < filter.get_seeds().size(); i++) {
-    for (unsigned j = 0; j < filter.get_seeds()[i].size() - frame_size; j++) {
+    unsigned rolls = filter.get_seeds()[i].size() - frame_size + window_size;
+    for (unsigned j = 0; j < rolls; j++) {
       hash_fns[i]->roll();
     }
   }

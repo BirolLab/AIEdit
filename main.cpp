@@ -85,7 +85,7 @@ main(int argc, char** argv)
   log.normal("Polishing " + args.get_input_path() + "... ", false);
   timer.start();
   for (const auto& record : reader) {
-    ai_edit::Observer obs(record.seq, bf, n);
+    ai_edit::Observer obs(record.seq, bf, n, w);
     while (obs.next()) {
       ai_edit::Signature observed = obs.get_signature();
       unsigned position = obs.get_position(), distance;
