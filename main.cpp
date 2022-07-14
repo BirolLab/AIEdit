@@ -58,7 +58,7 @@ main(int argc, char** argv)
     log.normal("Saving database... ", false);
     timer.start();
     std::ofstream db_json_file(db_file_path);
-    db_json_file << db.to_json();
+    db_json_file << db.to_string();
     db_json_file.flush();
     timer.stop();
     log.normal("DONE (" + timer.to_string() + ")");
