@@ -30,13 +30,16 @@ main(int argc, char** argv)
   btllib::SeedBloomFilter bf(args.get_filter_path());
   timer.stop();
   log.normal("DONE (" + timer.to_string() + ")");
-  log.normal("\t- Path            = " + args.get_filter_path());
-  log.normal("\t- Size (bytes)    = " + std::to_string(bf.get_bytes()));
-  log.normal("\t- Hashes per seed = " +
+  log.normal("- Path                = " + args.get_filter_path());
+  log.normal("- Size (bytes)        = " + std::to_string(bf.get_bytes()));
+  log.normal("- False positive rate = " + std::to_string(bf.get_fpr()));
+  log.normal("- Occupancy           = " + std::to_string(bf.get_occupancy()));
+  log.normal("- Hashes per seed     = " +
              std::to_string(bf.get_hash_num_per_seed()));
-  log.normal("\t- Number of seeds = " + std::to_string(bf.get_seeds().size()));
+  log.normal("- Number of seeds     = " +
+             std::to_string(bf.get_seeds().size()));
   for (const auto& seed : bf.get_seeds()) {
-    log.normal("\t\t- " + seed + " (" + std::to_string(seed.size()) + "bps)");
+    log.normal("\t- " + seed + " (" + std::to_string(seed.size()) + "bps)");
   }
   log.normal("");
 
@@ -96,9 +99,9 @@ main(int argc, char** argv)
   }
   timer.stop();
   log.normal("DONE (" + timer.to_string() + ")");
-  log.normal("\t- Number of detected patterns = " +
+  log.normal("- Number of detected patterns = " +
              std::to_string(num_patterns));
-  log.normal("\t- Number of edits             = " + std::to_string(num_edits));
+  log.normal("- Number of edits             = " + std::to_string(num_edits));
   log.normal("Results saved to " + args.get_out_path());
   log.normal("");
 
