@@ -8,6 +8,14 @@
   / ____ \ _| |_| |___| (_| | | |_         
  /_/    \_\_____|______\__,_|_|\__|
  ```
+ 
+# Dependencies
+
+- [btllib](https://github.com/bcgsc/btllib): Can be installed using conda
+
+No need to install—available in the `vendor` folder as git submodules:
+- [argparse](https://github.com/p-ranav/argparse)
+- [json](https://github.com/nlohmann/json)
 
 # Compilation
 
@@ -31,7 +39,7 @@ cd build
 ninja
 ```
 
-This will create an executable `ai-edit` in the `build` directory.
+This will create the executable `ai-edit` in the `build` directory.
 
 # Usage
 
@@ -57,7 +65,7 @@ Example:
 
 ```shell
 ntHits -h 1 -c 1 --outbloom -s 111001101100111,101010101010101,111100101001111,1100101111010011 reads_1.fa reads_2.fa
-ai-edit -a draft.fa -b repeats_k16.bf
+ai-edit -a draft.fa -b repeats_k15.bf
 ```
 
 # Output
