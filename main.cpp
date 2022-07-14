@@ -25,6 +25,8 @@ main(int argc, char** argv)
   log.normal(LOGO, false);
   log.normal(std::string("\tv") + std::string(VERSION) + "\n");
 
+  std::filesystem::path out_path(args.get_out_path());
+
   log.normal("Loading Bloom filter... ", false);
   timer.start();
   btllib::SeedBloomFilter bf(args.get_filter_path());
@@ -50,11 +52,12 @@ main(int argc, char** argv)
   log.normal("DONE (" + timer.to_string() + ")");
   log.normal("");
 
-  if (!args.get_db_path().empty() && ai_edit::file_exists(args.get_db_path())) {
-    std::string msg = "Saving database (" + args.get_db_path() + ")... ";
-    log.normal(msg, false);
+  std::string db_file_path = out_path / std::filesystem::path("db.json");
+  std::ofstream out_db(db_file_path);
+  if (!ai_edit::file_exists(db_file_path)) {
+    log.normal("Saving database... ", false);
     timer.start();
-    std::ofstream db_json_file(args.get_db_path());
+    std::ofstream db_json_file(db_file_path);
     db_json_file << db.to_json();
     db_json_file.flush();
     timer.stop();
@@ -72,9 +75,7 @@ main(int argc, char** argv)
   }
   btllib::SeqReader reader(args.get_input_path(), seq_reader_flags);
 
-  std::filesystem::path out_path(args.get_out_path());
-  std::filesystem::path tsv_path("mismatches.tsv");
-  std::ofstream out_tsv(out_path / tsv_path);
+  std::ofstream out_tsv(out_path / std::filesystem::path("mismatches.tsv"));
   out_tsv << "SequenceID\tPosition\tPattern\tDistance" << std::endl;
 
   uint64_t num_edits = 0, num_patterns = 0;
@@ -99,8 +100,7 @@ main(int argc, char** argv)
   }
   timer.stop();
   log.normal("DONE (" + timer.to_string() + ")");
-  log.normal("- Number of detected patterns = " +
-             std::to_string(num_patterns));
+  log.normal("- Number of detected patterns = " + std::to_string(num_patterns));
   log.normal("- Number of edits             = " + std::to_string(num_edits));
   log.normal("Results saved to " + args.get_out_path());
   log.normal("");
