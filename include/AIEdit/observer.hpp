@@ -32,6 +32,7 @@ public:
     for (const auto& seed : filter.get_seeds()) {
       auto* nth = new btllib::SeedNtHash(
         seq, { seed }, filter.get_hash_num(), seed.size());
+      nth->roll();
       hash_fns.push_back(nth);
     }
   }
