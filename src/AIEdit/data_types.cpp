@@ -1,17 +1,17 @@
 #include "AIEdit/data_types.hpp"
 
 std::string
-ai_edit::Pattern::to_string() const
+ai_edit::EditPattern::to_string() const
 {
   std::string str;
   for (size_t i = 0; i < window_size; i++) {
-    str.append(values[i] == PatternValue::MISMATCH ? "X" : "-");
+    str.append(values[i] == Value::MISMATCH ? "X" : "-");
   }
   return str;
 }
 
 void
-ai_edit::Signature::push(ai_edit::Signature::SignatureValue* x)
+ai_edit::Signature::push(ai_edit::Signature::Value* x)
 {
   values.pop_front();
   values.push_back(x);
@@ -21,10 +21,10 @@ std::vector<std::string>
 ai_edit::Signature::to_string_vec() const
 {
   std::vector<std::string> str_vec;
-  for (unsigned i = 0; i < frame_size; i++) {
+  for (unsigned i = 0; i < length; i++) {
     std::string row;
     for (unsigned j = 0; j < num_seeds; j++) {
-      row.append(get(i, j) == SignatureValue::MISS ? "M" : "-");
+      row.append(get(i, j) == Value::MISS ? "M" : "-");
     }
     str_vec.push_back(row);
   }
@@ -32,7 +32,7 @@ ai_edit::Signature::to_string_vec() const
 }
 
 ai_edit::Signature
-ai_edit::Signature::predict(const Pattern& pattern,
+ai_edit::Signature::predict(const EditPattern& pattern,
                             unsigned frame_size,
                             const std::vector<SpacedSeed>& seeds)
 {
@@ -42,16 +42,16 @@ ai_edit::Signature::predict(const Pattern& pattern,
       bool miss = false;
       auto seed = seeds[i_seed];
       for (unsigned pos = 0; pos < std::min(slide, pattern.size()); pos++) {
-        bool is_error = pattern.get(pos) == ai_edit::Pattern::PatternValue::MISMATCH;
+        bool is_error = pattern.get(pos) == ai_edit::EditPattern::Value::MISMATCH;
         bool is_care = seed[seed.size() - 1 - slide + pos] == '1';
         if (is_error && is_care) {
           miss = true;
         }
       }
       if (miss) {
-        data.set(slide, i_seed, ai_edit::Signature::SignatureValue::MISS);
+        data.set(slide, i_seed, ai_edit::Signature::Value::MISS);
       } else {
-        data.set(slide, i_seed, ai_edit::Signature::SignatureValue::HIT);
+        data.set(slide, i_seed, ai_edit::Signature::Value::HIT);
       }
     }
   }
@@ -59,11 +59,11 @@ ai_edit::Signature::predict(const Pattern& pattern,
 }
 
 unsigned
-ai_edit::Pattern::get_num_edits() const
+ai_edit::EditPattern::get_num_edits() const
 {
   unsigned num_edits = 0;
   for (size_t i = 0; i < window_size; i++) {
-    if (values[i] != PatternValue::CLEAN) {
+    if (values[i] != Value::CLEAN) {
       ++num_edits;
     }
   }

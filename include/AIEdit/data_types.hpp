@@ -9,75 +9,77 @@ namespace ai_edit {
 
 using SpacedSeed = std::string;
 
-class Pattern
+class EditPattern
 {
 public:
-  enum PatternValue
+  enum Value
   {
     CLEAN,
     MISMATCH
   };
 
-  explicit Pattern(const unsigned window_size)
+  explicit EditPattern(const unsigned window_size)
     : window_size(window_size)
-    , values(new PatternValue[window_size])
+    , values(new Value[window_size])
   {
     for (size_t i = 0; i < window_size; i++) {
-      values[i] = PatternValue::CLEAN;
+      values[i] = Value::CLEAN;
     }
   }
 
-  void set(size_t i, PatternValue x) { values[i] = x; }
-  [[nodiscard]] PatternValue get(size_t i) const { return values[i]; }
+  void set(size_t i, Value x) { values[i] = x; }
+  [[nodiscard]] Value get(size_t i) const { return values[i]; }
   [[nodiscard]] std::string to_string() const;
   [[nodiscard]] unsigned get_num_edits() const;
   [[nodiscard]] unsigned size() const { return window_size; }
 
 private:
   const unsigned window_size;
-  PatternValue* values;
+  Value* values;
 };
 
 class Signature
 {
 public:
-  enum SignatureValue
+  enum Value
   {
     HIT,
     MISS
   };
 
-  Signature(const unsigned frame_size, const unsigned num_seeds)
-    : frame_size(frame_size)
+  Signature(const unsigned length, const unsigned num_seeds)
+    : length(length)
     , num_seeds(num_seeds)
   {
-    for (unsigned i = 0; i < frame_size; i++) {
-      values.push_back(new SignatureValue[num_seeds]);
+    for (unsigned i = 0; i < length; i++) {
+      values.push_back(new Value[num_seeds]);
     }
   }
 
-  [[nodiscard]] unsigned get_frame_size() const { return frame_size; }
+  [[nodiscard]] unsigned get_frame_size() const { return length; }
   [[nodiscard]] unsigned get_num_seeds() const { return num_seeds; }
-  [[nodiscard]] SignatureValue get(unsigned i, unsigned j) const
+
+  [[nodiscard]] Value get(unsigned i_slide, unsigned i_seed) const
   {
-    return values[i][j];
+    return values[i_slide][i_seed];
   }
 
   [[nodiscard]] std::vector<std::string> to_string_vec() const;
 
-  void set(unsigned i, unsigned j, SignatureValue value)
+  void set(unsigned i_slide, unsigned i_seed, Value value)
   {
-    values[i][j] = value;
+    values[i_slide][i_seed] = value;
   }
-  void push(SignatureValue* x);
 
-  static Signature predict(const Pattern& pattern,
+  void push(Value* x);
+
+  static Signature predict(const EditPattern& pattern,
                            unsigned frame_size,
                            const std::vector<SpacedSeed>& seeds);
 
 private:
-  std::deque<SignatureValue*> values;
-  const unsigned frame_size, num_seeds;
+  std::deque<Value*> values;
+  const unsigned length, num_seeds;
 };
 
 }

@@ -25,6 +25,7 @@ std::string
 bool_vec_to_str(const std::vector<bool>& vec);
 
 /**
+ * TODO
  * Check if file exists.
  * @param path Path to file.
  * @return True if the file exists, otherwise false.

@@ -10,26 +10,26 @@
 
 namespace ai_edit {
 
-class DatabaseEntry
-{
-private:
-  Pattern pattern;
-  Signature signature;
-
-public:
-  DatabaseEntry(Pattern pattern, Signature frame_data)
-    : pattern(std::move(pattern))
-    , signature(std::move(frame_data))
-  {}
-
-  [[nodiscard]] const Pattern& get_pattern() { return pattern; }
-  [[nodiscard]] Signature get_frame_data() { return signature; }
-};
-
 class PatternDatabase
 {
+  class Entry
+  {
+  private:
+    EditPattern pattern;
+    Signature signature;
+
+  public:
+    Entry(EditPattern pattern, Signature frame_data)
+      : pattern(std::move(pattern))
+      , signature(std::move(frame_data))
+    {}
+
+    [[nodiscard]] const EditPattern& get_pattern() { return pattern; }
+    [[nodiscard]] Signature get_frame_data() { return signature; }
+  };
+
 private:
-  std::vector<DatabaseEntry> db;
+  std::vector<Entry> entries;
 
   /**
    * Populate the database using the provided seeds
@@ -53,8 +53,8 @@ public:
    * @param observed Observed hit/miss values from the data.
    * @return The most similar mismatch pattern in the database.
    */
-  [[nodiscard]] const DatabaseEntry& query(const Signature& observed,
-                                           unsigned& out_distance);
+  [[nodiscard]] const Entry& query(const Signature& observed,
+                                   unsigned& out_distance);
 
   /**
    * Get the JSON representation of the database.
@@ -67,7 +67,7 @@ public:
    * Get a string (JSON) representation of the database.
    * @return Database string dumped as JSON.
    */
-  [[nodiscard]] std::string to_string();
+  [[nodiscard]] std::string to_string() { return this->to_json().dump(4); }
 };
 
 }

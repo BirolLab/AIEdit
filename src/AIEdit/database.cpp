@@ -4,7 +4,7 @@
 #include <bitset>
 #include <limits>
 
-unsigned int
+unsigned
 ai_edit::PatternDatabase::distance(Signature observed, Signature from_db)
 {
   unsigned distance = 0;
@@ -13,7 +13,7 @@ ai_edit::PatternDatabase::distance(Signature observed, Signature from_db)
       bool t = observed.get(i, j);
       bool d = from_db.get(i, j);
       if ((!t) != (!d)) {
-        for (auto& entry : db) {
+        for (auto& entry : entries) {
           if ((t && entry.get_frame_data().get(i, j)) ||
               (!t && !entry.get_frame_data().get(i, j))) {
             ++distance;
@@ -25,13 +25,13 @@ ai_edit::PatternDatabase::distance(Signature observed, Signature from_db)
   return distance;
 }
 
-const ai_edit::DatabaseEntry&
+const ai_edit::PatternDatabase::Entry&
 ai_edit::PatternDatabase::query(const Signature& observed,
                                 unsigned& out_distance)
 {
-  const DatabaseEntry* result = nullptr;
+  const Entry* result = nullptr;
   unsigned min_dist = std::numeric_limits<unsigned>::max();
-  for (auto& entry : db) {
+  for (auto& entry : entries) {
     unsigned dist = distance(observed, entry.get_frame_data());
     if (result == nullptr || dist <= min_dist) {
       result = &entry;
@@ -50,16 +50,16 @@ ai_edit::PatternDatabase::populate(const unsigned window_size,
   for (unsigned p = 0; p < (1U << (window_size - 1)); p++) {
     std::string pattern_str = std::bitset<64>(p).to_string() + "1";
     std::reverse(pattern_str.begin(), pattern_str.end());
-    Pattern pattern(window_size);
+    EditPattern pattern(window_size);
     for (unsigned i = 0; i < window_size; i++) {
       if (pattern_str[i] == '1') {
-        pattern.set(i, Pattern::PatternValue::MISMATCH);
+        pattern.set(i, EditPattern::Value::MISMATCH);
       } else {
-        pattern.set(i, Pattern::PatternValue::CLEAN);
+        pattern.set(i, EditPattern::Value::CLEAN);
       }
     }
     Signature frame_data = Signature::predict(pattern, frame_size, seeds);
-    db.emplace_back(pattern, frame_data);
+    entries.emplace_back(pattern, frame_data);
   }
 }
 
@@ -67,18 +67,10 @@ nlohmann::json
 ai_edit::PatternDatabase::to_json()
 {
   nlohmann::json db_json;
-  for (auto& entry : db) {
+  for (auto& entry : entries) {
     auto key = entry.get_pattern().to_string();
     auto value = entry.get_frame_data().to_string_vec();
     db_json[key] = value;
   }
   return db_json;
-}
-
-std::string
-ai_edit::PatternDatabase::to_string()
-{
-  nlohmann::json db_json = this->to_json();
-  std::string db_str = db_json.dump(4);
-  return db_str;
 }

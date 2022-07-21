@@ -88,10 +88,10 @@ main(int argc, char** argv)
   for (const auto& record : reader) {
     ai_edit::Observer obs(record.seq, bf, n, w);
     while (obs.next()) {
-      ai_edit::Signature observed = obs.get_signature();
+      auto observed = obs.get_signature();
       unsigned position = obs.get_position(), distance;
-      ai_edit::DatabaseEntry result = db.query(observed, distance);
-      ai_edit::Pattern pattern = result.get_pattern();
+      auto result = db.query(observed, distance);
+      auto pattern = result.get_pattern();
       out_tsv << "\"" << record.id << "\"\t" << position << "\t"
               << pattern.to_string() << "\t" << distance << std::endl;
       ++num_patterns;

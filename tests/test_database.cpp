@@ -13,20 +13,20 @@ TEST_CASE("Test database querying", "[database]")
   auto signature = ai_edit::Signature(n, 1);
   for (size_t i = 0; i < seed.size(); i++) {
     if (seed[i] == '1') {
-      signature.set(i, 0, ai_edit::Signature::SignatureValue::MISS);
+      signature.set(i, 0, ai_edit::Signature::Value::MISS);
     } else {
-      signature.set(i, 0, ai_edit::Signature::SignatureValue::HIT);
+      signature.set(i, 0, ai_edit::Signature::Value::HIT);
     }
   }
   unsigned distance;
   auto result = db.query(signature, distance);
   REQUIRE(distance == 0);
   for (size_t i = 0; i < w; i++) {
-    ai_edit::Pattern::PatternValue expected;
+    ai_edit::EditPattern::Value expected;
     if (i == 0) {
-      expected = ai_edit::Pattern::PatternValue::MISMATCH;
+      expected = ai_edit::EditPattern::Value::MISMATCH;
     } else {
-      expected = ai_edit::Pattern::PatternValue::CLEAN;
+      expected = ai_edit::EditPattern::Value::CLEAN;
     }
     REQUIRE(result.get_pattern().get(i) == expected);
   }
