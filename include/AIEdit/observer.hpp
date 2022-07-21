@@ -16,6 +16,7 @@ private:
   const unsigned frame_size, window_size;
   Signature signature;
   std::vector<btllib::SeedNtHash*> hash_fns;
+  uint64_t*** signature_hashes;
 
   void update_signature();
 
@@ -35,6 +36,12 @@ public:
       nth->roll();
       hash_fns.push_back(nth);
     }
+    for (size_t i = 0; i < frame_size; i++) {
+      signature_hashes[i] = new uint64_t*[filter.get_seeds().size()];
+      for (size_t j = 0; j < filter.get_seeds().size(); j++) {
+        signature_hashes[i][j] = new uint64_t[filter.get_hash_num_per_seed()];
+      }
+    }
   }
 
   /**
@@ -44,6 +51,7 @@ public:
   bool next();
 
   [[nodiscard]] const Signature& get_signature() { return signature; }
+  [[nodiscard]] uint64_t*** get_signature_hashes();
   [[nodiscard]] size_t get_position() const;
 };
 

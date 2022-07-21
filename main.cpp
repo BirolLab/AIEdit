@@ -95,7 +95,7 @@ main(int argc, char** argv)
       out_tsv << "\"" << record.id << "\"\t" << position << "\t"
               << pattern.to_string() << "\t" << distance << std::endl;
       ++num_patterns;
-      num_edits += pattern.get_num_edits();
+      num_edits += pattern.get_edit_positions().size();
     }
   }
   timer.stop();

@@ -24,19 +24,17 @@ ai_edit::Observer::update_signature()
 {
   for (size_t i = 0; i < frame_size; i++) {
     for (unsigned j = 0; j < filter.get_seeds().size(); j++) {
-      if (!hash_fns[j]->roll()) {
-        signature.set(i, j, Signature::Value::HIT);
-      } else if (filter.contains(hash_fns[j]->hashes())) {
-        signature.set(i, j, Signature::Value::HIT);
+      bool rolled = hash_fns[j]->roll();
+      Signature::Value value;
+      if (rolled && !filter.contains(hash_fns[j]->hashes())) {
+        value = Signature::Value::MISS;
       } else {
-        signature.set(i, j, Signature::Value::MISS);
+        value = Signature::Value::MISS;
       }
-    }
-  }
-  for (unsigned i = 0; i < filter.get_seeds().size(); i++) {
-    unsigned rolls = filter.get_seeds()[i].size() - frame_size + window_size;
-    for (unsigned j = 0; j < rolls; j++) {
-      hash_fns[i]->roll();
+      signature.set(i, j, value);
+      std::copy(hash_fns[j]->hashes(),
+                hash_fns[j]->hashes() + filter.get_hash_num_per_seed(),
+                signature_hashes[i][j]);
     }
   }
 }
@@ -60,4 +58,22 @@ ai_edit::Observer::get_position() const
     }
   }
   return position - window_size + 1;
+}
+
+uint64_t***
+ai_edit::Observer::get_signature_hashes()
+{
+  size_t x = frame_size, y = filter.get_seeds().size(),
+         z = filter.get_hash_num_per_seed();
+  uint64_t*** hashes_copy = new uint64_t**[x];
+  for (size_t i = 0; i < x; i++) {
+    hashes_copy[i] = new uint64_t*[y];
+    for (size_t j = 0; j < y; j++) {
+      hashes_copy[i][j] = new uint64_t[z];
+    }
+  }
+  std::copy(&signature_hashes[0][0][0],
+            &signature_hashes[0][0][0] + x * y * z,
+            &hashes_copy[0][0][0]);
+  return hashes_copy;
 }
