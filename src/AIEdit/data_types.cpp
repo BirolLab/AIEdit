@@ -37,18 +37,22 @@ ai_edit::Signature::predict(const Pattern& pattern,
                             const std::vector<SpacedSeed>& seeds)
 {
   Signature data(frame_size, seeds.size());
-  bool is_care, is_mismatch;
-  SignatureValue value;
   for (unsigned slide = 0; slide < frame_size; slide++) {
     for (unsigned i_seed = 0; i_seed < seeds.size(); i_seed++) {
-      is_care = seeds[i_seed][seeds[i_seed].size() - 1 - slide] == '1';
-      is_mismatch = pattern.get(slide) == Pattern::PatternValue::MISMATCH;
-      if (is_care && is_mismatch) {
-        value = SignatureValue::MISS;
-      } else {
-        value = SignatureValue::HIT;
+      bool miss = false;
+      auto seed = seeds[i_seed];
+      for (unsigned pos = 0; pos < std::min(slide, pattern.size()); pos++) {
+        bool is_error = pattern.get(pos) == ai_edit::Pattern::PatternValue::MISMATCH;
+        bool is_care = seed[seed.size() - 1 - slide + pos] == '1';
+        if (is_error && is_care) {
+          miss = true;
+        }
       }
-      data.set(slide, i_seed, value);
+      if (miss) {
+        data.set(slide, i_seed, ai_edit::Signature::SignatureValue::MISS);
+      } else {
+        data.set(slide, i_seed, ai_edit::Signature::SignatureValue::HIT);
+      }
     }
   }
   return data;

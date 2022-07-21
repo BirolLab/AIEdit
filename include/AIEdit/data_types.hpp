@@ -31,6 +31,7 @@ public:
   [[nodiscard]] PatternValue get(size_t i) const { return values[i]; }
   [[nodiscard]] std::string to_string() const;
   [[nodiscard]] unsigned get_num_edits() const;
+  [[nodiscard]] unsigned size() const { return window_size; }
 
 private:
   const unsigned window_size;
