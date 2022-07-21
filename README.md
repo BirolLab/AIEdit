@@ -81,6 +81,3 @@ In the output folder (specified by `-o`), the following files are created:
 
 - `mismatches.tsv` containing all the detected mismatch patterns
 - `db.json` which is a dump of the pattern database in JSON format
-](https://anaconda.org/conda-forge/catch2/badges/installer/conda.svg
-)](https://anaconda.org/conda-forge/catch2/badges/installer/conda.svg
-)
