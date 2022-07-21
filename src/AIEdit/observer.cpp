@@ -59,5 +59,5 @@ ai_edit::Observer::get_position() const
       exit(1);
     }
   }
-  return position;
+  return position - window_size + 1;
 }
