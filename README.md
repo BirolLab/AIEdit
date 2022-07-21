@@ -1,4 +1,4 @@
-[[# AIEdit: Artificially-intelligent long read genome polisher
+# AIEdit: Artificially-intelligent long read genome polisher
 
 ```
            _____ ______    _ _ _            
