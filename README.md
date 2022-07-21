@@ -1,4 +1,4 @@
-# AIEdit: Artificially-intelligent long read genome polisher
+[[# AIEdit: Artificially-intelligent long read genome polisher
 
 ```
            _____ ______    _ _ _            
@@ -11,7 +11,8 @@
  
 # Dependencies
 
-- [btllib](https://github.com/bcgsc/btllib): Can be installed using conda
+- [btllib](https://github.com/bcgsc/btllib) [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/btllib/README.html)
+- [catch2](https://github.com/catchorg/Catch2) (optional, only required for tests) [![install with conda](https://anaconda.org/conda-forge/catch2/badges/installer/conda.svg)](https://anaconda.org/conda-forge/catch2)
 
 No need to install—available in the `vendor` folder as git submodules:
 - [argparse](https://github.com/p-ranav/argparse)
@@ -19,7 +20,7 @@ No need to install—available in the `vendor` folder as git submodules:
 
 # Compilation
 
-First, clone the repo and `cd` into the created directory:
+First, clone the repo and `cd` into the `AIEdit` folder:
 
 ```shell
 git clone --recurse-submodules git@github.com:bcgsc/AIEdit.git
@@ -40,6 +41,10 @@ ninja
 ```
 
 This will create the executable `ai-edit` in the `build` directory.
+
+# Run Tests
+
+If [catch2](https://github.com/catchorg/Catch2) is installed, AIEdit's unit tests can be run by executing `ninja test` in the `build` directory.
 
 # Usage
 
@@ -76,3 +81,6 @@ In the output folder (specified by `-o`), the following files are created:
 
 - `mismatches.tsv` containing all the detected mismatch patterns
 - `db.json` which is a dump of the pattern database in JSON format
+](https://anaconda.org/conda-forge/catch2/badges/installer/conda.svg
+)](https://anaconda.org/conda-forge/catch2/badges/installer/conda.svg
+)
