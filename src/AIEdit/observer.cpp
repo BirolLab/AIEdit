@@ -31,10 +31,11 @@ ai_edit::Observer::update_signature()
       } else {
         value = Signature::Value::MISS;
       }
-      signature.set(i, j, value);
-      std::copy(hash_fns[j]->hashes(),
-                hash_fns[j]->hashes() + filter.get_hash_num_per_seed(),
-                signature_hashes[i][j]);
+      signature.set(i,
+                    j,
+                    value,
+                    hash_fns[j]->get_forward_hash()[0],
+                    hash_fns[j]->get_reverse_hash()[0]);
     }
   }
 }
@@ -58,22 +59,4 @@ ai_edit::Observer::get_position() const
     }
   }
   return position - window_size + 1;
-}
-
-uint64_t***
-ai_edit::Observer::get_signature_hashes()
-{
-  size_t x = frame_size, y = filter.get_seeds().size(),
-         z = filter.get_hash_num_per_seed();
-  uint64_t*** hashes_copy = new uint64_t**[x];
-  for (size_t i = 0; i < x; i++) {
-    hashes_copy[i] = new uint64_t*[y];
-    for (size_t j = 0; j < y; j++) {
-      hashes_copy[i][j] = new uint64_t[z];
-    }
-  }
-  std::copy(&signature_hashes[0][0][0],
-            &signature_hashes[0][0][0] + x * y * z,
-            &hashes_copy[0][0][0]);
-  return hashes_copy;
 }
