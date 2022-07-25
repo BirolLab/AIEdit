@@ -30,7 +30,7 @@ public:
   void set(size_t i, Value x) { values[i] = x; }
   [[nodiscard]] Value get(size_t i) const { return values[i]; }
   [[nodiscard]] std::string to_string() const;
-  [[nodiscard]] unsigned get_num_edits() const;
+  [[nodiscard]] std::vector<size_t> get_edit_positions();
   [[nodiscard]] unsigned size() const { return window_size; }
 
 private:

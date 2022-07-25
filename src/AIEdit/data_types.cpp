@@ -42,7 +42,8 @@ ai_edit::Signature::predict(const EditPattern& pattern,
       bool miss = false;
       auto seed = seeds[i_seed];
       for (unsigned pos = 0; pos < std::min(slide, pattern.size()); pos++) {
-        bool is_error = pattern.get(pos) == ai_edit::EditPattern::Value::MISMATCH;
+        bool is_error =
+          pattern.get(pos) == ai_edit::EditPattern::Value::MISMATCH;
         bool is_care = seed[seed.size() - 1 - slide + pos] == '1';
         if (is_error && is_care) {
           miss = true;
@@ -58,14 +59,14 @@ ai_edit::Signature::predict(const EditPattern& pattern,
   return data;
 }
 
-unsigned
-ai_edit::EditPattern::get_num_edits() const
+std::vector<size_t>
+ai_edit::EditPattern::get_edit_positions()
 {
-  unsigned num_edits = 0;
+  std::vector<size_t> positions;
   for (size_t i = 0; i < window_size; i++) {
     if (values[i] != Value::CLEAN) {
-      ++num_edits;
+      positions.push_back(i);
     }
   }
-  return num_edits;
+  return positions;
 }
