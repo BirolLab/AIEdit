@@ -1,4 +1,4 @@
 #!/bin/bash
 
-cd "${MESON_SOURCE_ROOT}"/tests
-ls *.cpp
+cd "${MESON_SOURCE_ROOT}"
+ls tests/*.cpp
