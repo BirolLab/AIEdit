@@ -9,7 +9,7 @@ if not catch2.found()
   error('Tests require catch2 to be installed.')
 endif
 
-tests = run_command('find_tests.sh', check: true).stdout().strip().split()
+tests = run_command('../scripts/list_tests.sh', check: true).stdout().strip().split()
 
 foreach test_file : tests
     test_name = test_file.split('.cpp')[0].split('/')[-1]

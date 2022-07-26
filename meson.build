@@ -19,32 +19,14 @@ include_dirs = [
     include_directories('vendor/json/single_include')
 ]
 
-ai_edit_sources = [
-    'src/AIEdit/data_types.cpp',
-    'src/AIEdit/database.cpp',
-    'src/AIEdit/observer.cpp',
-    'src/AIEdit/utils.cpp'
-]
-
-program_sources = [
-    'main.cpp',
-    'src/args.cpp',
-    'src/logging.cpp'
-]
-
-static_lib = static_library(
-    'ai-edit',
-    ai_edit_sources,
-    include_directories : include_dirs,
-    dependencies : dependencies
-)
+sources = run_command('scripts/list_sources.sh', check: true).stdout().strip().split()
 
 executable(
     'ai-edit',
-    ai_edit_sources + program_sources,
+    sources,
     dependencies: dependencies,
     include_directories: include_dirs,
     install: true
 )
 
-subdir('tests')
+# subdir('tests')
