@@ -24,7 +24,7 @@ ai_edit::update_signature(btllib::SeedNtHash& hash_fn,
   unsigned num_hashes_per_seed = hash_fn.get_hash_num_per_seed();
   uint64_t* hashes = new uint64_t[num_hashes_per_seed];
   for (size_t i = 0; i < signature_length; i++) {
-    bool rolled = hash_fn.roll();
+    bool rolled = i > 0 ? hash_fn.roll() : true;
     for (unsigned j = 0; j < num_seeds; j++) {
       std::copy(hash_fn.hashes() + j * num_hashes_per_seed,
                 hash_fn.hashes() + (j + 1) * num_hashes_per_seed,

@@ -74,6 +74,7 @@ main(int argc, char** argv)
                                      bloom_filter.get_hash_num_per_seed(),
                                      bloom_filter.get_k());
     while (ai_edit::find_next_miss(hash_function, bloom_filter)) {
+      auto miss_position = hash_function.get_pos() + bloom_filter.get_k();
       ai_edit::update_signature(
         hash_function, bloom_filter, signature, args.signature_length);
       auto query_result = ai_edit::query(signature,
@@ -81,7 +82,7 @@ main(int argc, char** argv)
                                          bloom_filter.get_seeds().size(),
                                          database);
       auto pattern = query_result.entry.pattern;
-      out_tsv << "\"" << record.id << "\"\t" << hash_function.get_pos() << "\t"
+      out_tsv << "\"" << record.id << "\"\t" << miss_position << "\t"
               << ai_edit::to_string(pattern, args.pattern_length) << "\t"
               << query_result.distance << std::endl;
       ++num_patterns;
