@@ -51,15 +51,18 @@ If [catch2](https://github.com/catchorg/Catch2) is installed, AIEdit's unit test
 ```
 Usage: AIEdit [options] 
 
+Artificially-intelligent long read genome polisher
+
 Optional arguments:
--a --assembly    	Path to assembly file [required]
--b --bloom       	Path to btllib SeedBloomFilter populated with reads and seeds [required]
--d --database    	Path to load database json file, or save to if file does not exist
---long-mode      	Optimize seq. reader for long data (>5kbp) [default: false]
--o --out-path    	Path to output directory for storing results [default: "."]
--n --num-frames  	Number of frames in each pattern [default: 10]
--v --verbosity   	Verbosity level (0: none, 1: normal, 2: detailed) [default: 1]
--w --window-size 	Number of bases to scan for mismatches [default: 5]
+-h --help               shows help message and exits [default: false]
+-v --version            prints version information and exits [default: false]
+-a --assembly           Path to assembly file [required]
+-b --bloom-filter       Path to btllib SeedBloomFilter populated with reads and seeds [required]
+--long-mode             Optimize seq. reader for long data (>5kbp) [default: false]
+-o --out-path           Path to output directory for storing results [default: "."]
+-n --signature-length   Number of frames in each pattern [default: 10]
+--verbose               Print a more detailed log to stdout [default: false]
+-w --pattern-length     Number of bases to scan for mismatches [default: 5]
 ```
 
 Use [ntHits](https://github.com/bcgsc/ntHits/tree/refactor) to generate the Bloom filter (`-b`).
