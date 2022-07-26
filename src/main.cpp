@@ -36,10 +36,11 @@ main(int argc, char** argv)
   std::string db_file_path = out_dir_path / std::filesystem::path("db.json");
   std::cout << "Saving database to " << db_file_path << "... ";
   BENCHMARK(std::ofstream db_file(db_file_path);
-            db_file << ai_edit::to_json(database,
-                                        args.signature_length,
-                                        bloom_filter.get_seeds().size(),
-                                        args.pattern_length);
+            auto db_json = ai_edit::to_json(database,
+                                            args.signature_length,
+                                            bloom_filter.get_seeds().size(),
+                                            args.pattern_length);
+            db_file << db_json.dump(4);
             db_file.flush();)
   std::cout << std::endl;
 
