@@ -51,9 +51,9 @@ ai_edit::parse_args(int argc, char** argv)
     std::exit(1);
   }
 
-  args.assembly_path = parser.get("-a");
-  args.bloom_filter_path = parser.get("-b");
-  args.out_path = parser.get("-o");
+  args.assembly_path = std::filesystem::path(parser.get("-a"));
+  args.bloom_filter_path = std::filesystem::path(parser.get("-b"));
+  args.out_path = std::filesystem::path(parser.get("-o"));
   args.verbose = parser.get<bool>("--verbose");
   args.signature_length = parser.get<unsigned>("-n");
   args.pattern_length = parser.get<unsigned>("-w");
@@ -95,21 +95,45 @@ ai_edit::Timer::print_done() const
 void
 ai_edit::print_logo()
 {
-  std::cout << LOGO << "\tv" << VERSION << std::endl;
+  std::cout << LOGO << "\tv" << VERSION << std::endl << std::endl;
 }
 
 void
 ai_edit::print_bloom_filter_information(const btllib::SeedBloomFilter& bf,
                                         const std::string& path)
 {
-  std::cout << "- Path            = " << path << std::endl;
   std::cout << "- Size (bytes)    = " << bf.get_bytes() << std::endl;
   std::cout << "- FPR             = " << bf.get_fpr() << std::endl;
   std::cout << "- Occupancy       = " << bf.get_occupancy() << std::endl;
-  std::cout << "- Hash per seed = " << bf.get_hash_num_per_seed() << std::endl;
-  std::cout << "- " << bf.get_seeds().size() << " seed patterns: " << std::endl;
+  std::cout << "- Hashes per seed = " << bf.get_hash_num_per_seed()
+            << std::endl;
+  std::cout << "- " << bf.get_seeds().size() << " seed patterns (each "
+            << bf.get_k() << "bp long):" << std::endl;
   for (size_t i = 0; i < bf.get_seeds().size(); i++) {
     std::cout << "    - Seed " << i + 1 << ": " << bf.get_seeds()[i]
               << std::endl;
   }
+}
+
+void
+ai_edit::print_args(const ai_edit::ProgramArguments& args)
+{
+  std::cout << "Assembly file     (-a)  = " << args.assembly_path << std::endl;
+  std::cout << "Bloom filter file (-b)  = " << args.bloom_filter_path
+            << std::endl;
+  std::cout << "Signature length  (-n)  = " << args.signature_length
+            << std::endl;
+  std::cout << "Pattern length    (-w)  = " << args.pattern_length << std::endl;
+  std::cout << "Optimize for reading long sequences (--long-mode) = "
+            << (args.seq_reader_long_mode ? "yes" : "no") << std::endl;
+}
+
+void
+ai_edit::print_output_files_list()
+{}
+
+void
+ai_edit::print_editing_log(const ai_edit::EditingLog& log)
+{
+  std::cout << "- Detected patterns = " << log.num_patterns << std::endl;
 }

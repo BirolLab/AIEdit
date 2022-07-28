@@ -9,13 +9,13 @@ namespace ai_edit {
 
 /**
  * Roll the hash function until a miss is detected.
- * @param hash_fn btllib::SeedNtHash object for generating hash values.
+ * @param hash_function btllib::SeedNtHash object for generating hash values.
  * @param filter btllib::SeedBloomFilter object for interrogation.
  * @return True if the ntHash vector can advance, otherwise false.
  */
 bool
-find_next_miss(btllib::SeedNtHash& hash_fn,
-               const btllib::SeedBloomFilter& filter);
+roll_to_next_miss(btllib::SeedNtHash& hash_function,
+                  const btllib::SeedBloomFilter& filter);
 
 /**
  * Update the hit/miss signature by peeking the next signature_length
@@ -31,7 +31,7 @@ find_next_miss(btllib::SeedNtHash& hash_fn,
 bool
 update_signature(btllib::SeedNtHash& hash_fn,
                  const btllib::SeedBloomFilter& filter,
-                 SignatureValue** signature,
+                 Signature& signature,
                  const size_t signature_length);
 
 }

@@ -38,6 +38,7 @@ get_combinations(const std::string& original)
 {
   std::vector<std::string> combinations;
   get_combinations("", original.size(), original, combinations);
+  return combinations;
 }
 
 /**
@@ -59,7 +60,7 @@ update_edits(std::vector<ai_edit::Edit>& edits, const std::string& combination)
 std::vector<ai_edit::Edit>
 ai_edit::get_edits(std::string& seq,
                    const size_t position,
-                   ai_edit::PatternValue* pattern,
+                   const ai_edit::Pattern& pattern,
                    const unsigned pattern_length,
                    const btllib::SeedBloomFilter& bloom_filter,
                    const btllib::SeedNtHash& hash_function)
@@ -68,7 +69,7 @@ ai_edit::get_edits(std::string& seq,
   std::string original_combination;
   std::vector<ai_edit::Edit> edits;
   for (const auto& i : ai_edit::get_edit_positions(pattern, pattern_length)) {
-    edits.emplace_back(ai_edit::Edit({position + i, seq[position + i]}));
+    edits.emplace_back(ai_edit::Edit({ position + i, seq[position + i] }));
     original_combination += seq[position + i];
   }
   auto combinations = get_combinations(original_combination);

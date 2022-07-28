@@ -1,8 +1,8 @@
 #include "error_detection.hpp"
 
 bool
-ai_edit::find_next_miss(btllib::SeedNtHash& hash_fn,
-                        const btllib::SeedBloomFilter& filter)
+ai_edit::roll_to_next_miss(btllib::SeedNtHash& hash_fn,
+                           const btllib::SeedBloomFilter& filter)
 {
   while (true) {
     if (!hash_fn.roll()) {
@@ -17,7 +17,7 @@ ai_edit::find_next_miss(btllib::SeedNtHash& hash_fn,
 bool
 ai_edit::update_signature(btllib::SeedNtHash& hash_fn,
                           const btllib::SeedBloomFilter& filter,
-                          SignatureValue** signature,
+                          Signature& signature,
                           const size_t signature_length)
 {
   bool has_miss = false;

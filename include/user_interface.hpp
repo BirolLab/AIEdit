@@ -14,15 +14,16 @@
 
 #include <btllib/bloom_filter.hpp>
 #include <chrono>
+#include <filesystem>
 #include <string>
 
 namespace ai_edit {
 
 struct ProgramArguments
 {
-  std::string assembly_path;
-  std::string bloom_filter_path;
-  std::string out_path;
+  std::filesystem::path assembly_path;
+  std::filesystem::path bloom_filter_path;
+  std::filesystem::path out_path;
   bool verbose;
   unsigned signature_length;
   unsigned pattern_length;
@@ -62,6 +63,12 @@ public:
   void print_done() const;
 };
 
+struct EditingLog
+{
+  unsigned num_patterns = 0;
+  unsigned num_edits = 0;
+};
+
 /**
  * Read program parameters from the command line.
  * @param argc Number of command-line parameters given to main.
@@ -85,6 +92,24 @@ print_logo();
 void
 print_bloom_filter_information(const btllib::SeedBloomFilter& filter,
                                const std::string& path);
+
+/**
+ * Print parsed command-line arguments to stdout.
+ */
+void
+print_args(const ai_edit::ProgramArguments& args);
+
+/**
+ * Print the generated files' descriptions to stdout.
+ */
+void
+print_output_files_list();
+
+/**
+ * Print the editing logs to stdout.
+ */
+void
+print_editing_log(const EditingLog& log);
 
 }
 

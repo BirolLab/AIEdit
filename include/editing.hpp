@@ -28,7 +28,7 @@ struct Edit
 std::vector<Edit>
 get_edits(std::string& seq,
           const size_t position,
-          PatternValue* pattern,
+          const Pattern& pattern,
           const unsigned pattern_length,
           const btllib::SeedBloomFilter& bloom_filter,
           const btllib::SeedNtHash& hash_function);

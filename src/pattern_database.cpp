@@ -12,8 +12,8 @@ namespace {
  * @param seeds Vector of spaced seed patterns.
  * @return 2D array of values representing the signature.
  */
-ai_edit::SignatureValue**
-predict_signature(ai_edit::PatternValue* pattern,
+ai_edit::Signature
+predict_signature(const ai_edit::Pattern& pattern,
                   const unsigned pattern_length,
                   const unsigned signature_length,
                   const std::vector<std::string>& seeds)
@@ -48,8 +48,8 @@ predict_signature(ai_edit::PatternValue* pattern,
  * @return An unsigned integer as the distance.
  */
 unsigned
-distance(ai_edit::SignatureValue** observed,
-         ai_edit::SignatureValue** from_database,
+distance(const ai_edit::Signature& observed,
+         const ai_edit::Signature& from_database,
          const unsigned signature_length,
          const unsigned num_seeds,
          const ai_edit::PatternDatabase& db)
@@ -73,12 +73,12 @@ distance(ai_edit::SignatureValue** observed,
 
 }
 
-std::vector<ai_edit::DatabaseEntry>
+ai_edit::PatternDatabase
 ai_edit::build_database(const std::vector<std::string>& seeds,
                         const unsigned pattern_length,
                         const unsigned signature_length)
 {
-  std::vector<ai_edit::DatabaseEntry> db;
+  PatternDatabase db;
   for (unsigned p = 0; p < (1U << (pattern_length - 1)); p++) {
     std::string pattern_string = std::bitset<64>(p).to_string() + "1";
     std::reverse(pattern_string.begin(), pattern_string.end());
@@ -95,7 +95,7 @@ ai_edit::build_database(const std::vector<std::string>& seeds,
 }
 
 ai_edit::QueryResult
-ai_edit::query(SignatureValue** observed,
+ai_edit::query(const Signature& observed,
                const unsigned signature_length,
                const unsigned num_seeds,
                const PatternDatabase& db)
@@ -111,20 +111,4 @@ ai_edit::query(SignatureValue** observed,
     }
   }
   return { *result, min_dist };
-}
-
-nlohmann::json
-ai_edit::to_json(const PatternDatabase& db,
-                 const unsigned signature_length,
-                 const unsigned num_seeds,
-                 const unsigned pattern_length)
-{
-  nlohmann::json db_json;
-  for (auto& entry : db) {
-    auto key = ai_edit::to_string(entry.pattern, pattern_length);
-    auto value =
-      ai_edit::to_string_vec(entry.signature, signature_length, num_seeds);
-    db_json[key] = value;
-  }
-  return db_json;
 }

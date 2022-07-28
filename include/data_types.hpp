@@ -13,17 +13,15 @@ enum SignatureValue
   MISS
 };
 
+using Signature = SignatureValue**;
+
 enum PatternValue
 {
   CLEAN,
   MISMATCH
 };
 
-struct DatabaseEntry
-{
-  PatternValue* pattern;
-  SignatureValue** signature;
-};
+using Pattern = PatternValue*;
 
 /**
  * Create a new Signature object.
@@ -31,7 +29,7 @@ struct DatabaseEntry
  * @param num_seeds Number of spaced seed patterns (number of columns).
  * @return An empty signature filled with SignatureValue::HIT values
  */
-SignatureValue**
+Signature
 create_signature(const size_t length, const unsigned num_seeds);
 
 /**
@@ -40,9 +38,9 @@ create_signature(const size_t length, const unsigned num_seeds);
  * @return Vector of strings, each a row of the given signature.
  */
 std::vector<std::string>
-to_string_vec(SignatureValue** signature,
-              const unsigned signature_length,
-              const unsigned num_seeds);
+signature_to_string_vec(const ai_edit::Signature& signature,
+                        const unsigned signature_length,
+                        const unsigned num_seeds);
 
 /**
  * Convert an error pattern to a string.
@@ -50,7 +48,7 @@ to_string_vec(SignatureValue** signature,
  * @return String representation of the pattern.
  */
 std::string
-to_string(PatternValue* pattern, const unsigned pattern_length);
+pattern_to_string(const Pattern& pattern, const unsigned pattern_length);
 
 /**
  * Get the edit positions of a pattern.
@@ -59,7 +57,7 @@ to_string(PatternValue* pattern, const unsigned pattern_length);
  * @return Pattern's edit positions relative to the start of the pattern.
  */
 std::vector<size_t>
-get_edit_positions(PatternValue* pattern, const unsigned pattern_length);
+get_edit_positions(const Pattern& pattern, const unsigned pattern_length);
 
 }
 

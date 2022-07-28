@@ -1,6 +1,6 @@
 #include "data_types.hpp"
 
-ai_edit::SignatureValue**
+ai_edit::Signature
 ai_edit::create_signature(const size_t length, const unsigned num_seeds)
 {
   auto signature = new SignatureValue*[length];
@@ -14,9 +14,9 @@ ai_edit::create_signature(const size_t length, const unsigned num_seeds)
 }
 
 std::vector<std::string>
-ai_edit::to_string_vec(SignatureValue** signature,
-                       const unsigned signature_length,
-                       const unsigned num_seeds)
+ai_edit::signature_to_string_vec(const ai_edit::Signature& signature,
+                                 const unsigned signature_length,
+                                 const unsigned num_seeds)
 {
   std::vector<std::string> rows;
   for (size_t i = 0; i < signature_length; i++) {
@@ -30,7 +30,8 @@ ai_edit::to_string_vec(SignatureValue** signature,
 }
 
 std::string
-ai_edit::to_string(PatternValue* pattern, const unsigned pattern_length)
+ai_edit::pattern_to_string(const ai_edit::Pattern& pattern,
+                           const unsigned pattern_length)
 {
   std::string pattern_string;
   for (size_t i = 0; i < pattern_length; i++) {
@@ -40,7 +41,7 @@ ai_edit::to_string(PatternValue* pattern, const unsigned pattern_length)
 }
 
 std::vector<size_t>
-ai_edit::get_edit_positions(PatternValue* pattern,
+ai_edit::get_edit_positions(const ai_edit::Pattern& pattern,
                             const unsigned pattern_length)
 {
   std::vector<size_t> positions;

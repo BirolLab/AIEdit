@@ -9,6 +9,12 @@
 
 namespace ai_edit {
 
+struct DatabaseEntry
+{
+  Pattern pattern;
+  Signature signature;
+};
+
 using PatternDatabase = std::vector<DatabaseEntry>;
 
 struct QueryResult
@@ -36,25 +42,10 @@ build_database(const std::vector<std::string>& seeds,
  * @return QueryResult object containing the entry and minimum distance.
  */
 QueryResult
-query(SignatureValue** observed,
+query(const Signature& observed,
       const unsigned signature_length,
       const unsigned num_seeds,
       const PatternDatabase& db);
-
-/**
- * Convert the database to a json object.
- * @param db Pattern database.
- * @param signature_length Length of the signatures in the database.
- * @param num_seeds Number of spaced seed patterns.
- * @param pattern_length Length of the patterns in the database.
- * @return JSON object representing the database.
- */
-nlohmann::json
-to_json(const PatternDatabase& db,
-        const unsigned signature_length,
-        const unsigned num_seeds,
-        const unsigned pattern_length);
-
 
 }
 
