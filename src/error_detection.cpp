@@ -1,7 +1,7 @@
 #include "error_detection.hpp"
 
 bool
-ai_edit::roll_to_next_miss(btllib::SeedNtHash& hash_fn,
+ai_edit::roll_to_next_miss(nthash::SeedNtHash& hash_fn,
                            const btllib::SeedBloomFilter& filter)
 {
   while (true) {
@@ -15,7 +15,7 @@ ai_edit::roll_to_next_miss(btllib::SeedNtHash& hash_fn,
 }
 
 bool
-ai_edit::update_signature(btllib::SeedNtHash& hash_fn,
+ai_edit::update_signature(nthash::SeedNtHash& hash_fn,
                           const btllib::SeedBloomFilter& filter,
                           Signature& signature,
                           const size_t signature_length)

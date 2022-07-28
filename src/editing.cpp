@@ -63,7 +63,7 @@ ai_edit::get_edits(std::string& seq,
                    const ai_edit::Pattern& pattern,
                    const unsigned pattern_length,
                    const btllib::SeedBloomFilter& bloom_filter,
-                   const btllib::SeedNtHash& hash_function)
+                   const nthash::SeedNtHash& hash_function)
 {
   bool found = false;
   std::string original_combination;

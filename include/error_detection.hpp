@@ -4,6 +4,7 @@
 #include <btllib/bloom_filter.hpp>
 
 #include "data_types.hpp"
+#include "nthash/nthash.hpp"
 
 namespace ai_edit {
 
@@ -14,7 +15,7 @@ namespace ai_edit {
  * @return True if the ntHash vector can advance, otherwise false.
  */
 bool
-roll_to_next_miss(btllib::SeedNtHash& hash_function,
+roll_to_next_miss(nthash::SeedNtHash& hash_function,
                   const btllib::SeedBloomFilter& filter);
 
 /**
@@ -29,7 +30,7 @@ roll_to_next_miss(btllib::SeedNtHash& hash_function,
  * @return True if the signature contains any misses, otherwise false.
  */
 bool
-update_signature(btllib::SeedNtHash& hash_fn,
+update_signature(nthash::SeedNtHash& hash_fn,
                  const btllib::SeedBloomFilter& filter,
                  Signature& signature,
                  const size_t signature_length);

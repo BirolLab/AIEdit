@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "data_types.hpp"
+#include "nthash/nthash.hpp"
 
 namespace ai_edit {
 
@@ -31,7 +32,7 @@ get_edits(std::string& seq,
           const Pattern& pattern,
           const unsigned pattern_length,
           const btllib::SeedBloomFilter& bloom_filter,
-          const btllib::SeedNtHash& hash_function);
+          const nthash::SeedNtHash& hash_function);
 
 /**
  * Apply edits to the sequence in-place.

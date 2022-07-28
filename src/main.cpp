@@ -7,6 +7,7 @@
 #include "data_types.hpp"
 #include "error_detection.hpp"
 #include "file_management.hpp"
+#include "nthash/nthash.hpp"
 #include "pattern_database.hpp"
 #include "user_interface.hpp"
 
@@ -69,7 +70,7 @@ main(int argc, char** argv)
   timer.start();
   for (auto record : reader) {
     std::string& seq = record.seq;
-    btllib::SeedNtHash hash_function(seq,
+    nthash::SeedNtHash hash_function(seq,
                                      bloom_filter.get_seeds(),
                                      bloom_filter.get_hash_num_per_seed(),
                                      bloom_filter.get_k());
