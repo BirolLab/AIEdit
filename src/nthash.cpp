@@ -331,4 +331,47 @@ BlindNtHash::sub(const std::vector<unsigned>& positions,
            hashes_array.get());
 }
 
+uint64_t**
+SeedNtHash::peek_window(unsigned n)
+{
+  btllib::check_error(nthash.pos + n >= nthash.seq_len,
+                      "SeedNtHash: Peek window out of bounds");
+  uint64_t** window_hashes = new uint64_t*[n];
+  std::unique_ptr<uint64_t[]> fh_no_monomers_tmp(new uint64_t[blocks.size()]);
+  std::unique_ptr<uint64_t[]> rh_no_monomers_tmp(new uint64_t[blocks.size()]);
+  std::unique_ptr<uint64_t[]> forward_hash_tmp(new uint64_t[blocks.size()]);
+  std::unique_ptr<uint64_t[]> reverse_hash_tmp(new uint64_t[blocks.size()]);
+  std::unique_ptr<uint64_t[]> hval_temp(new uint64_t[nthash.hash_num]);
+  std::memcpy(fh_no_monomers_tmp.get(),
+              fh_no_monomers.get(),
+              blocks.size() * sizeof(uint64_t));
+  std::memcpy(rh_no_monomers_tmp.get(),
+              rh_no_monomers.get(),
+              blocks.size() * sizeof(uint64_t));
+  std::memcpy(forward_hash_tmp.get(),
+              forward_hash.get(),
+              blocks.size() * sizeof(uint64_t));
+  std::memcpy(reverse_hash_tmp.get(),
+              reverse_hash.get(),
+              blocks.size() * sizeof(uint64_t));
+  for (unsigned i = 0; i < n; i++) {
+    window_hashes[i] = new uint64_t[nthash.hash_num];
+    ntmsm64(nthash.seq + nthash.pos + i, 
+            blocks, 
+            monomers, 
+            nthash.k, 
+            blocks.size(),
+            hash_num_per_seed,
+            fh_no_monomers_tmp.get(),
+            rh_no_monomers_tmp.get(),
+            forward_hash_tmp.get(),
+            reverse_hash_tmp.get(),
+            hval_temp.get());
+    std::memcpy(window_hashes[i],
+                hval_temp.get(),
+                nthash.hash_num * sizeof(uint64_t));
+  }
+  return window_hashes;
+}
+
 } // namespace nthash

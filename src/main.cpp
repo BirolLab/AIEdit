@@ -5,6 +5,7 @@
 #include <fstream>
 
 #include "data_types.hpp"
+#include "editing.hpp"
 #include "error_detection.hpp"
 #include "file_management.hpp"
 #include "nthash/nthash.hpp"
@@ -27,7 +28,7 @@ main(int argc, char** argv)
   std::cout << std::endl;
 
   // LOAD THE BLOOM FILTER
-  std::cout << "Loading Bloom filter... ";
+  std::cout << "Loading Bloom filter... " << std::flush;
   BENCHMARK(btllib::SeedBloomFilter bloom_filter(args.bloom_filter_path);)
   if (args.verbose) {
     ai_edit::print_bloom_filter_information(bloom_filter,
@@ -36,11 +37,11 @@ main(int argc, char** argv)
   }
 
   // POPULATE PATTERN DATABASE
-  std::cout << "Populating pattern database... ";
+  std::cout << "Populating pattern database... " << std::flush;
   BENCHMARK(auto database = ai_edit::build_database(bloom_filter.get_seeds(),
                                                     args.pattern_length,
                                                     args.signature_length);)
-  std::cout << "Saving database... ";
+  std::cout << "Saving database... " << std::flush;
   std::string db_file_path = args.out_path / std::filesystem::path("db.json");
   BENCHMARK(ai_edit::write_database_file(database,
                                          args.signature_length,
@@ -66,7 +67,7 @@ main(int argc, char** argv)
 
   // EDITING PROCEDURE
   ai_edit::EditingLog edit_log;
-  std::cout << "Detecting errors and editing assembly... ";
+  std::cout << "Detecting errors and editing assembly... " << std::flush;
   timer.start();
   for (auto record : reader) {
     std::string& seq = record.seq;
@@ -75,17 +76,22 @@ main(int argc, char** argv)
                                      bloom_filter.get_hash_num_per_seed(),
                                      bloom_filter.get_k());
     while (ai_edit::roll_to_next_miss(hash_function, bloom_filter)) {
+      size_t miss_position = hash_function.get_pos() + hash_function.get_k();
       ai_edit::update_signature(hash_function,
                                 bloom_filter,
                                 signature,
                                 args.signature_length);
+      for (unsigned i = 0; i < hash_function.get_k() + args.pattern_length;
+           i++) {
+        hash_function.roll();
+      }
       auto query_result = ai_edit::query(signature,
                                          args.signature_length,
                                          bloom_filter.get_seeds().size(),
                                          database);
       auto pattern = query_result.entry.pattern;
       edits_file.write(record.id,
-                       hash_function.get_pos() + hash_function.get_k(),
+                       miss_position,
                        ai_edit::pattern_to_string(pattern, args.pattern_length),
                        query_result.distance);
       ++edit_log.num_patterns;

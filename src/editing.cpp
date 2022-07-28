@@ -94,9 +94,12 @@ ai_edit::get_edits(std::string& seq,
 }
 
 void
-ai_edit::apply_edits(std::string& seq, const std::vector<Edit>& edits)
+ai_edit::apply_edits(std::string& seq,
+                     nthash::SeedNtHash& hash_function,
+                     const std::vector<Edit>& edits)
 {
   for (const auto& edit : edits) {
     seq[edit.position] = edit.content;
+    hash_function.change_seq(seq.data(), false);
   }
 }

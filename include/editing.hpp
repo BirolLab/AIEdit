@@ -41,7 +41,9 @@ get_edits(std::string& seq,
  * sequence.
  */
 void
-apply_edits(std::string& seq, const std::vector<Edit>& edits);
+apply_edits(std::string& seq,
+            nthash::SeedNtHash& hash_function,
+            const std::vector<Edit>& edits);
 
 }
 
