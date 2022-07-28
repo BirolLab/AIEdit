@@ -370,9 +370,9 @@ public:
 
   const uint64_t* hashes() const { return nthash.hashes(); }
 
-  void change_seq(const std::string& seq, size_t pos = 0)
+  void change_seq(std::string& seq, bool reset = true)
   {
-    nthash.change_seq(seq, pos);
+    nthash.change_seq(seq, reset);
   }
 
   size_t get_pos() const { return nthash.get_pos(); }

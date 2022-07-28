@@ -25,11 +25,20 @@ ai_edit::write_database_file(const ai_edit::PatternDatabase& database,
 }
 
 void
-ai_edit::EditsFile::write(const std::string& seq_id,
+ai_edit::EditsFile::write(const std::string& seq,
+                          const std::string& seq_id,
                           const size_t miss_position,
-                          const std::string& pattern_string,
+                          const ai_edit::Pattern& pattern,
+                          const unsigned pattern_length,
+                          const std::vector<ai_edit::Edit>& edits,
                           const unsigned distance)
 {
-  file << "\"" << seq_id << "\"\t" << miss_position << "\t" << pattern_string
-       << "\t" << distance << std::endl;
+  file << "\"" << seq_id << "\"\t" << miss_position + 1 << "\t";
+  std::string before = std::string(pattern_length, '-');
+  std::string after = std::string(pattern_length, '-');
+  for (const auto& edit : edits) {
+    before[edit.position - miss_position] = seq[edit.position];
+    after[edit.position - miss_position] = edit.content;
+  }
+  file << before << "\t" << after << "\t" << distance << std::endl;
 }
