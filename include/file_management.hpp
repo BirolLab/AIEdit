@@ -3,6 +3,7 @@
 
 #include <fstream>
 
+#include "editing.hpp"
 #include "pattern_database.hpp"
 
 namespace ai_edit {
@@ -32,9 +33,12 @@ public:
    * @param distance Distance between the observed signature and the signature
    * from the pattern database.
    */
-  void write(const std::string& seq_id,
+  void write(const std::string& seq,
+             const std::string& seq_id,
              const size_t miss_position,
-             const std::string& pattern_string,
+             const ai_edit::Pattern& pattern,
+             const unsigned pattern_length,
+             const std::vector<ai_edit::Edit>& edits,
              const unsigned distance);
 };
 

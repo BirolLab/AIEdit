@@ -76,25 +76,39 @@ main(int argc, char** argv)
                                      bloom_filter.get_hash_num_per_seed(),
                                      bloom_filter.get_k());
     while (ai_edit::roll_to_next_miss(hash_function, bloom_filter)) {
-      size_t miss_position = hash_function.get_pos() + hash_function.get_k();
+      size_t miss_pos = hash_function.get_pos() + hash_function.get_k() - 1;
       ai_edit::update_signature(hash_function,
                                 bloom_filter,
                                 signature,
                                 args.signature_length);
-      for (unsigned i = 0; i < hash_function.get_k() + args.pattern_length;
-           i++) {
-        hash_function.roll();
-      }
       auto query_result = ai_edit::query(signature,
                                          args.signature_length,
                                          bloom_filter.get_seeds().size(),
                                          database);
       auto pattern = query_result.entry.pattern;
-      edits_file.write(record.id,
-                       miss_position,
-                       ai_edit::pattern_to_string(pattern, args.pattern_length),
-                       query_result.distance);
-      ++edit_log.num_patterns;
+      auto edits = ai_edit::get_edits(seq,
+                                      miss_pos,
+                                      pattern,
+                                      args.pattern_length,
+                                      bloom_filter,
+                                      hash_function,
+                                      args.signature_length);
+      if (edits.size() > 0) {
+        edits_file.write(seq,
+                         record.id,
+                         miss_pos,
+                         pattern,
+                         args.pattern_length,
+                         edits,
+                         query_result.distance);
+        ai_edit::apply_edits(seq, hash_function, edits);
+        ++edit_log.num_patterns;
+      } else {
+        unsigned rolls = hash_function.get_k() + args.pattern_length;
+        for (unsigned i = 0; i < rolls; i++) {
+          hash_function.roll();
+        }
+      }
     }
   }
   timer.stop();

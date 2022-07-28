@@ -28,7 +28,7 @@ get_combinations(std::string prefix,
   }
   for (const auto& c : "ACGT") {
     if (original[original.size() - k] != c) {
-      get_combinations(prefix + "c", k - 1, original, combinations);
+      get_combinations(prefix + c, k - 1, original, combinations);
     }
   }
 }
@@ -63,7 +63,8 @@ ai_edit::get_edits(std::string& seq,
                    const ai_edit::Pattern& pattern,
                    const unsigned pattern_length,
                    const btllib::SeedBloomFilter& bloom_filter,
-                   const nthash::SeedNtHash& hash_function)
+                   nthash::SeedNtHash& hash_function,
+                   const unsigned signature_length)
 {
   bool found = false;
   std::string original_combination;
@@ -73,11 +74,17 @@ ai_edit::get_edits(std::string& seq,
     original_combination += seq[position + i];
   }
   auto combinations = get_combinations(original_combination);
+  auto signature = ai_edit::create_signature(signature_length,
+                                             bloom_filter.get_seeds().size());
   for (const auto& combination : combinations) {
     for (unsigned i = 0; i < edits.size(); i++) {
       seq[edits[i].position] = combination[i];
     }
-    bool has_miss = false;
+    hash_function.change_seq(seq, false);
+    bool has_miss = ai_edit::update_signature(hash_function,
+                                              bloom_filter,
+                                              signature,
+                                              signature_length);
     if (!has_miss && !found) {
       update_edits(edits, combination);
       found = true;
@@ -90,6 +97,10 @@ ai_edit::get_edits(std::string& seq,
   for (unsigned i = 0; i < edits.size(); i++) {
     seq[edits[i].position] = original_combination[i];
   }
+  hash_function.change_seq(seq, false);
+  if (!found) {
+    edits.clear();
+  }
   return edits;
 }
 
@@ -100,6 +111,6 @@ ai_edit::apply_edits(std::string& seq,
 {
   for (const auto& edit : edits) {
     seq[edit.position] = edit.content;
-    hash_function.change_seq(seq.data(), false);
   }
+  hash_function.change_seq(seq, false);
 }

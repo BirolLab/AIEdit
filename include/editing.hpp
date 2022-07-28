@@ -32,7 +32,8 @@ get_edits(std::string& seq,
           const Pattern& pattern,
           const unsigned pattern_length,
           const btllib::SeedBloomFilter& bloom_filter,
-          const nthash::SeedNtHash& hash_function);
+          nthash::SeedNtHash& hash_function,
+          const unsigned signature_length);
 
 /**
  * Apply edits to the sequence in-place.
