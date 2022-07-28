@@ -38,3 +38,16 @@ ai_edit::to_string(PatternValue* pattern, const unsigned pattern_length)
   }
   return pattern_string;
 }
+
+std::vector<size_t>
+ai_edit::get_edit_positions(PatternValue* pattern,
+                            const unsigned pattern_length)
+{
+  std::vector<size_t> positions;
+  for (size_t i = 0; i < pattern_length; i++) {
+    if (pattern[i] != PatternValue::CLEAN) {
+      positions.emplace_back(i);
+    }
+  }
+  return positions;
+}

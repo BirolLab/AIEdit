@@ -52,6 +52,15 @@ to_string_vec(SignatureValue** signature,
 std::string
 to_string(PatternValue* pattern, const unsigned pattern_length);
 
+/**
+ * Get the edit positions of a pattern.
+ * @param pattern Pattern values.
+ * @param pattern_length Length of the pattern array.
+ * @return Pattern's edit positions relative to the start of the pattern.
+ */
+std::vector<size_t>
+get_edit_positions(PatternValue* pattern, const unsigned pattern_length);
+
 }
 
 #endif // AI_EDIT_DATA_TYPES_HPP

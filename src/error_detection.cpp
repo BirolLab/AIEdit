@@ -14,12 +14,13 @@ ai_edit::find_next_miss(btllib::SeedNtHash& hash_fn,
   }
 }
 
-void
+bool
 ai_edit::update_signature(btllib::SeedNtHash& hash_fn,
                           const btllib::SeedBloomFilter& filter,
                           SignatureValue** signature,
                           const size_t signature_length)
 {
+  bool has_miss = false;
   unsigned num_seeds = filter.get_seeds().size();
   unsigned num_hashes_per_seed = hash_fn.get_hash_num_per_seed();
   uint64_t* hashes = new uint64_t[num_hashes_per_seed];
@@ -31,9 +32,11 @@ ai_edit::update_signature(btllib::SeedNtHash& hash_fn,
                 hashes);
       if (rolled && !filter.contains(hashes)) {
         signature[i][j] = SignatureValue::MISS;
+        has_miss = true;
       } else {
         signature[i][j] = SignatureValue::HIT;
       }
     }
   }
+  return has_miss;
 }

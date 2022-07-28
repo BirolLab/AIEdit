@@ -68,8 +68,9 @@ main(int argc, char** argv)
   auto signature = ai_edit::create_signature(args.signature_length,
                                              bloom_filter.get_seeds().size());
   uint64_t num_patterns = 0;
-  for (const auto& record : reader) {
-    btllib::SeedNtHash hash_function(record.seq,
+  for (auto record : reader) {
+    std::string& seq = record.seq;
+    btllib::SeedNtHash hash_function(seq,
                                      bloom_filter.get_seeds(),
                                      bloom_filter.get_hash_num_per_seed(),
                                      bloom_filter.get_k());
@@ -90,7 +91,9 @@ main(int argc, char** argv)
   }
   timer.stop();
   timer.print_done();
-  std::cout << "- Number of detected patterns = " << num_patterns << std::endl;
+  std::cout << "- Detected patterns = " << num_patterns << std::endl;
+
+  std::cout << std::endl;
   std::cout << "Results saved to " << args.out_path << std::endl;
 
   return 0;
