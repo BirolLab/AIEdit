@@ -1,8 +1,7 @@
 #include "user_interface.hpp"
 
-#include <iostream>
-
 #include <argparse/argparse.hpp>
+#include <iostream>
 
 ai_edit::ProgramArguments
 ai_edit::parse_args(int argc, char** argv)
@@ -102,17 +101,28 @@ void
 ai_edit::print_bloom_filter_information(const btllib::SeedBloomFilter& bf,
                                         const std::string& path)
 {
-  std::cout << "- Size (bytes)    = " << bf.get_bytes() << std::endl;
-  std::cout << "- FPR             = " << bf.get_fpr() << std::endl;
-  std::cout << "- Occupancy       = " << bf.get_occupancy() << std::endl;
-  std::cout << "- Hashes per seed = " << bf.get_hash_num_per_seed()
+  std::cout << "- Size (bytes)       = " << bf.get_bytes() << std::endl;
+  std::cout << "- FPR                = " << bf.get_fpr() << std::endl;
+  std::cout << "- Occupancy          = " << bf.get_occupancy() << std::endl;
+  std::cout << "- Hashes per seed    = " << bf.get_hash_num_per_seed()
             << std::endl;
-  std::cout << "- " << bf.get_seeds().size() << " seed patterns (each "
-            << bf.get_k() << "bp long):" << std::endl;
+  std::cout << "- Spaced seed length = " << bf.get_k() << std::endl;
   for (size_t i = 0; i < bf.get_seeds().size(); i++) {
-    std::cout << "    - Seed " << i + 1 << ": " << bf.get_seeds()[i]
-              << std::endl;
+    std::cout << "- Seed " << i + 1 << ": " << bf.get_seeds()[i] << std::endl;
   }
+}
+
+void
+ai_edit::print_database_information(const PatternDatabase& database,
+                                    const unsigned signature_length,
+                                    const unsigned num_seeds)
+{
+  std::cout << "- Number of database entries   = " << database.size()
+            << std::endl;
+  std::cout << "- Average signature miss count = "
+            << ai_edit::get_database_average_signature_miss_count(
+                 database, signature_length, num_seeds)
+            << std::endl;
 }
 
 void
@@ -133,8 +143,10 @@ ai_edit::print_output_files_list()
 {
   std::cout << "- db.json      : Pattern database in JSON format" << std::endl;
   std::cout << "- edited.fa    : Edited assembly in FASTA format" << std::endl;
-  std::cout << "- edits.tsv    : List of edits applied to the assembly" << std::endl;
-  std::cout << "- variants.vcf : List of edits in variant call format" << std::endl;
+  std::cout << "- edits.tsv    : List of edits applied to the assembly"
+            << std::endl;
+  std::cout << "- variants.vcf : List of edits in variant call format"
+            << std::endl;
 }
 
 void

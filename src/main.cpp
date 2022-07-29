@@ -50,6 +50,9 @@ main(int argc, char** argv)
                                          args.pattern_length,
                                          db_file_path);)
   if (args.verbose) {
+    ai_edit::print_database_information(database,
+                                        args.signature_length,
+                                        args.pattern_length);
     std::cout << std::endl;
   }
 
@@ -109,6 +112,7 @@ main(int argc, char** argv)
         vcf_file.write(seq, record.id, edits);
         ai_edit::apply_edits(seq, hash_function, edits);
         ++edit_log.num_patterns;
+        edit_log.num_edits += edits.size();
       } else {
         unsigned rolls = hash_function.get_k() + args.pattern_length;
         for (unsigned i = 0; i < rolls; i++) {

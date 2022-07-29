@@ -17,6 +17,8 @@
 #include <filesystem>
 #include <string>
 
+#include "pattern_database.hpp"
+
 namespace ai_edit {
 
 struct ProgramArguments
@@ -95,9 +97,19 @@ print_bloom_filter_information(const btllib::SeedBloomFilter& filter,
 
 /**
  * Print parsed command-line arguments to stdout.
+ * @param args Object containing program arguments.
  */
 void
 print_args(const ai_edit::ProgramArguments& args);
+
+/**
+ * Print information about the pattern database to stdout.
+ * @param database Popluated pattern database.
+ */
+void
+print_database_information(const PatternDatabase& database,
+                           const unsigned signature_length,
+                           const unsigned num_seeds);
 
 /**
  * Print the generated files' descriptions to stdout.

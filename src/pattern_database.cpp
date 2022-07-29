@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <bitset>
 
+#include "error_detection.hpp"
+
 namespace {
 
 /**
@@ -111,4 +113,19 @@ ai_edit::query(const Signature& observed,
     }
   }
   return { *result, min_dist };
+}
+
+double
+ai_edit::get_database_average_signature_miss_count(
+  const ai_edit::PatternDatabase& db,
+  const unsigned signature_length,
+  const unsigned num_seeds)
+{
+  unsigned sum_miss_count = 0;
+  for (const auto& entry : db) {
+    sum_miss_count += ai_edit::get_signature_miss_count(entry.signature,
+                                                        signature_length,
+                                                        num_seeds);
+  }
+  return (double)sum_miss_count / (double)db.size();
 }

@@ -42,3 +42,19 @@ ai_edit::update_signature(nthash::SeedNtHash& hash_fn,
   }
   return has_miss;
 }
+
+unsigned
+ai_edit::get_signature_miss_count(const ai_edit::Signature& signature,
+                                  const size_t signature_length,
+                                  const unsigned num_seeds)
+{
+  unsigned num_misses = 0;
+  for (size_t i = 0; i < signature_length; i++) {
+    for (size_t j = 0; j < num_seeds; j++) {
+      if (signature[i][j] == ai_edit::SignatureValue::MISS) {
+        ++num_misses;
+      }
+    }
+  }
+  return num_misses;
+}

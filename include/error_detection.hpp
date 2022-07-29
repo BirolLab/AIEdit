@@ -35,6 +35,18 @@ update_signature(nthash::SeedNtHash& hash_fn,
                  Signature& signature,
                  const size_t signature_length);
 
+/**
+ * Get the number of misses in a signature.
+ * @param signature Signature value array.
+ * @param signature_length Signature length (num. rows).
+ * @param num_seeds Number of spaced seeds (num. columns).
+ * @return Number of misses in the signature array.
+ */
+unsigned
+get_signature_miss_count(const ai_edit::Signature& signature,
+                         const size_t signature_length,
+                         const unsigned num_seeds);
+
 }
 
 #endif // AI_EDIT_ERROR_DETECTION_HPP

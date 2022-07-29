@@ -47,6 +47,18 @@ query(const Signature& observed,
       const unsigned num_seeds,
       const PatternDatabase& db);
 
+/**
+ * Get the average miss count in the database's signatures.
+ * @param db Database object.
+ * @param signature_length Number of rows in each signature.
+ * @param num_seeds Number of columns in each signature.
+ * @return Average miss count.
+ */
+double
+get_database_average_signature_miss_count(const ai_edit::PatternDatabase& db,
+                                          const unsigned signature_length,
+                                          const unsigned num_seeds);
+
 }
 
 #endif // AI_EDIT_PATTERN_DATABASE_HPP
