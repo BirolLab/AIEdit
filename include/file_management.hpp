@@ -27,9 +27,12 @@ public:
 
   /**
    * Add a new row to the file.
+   * @param seq Sequence contents.
    * @param seq_id Sequence name.
    * @param miss_position Position of the edit pattern.
-   * @param pattern_string Edit pattern string.
+   * @param pattern Edit pattern.
+   * @param pattern_length Edit pattern length.
+   * @param edits List of edits
    * @param distance Distance between the observed signature and the signature
    * from the pattern database.
    */
@@ -40,6 +43,39 @@ public:
              const unsigned pattern_length,
              const std::vector<ai_edit::Edit>& edits,
              const unsigned distance);
+};
+
+class VCFWriter
+{
+private:
+  std::ofstream file;
+
+  /**
+   * Write the VCF file's headers.
+   */
+  void write_headers(const std::string& assembly_path);
+
+public:
+  /**
+   * Construct a new VCF file writer.
+   * @param path Path to the new VCF file.
+   * @param assembly_path Path to the input assembly file.
+   */
+  VCFWriter(const std::string& path, const std::string& assembly_path)
+    : file(path)
+  {
+    write_headers(assembly_path);
+  }
+
+  /**
+   * Add a new row to the file.
+   * @param seq Sequence contents.
+   * @param seq_id Sequence name.
+   * @param edits List of edits
+   */
+  void write(const std::string& seq,
+             const std::string& seq_id,
+             const std::vector<ai_edit::Edit>& edits);
 };
 
 /**

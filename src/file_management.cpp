@@ -1,8 +1,10 @@
 #include "file_management.hpp"
 
+#include <ctime>
 #include <nlohmann/json.hpp>
 
 #include "pattern_database.hpp"
+#include "user_interface.hpp"
 
 void
 ai_edit::write_database_file(const ai_edit::PatternDatabase& database,
@@ -22,6 +24,40 @@ ai_edit::write_database_file(const ai_edit::PatternDatabase& database,
   std::ofstream db_file(path);
   db_file << db_json.dump(4);
   db_file.flush();
+}
+
+void
+ai_edit::VCFWriter::write_headers(const std::string& assembly_path)
+{
+  char s[64];
+  time_t t = time(0);
+  strftime(s, 64, "%Y%m%d", localtime(&t));
+  file << "##fileformat=VCFv4.3" << std::endl;
+  file << "##fileDate=" << s << std::endl;
+  file << "##source=AIEdit" << VERSION << std::endl;
+  file << "##reference=file:" << assembly_path << std::endl;
+  file << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tINTEGRATION"
+       << std::endl;
+}
+
+void
+ai_edit::VCFWriter::write(const std::string& seq,
+                          const std::string& seq_id,
+                          const std::vector<ai_edit::Edit>& edits)
+{
+
+  for (const auto& edit : edits) {
+    file << seq_id << "\t";             // CHROM
+    file << edit.position + 1 << "\t";  // POS
+    file << ".\t";                      // ID
+    file << seq[edit.position] << "\t"; // REF
+    file << edit.content << "\t";       // ALT
+    file << ".\t";                      // QUAL
+    file << "PASS\t";                   // FILTER
+    file << ".\t";                      // INFO
+    file << "GT\t";                     // FORMAT
+    file << "1/1" << std::endl;         // INTEGRATION
+  }
 }
 
 void

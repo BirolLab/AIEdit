@@ -131,9 +131,10 @@ ai_edit::print_args(const ai_edit::ProgramArguments& args)
 void
 ai_edit::print_output_files_list()
 {
-  std::cout << "- db.json  : Pattern database in JSON format" << std::endl;
-  std::cout << "- edits.tsv: List of edits applied to the assembly" << std::endl;
-  std::cout << "- edited.fa: Edited assembly in FASTA format" << std::endl;
+  std::cout << "- db.json      : Pattern database in JSON format" << std::endl;
+  std::cout << "- edited.fa    : Edited assembly in FASTA format" << std::endl;
+  std::cout << "- edits.tsv    : List of edits applied to the assembly" << std::endl;
+  std::cout << "- variants.vcf : List of edits in variant call format" << std::endl;
 }
 
 void

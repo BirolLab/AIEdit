@@ -65,6 +65,8 @@ main(int argc, char** argv)
   btllib::SeqWriter writer(edited_file_path, btllib::SeqWriter::FASTA);
   auto edits_file_path = args.out_path / std::filesystem::path("edits.tsv");
   ai_edit::EditsFile edits_file(edits_file_path);
+  auto vcf_file_path = args.out_path / std::filesystem::path("variants.vcf");
+  ai_edit::VCFWriter vcf_file(vcf_file_path, args.assembly_path);
   auto signature = ai_edit::create_signature(args.signature_length,
                                              bloom_filter.get_seeds().size());
 
@@ -104,6 +106,7 @@ main(int argc, char** argv)
                          args.pattern_length,
                          edits,
                          query_result.distance);
+        vcf_file.write(seq, record.id, edits);
         ai_edit::apply_edits(seq, hash_function, edits);
         ++edit_log.num_patterns;
       } else {
