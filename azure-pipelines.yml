@@ -1,0 +1,51 @@
+jobs:
+
+- job: linux
+  pool:
+    vmImage: 'ubuntu-latest'
+
+  steps:
+  - checkout: self
+    submodules: recursive
+
+  - script: |
+      echo "##vso[task.prependpath]$CONDA/bin"
+      conda install --file requirements.txt
+
+    displayName: 'Install requirements'
+
+  - script: meson setup build && cd build && ninja
+    displayName: 'Build the project'
+  
+  - script: |
+      cd build && meson test
+      if [[ $? -ne 0 ]]; then
+        cat meson-logs/testlog.txt
+        exit 1
+      fi
+    displayName: 'Run tests'
+
+- job: macos
+  pool:
+    vmImage: 'macOS-latest'
+
+  steps:
+  - checkout: self
+    submodules: recursive
+
+  - script: |
+      echo "##vso[task.prependpath]$CONDA/bin"
+      sudo chown -R $USER $CONDA
+      conda install --file requirements.txt
+     displayName: 'Install requirements'
+
+  - script: meson setup build && cd build && ninja
+    displayName: 'Build the project'
+  
+  - script: |
+      cd build && meson test
+      if [[ $? -ne 0 ]]; then
+        cat meson-logs/testlog.txt
+        exit 1
+      fi
+    displayName: 'Run tests'
