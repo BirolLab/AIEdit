@@ -12,7 +12,7 @@
 # Dependencies
 
 - [btllib](https://github.com/bcgsc/btllib) [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/btllib/README.html)
-- [catch2](https://github.com/catchorg/Catch2) (optional, only required for tests) [![install with conda](https://anaconda.org/conda-forge/catch2/badges/installer/conda.svg)](https://anaconda.org/conda-forge/catch2)
+- [catch2](https://github.com/catchorg/Catch2) (optional, required only for running tests) [![install with conda](https://anaconda.org/conda-forge/catch2/badges/installer/conda.svg)](https://anaconda.org/conda-forge/catch2)
 
 No need to install—available in the `vendor` folder as git submodules:
 - [argparse](https://github.com/p-ranav/argparse)
