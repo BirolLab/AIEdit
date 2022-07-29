@@ -1,6 +1,7 @@
 #include <btllib/bloom_filter.hpp>
 #include <btllib/nthash.hpp>
 #include <btllib/seq_reader.hpp>
+#include <btllib/seq_writer.hpp>
 #include <filesystem>
 #include <fstream>
 
@@ -60,6 +61,8 @@ main(int argc, char** argv)
     seq_reader_flags = btllib::SeqReader::Flag::SHORT_MODE;
   }
   btllib::SeqReader reader(args.assembly_path, seq_reader_flags);
+  auto edited_file_path = args.out_path / std::filesystem::path("edited.fa");
+  btllib::SeqWriter writer(edited_file_path, btllib::SeqWriter::FASTA);
   auto edits_file_path = args.out_path / std::filesystem::path("edits.tsv");
   ai_edit::EditsFile edits_file(edits_file_path);
   auto signature = ai_edit::create_signature(args.signature_length,
@@ -110,6 +113,7 @@ main(int argc, char** argv)
         }
       }
     }
+    writer.write(record.id, record.comment, seq);
   }
   timer.stop();
   timer.print_done();

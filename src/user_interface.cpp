@@ -130,10 +130,15 @@ ai_edit::print_args(const ai_edit::ProgramArguments& args)
 
 void
 ai_edit::print_output_files_list()
-{}
+{
+  std::cout << "- db.json  : Pattern database in JSON format" << std::endl;
+  std::cout << "- edits.tsv: List of edits applied to the assembly" << std::endl;
+  std::cout << "- edited.fa: Edited assembly in FASTA format" << std::endl;
+}
 
 void
 ai_edit::print_editing_log(const ai_edit::EditingLog& log)
 {
-  std::cout << "- Detected patterns = " << log.num_patterns << std::endl;
+  std::cout << "- Number of error patterns = " << log.num_patterns << std::endl;
+  std::cout << "- Number of edited bases   = " << log.num_edits << std::endl;
 }
