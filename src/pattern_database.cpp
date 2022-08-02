@@ -59,8 +59,8 @@ distance(const ai_edit::Signature& observed,
   unsigned distance = 0;
   for (unsigned i = 0; i < signature_length; i++) {
     for (unsigned j = 0; j < num_seeds; j++) {
-      bool t = observed[i][j] == ai_edit::SignatureValue::MISS;
-      bool d = from_database[i][j] == ai_edit::SignatureValue::MISS;
+      auto t = observed[i][j];
+      auto d = from_database[i][j];
       if ((!t) != (!d)) {
         for (const auto& entry : db) {
           if ((t && entry.signature[i][j]) || (!t && !entry.signature[i][j])) {

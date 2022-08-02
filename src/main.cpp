@@ -78,9 +78,6 @@ main(int argc, char** argv)
   std::cout << "Detecting errors and editing assembly... " << std::flush;
   timer.start();
   for (auto record : reader) {
-    if (args.verbosity > 1) {
-      std::cout << "- Sequence: " << record.id << std::endl;
-    }
     std::string& seq = record.seq;
     nthash::SeedNtHash hash_function(seq,
                                      bloom_filter.get_seeds(),
@@ -89,7 +86,8 @@ main(int argc, char** argv)
     while (ai_edit::roll_to_next_miss(hash_function, bloom_filter)) {
       size_t miss_pos = hash_function.get_pos() + hash_function.get_k() - 1;
       if (args.verbosity > 1) {
-        std::cout << "  - Miss at " << miss_pos + 1 << ": " << std::flush;
+        std::cout << "[" << record.id << "] Miss at " << miss_pos + 1 << ": "
+                  << std::flush;
       }
       ai_edit::update_signature(hash_function,
                                 bloom_filter,
