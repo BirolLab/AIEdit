@@ -26,7 +26,7 @@ struct ProgramArguments
   std::filesystem::path assembly_path;
   std::filesystem::path bloom_filter_path;
   std::filesystem::path out_path;
-  bool verbose;
+  unsigned verbosity;
   unsigned signature_length;
   unsigned pattern_length;
   bool seq_reader_long_mode;

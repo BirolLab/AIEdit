@@ -31,7 +31,7 @@ main(int argc, char** argv)
   // LOAD THE BLOOM FILTER
   std::cout << "Loading Bloom filter... " << std::flush;
   BENCHMARK(btllib::SeedBloomFilter bloom_filter(args.bloom_filter_path);)
-  if (args.verbose) {
+  if (args.verbosity > 0) {
     ai_edit::print_bloom_filter_information(bloom_filter,
                                             args.bloom_filter_path);
     std::cout << std::endl;
@@ -49,7 +49,7 @@ main(int argc, char** argv)
                                          bloom_filter.get_seeds().size(),
                                          args.pattern_length,
                                          db_file_path);)
-  if (args.verbose) {
+  if (args.verbosity > 0) {
     ai_edit::print_database_information(database,
                                         args.signature_length,
                                         args.pattern_length);
@@ -78,6 +78,9 @@ main(int argc, char** argv)
   std::cout << "Detecting errors and editing assembly... " << std::flush;
   timer.start();
   for (auto record : reader) {
+    if (args.verbosity > 1) {
+      std::cout << "- Sequence: " << record.id << std::endl;
+    }
     std::string& seq = record.seq;
     nthash::SeedNtHash hash_function(seq,
                                      bloom_filter.get_seeds(),
@@ -85,6 +88,9 @@ main(int argc, char** argv)
                                      bloom_filter.get_k());
     while (ai_edit::roll_to_next_miss(hash_function, bloom_filter)) {
       size_t miss_pos = hash_function.get_pos() + hash_function.get_k() - 1;
+      if (args.verbosity > 1) {
+        std::cout << "  - Miss at " << miss_pos + 1 << ": " << std::flush;
+      }
       ai_edit::update_signature(hash_function,
                                 bloom_filter,
                                 signature,
@@ -113,10 +119,19 @@ main(int argc, char** argv)
         ai_edit::apply_edits(seq, hash_function, edits);
         ++edit_log.num_patterns;
         edit_log.num_edits += edits.size();
+        if (args.verbosity > 1) {
+          std::cout << "Edited " << edits.size() << " base(s) with pattern "
+                    << ai_edit::pattern_to_string(pattern, args.pattern_length)
+                    << std::endl;
+        }
       } else {
         unsigned rolls = hash_function.get_k() + args.pattern_length;
         for (unsigned i = 0; i < rolls; i++) {
           hash_function.roll();
+        }
+        if (args.verbosity > 1) {
+          std::cout << "No edit pattern detected, skipped " << rolls << " bases"
+                    << std::endl;
         }
       }
     }
@@ -125,13 +140,13 @@ main(int argc, char** argv)
   timer.stop();
   timer.print_done();
 
-  if (args.verbose) {
+  if (args.verbosity > 0) {
     ai_edit::print_editing_log(edit_log);
     std::cout << std::endl;
   }
 
   std::cout << "Results saved to " << args.out_path << std::endl;
-  if (args.verbose) {
+  if (args.verbosity > 0) {
     ai_edit::print_output_files_list();
   }
 

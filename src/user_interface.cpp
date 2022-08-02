@@ -32,10 +32,13 @@ ai_edit::parse_args(int argc, char** argv)
     .default_value(10U)
     .scan<'u', unsigned>();
 
-  parser.add_argument("--verbose")
-    .help("Print a more detailed log to stdout")
+  parser.add_argument("-V")
+    .action([&](const auto&) { ++args.verbosity; })
+    .append()
+    .help("Level of details printed to stdout")
     .default_value(false)
-    .implicit_value(true);
+    .implicit_value(true)
+    .nargs(0);
 
   parser.add_argument("--pattern-length", "-w")
     .help("Number of bases to scan for mismatches")
@@ -53,7 +56,6 @@ ai_edit::parse_args(int argc, char** argv)
   args.assembly_path = std::filesystem::path(parser.get("-a"));
   args.bloom_filter_path = std::filesystem::path(parser.get("-b"));
   args.out_path = std::filesystem::path(parser.get("-o"));
-  args.verbose = parser.get<bool>("--verbose");
   args.signature_length = parser.get<unsigned>("-n");
   args.pattern_length = parser.get<unsigned>("-w");
   args.seq_reader_long_mode = parser.get<bool>("--long-mode");
