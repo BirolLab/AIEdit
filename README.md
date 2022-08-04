@@ -17,6 +17,7 @@
 No need to install—available in the `vendor` folder as git submodules:
 - [argparse](https://github.com/p-ranav/argparse)
 - [json](https://github.com/nlohmann/json)
+- [progressbar](https://github.com/gipert/progressbar)
 
 # Compilation
 
