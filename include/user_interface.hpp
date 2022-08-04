@@ -15,6 +15,7 @@
 #include <btllib/bloom_filter.hpp>
 #include <chrono>
 #include <filesystem>
+#include <progressbar.hpp>
 #include <string>
 
 #include "pattern_database.hpp"
@@ -63,6 +64,53 @@ public:
    * Print a line-ender for logging.
    */
   void print_done() const;
+};
+
+/**
+ * Class for printing a progress bar to stdout.
+ */
+class ProgressBar
+{
+private:
+  progressbar* pbar;
+  size_t file_size;
+  bool show;
+  unsigned percentage_done;
+  size_t seq_info_bytes;
+
+public:
+  ProgressBar(size_t file_size, bool show)
+    : file_size(file_size)
+    , show(show)
+    , percentage_done(0)
+    , seq_info_bytes(0)
+  {
+    pbar = new progressbar(100, show);
+    pbar->set_todo_char(" ");
+    pbar->set_done_char("\033[1;34m█\033[0m");
+    pbar->set_opening_bracket_char("");
+    pbar->set_closing_bracket_char("");
+  }
+
+  /**
+   * Add the bytes of a sequence's information to the progress.
+   *
+   * @param id Sequence ID.
+   * @param comment Sequence comment.
+   */
+  void start_seq(const std::string& id, const std::string& comment);
+
+  /**
+   * Move the progress to a certain position in the sequence.
+   *
+   * @param miss_position The position of the current base in the sequence.
+   */
+  void seek(const size_t position);
+
+  /**
+   * Move the progress bar to the end.
+   */
+  void complete();
 };
 
 struct EditingLog

@@ -160,3 +160,35 @@ ai_edit::print_editing_log(const ai_edit::EditingLog& log)
   std::cout << "- Number of error patterns = " << log.num_patterns << std::endl;
   std::cout << "- Number of edited bases   = " << log.num_edits << std::endl;
 }
+
+void
+ai_edit::ProgressBar::start_seq(const std::string& id,
+                                const std::string& comment)
+{
+  seq_info_bytes = id.size() + comment.size();
+}
+
+void
+ai_edit::ProgressBar::seek(const size_t position)
+{
+  if (!show) {
+    return;
+  }
+  double current_byte = seq_info_bytes + position;
+  unsigned p = (unsigned)(current_byte / (double)file_size * 100.0);
+  for (unsigned i = 0; i < p - percentage_done; i++) {
+    pbar->update();
+  }
+  percentage_done = p;
+}
+
+void
+ai_edit::ProgressBar::complete()
+{
+  if (!show) {
+    return;
+  }
+  for (unsigned i = 0; i < 100 - percentage_done; i++) {
+    pbar->update();
+  }
+}

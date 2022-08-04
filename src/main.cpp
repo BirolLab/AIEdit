@@ -4,7 +4,6 @@
 #include <btllib/seq_writer.hpp>
 #include <filesystem>
 #include <fstream>
-#include <progressbar.hpp>
 
 #include "data_types.hpp"
 #include "editing.hpp"
@@ -24,11 +23,8 @@ main(int argc, char** argv)
 {
   auto args = ai_edit::parse_args(argc, argv);
   ai_edit::Timer timer;
-  progressbar pbar(100, args.verbosity < 2);
-  pbar.set_todo_char(" ");
-  pbar.set_done_char("\033[1;34m█\033[0m");
-  pbar.set_opening_bracket_char("|");
-  pbar.set_closing_bracket_char("|");
+  ai_edit::ProgressBar pbar(ai_edit::get_file_size(args.assembly_path),
+                            args.verbosity < 2);
 
   ai_edit::print_logo();
   ai_edit::print_args(args);
@@ -81,12 +77,11 @@ main(int argc, char** argv)
 
   // EDITING PROCEDURE
   ai_edit::EditingLog edit_log;
-  size_t file_size = ai_edit::get_file_size(args.assembly_path);
-  unsigned percentage = 0;
   std::cout << "Detecting errors and editing assembly... " << std::endl;
   timer.start();
   for (auto record : reader) {
     std::string& seq = record.seq;
+    pbar.start_seq(record.id, record.comment);
     nthash::SeedNtHash hash_function(seq,
                                      bloom_filter.get_seeds(),
                                      bloom_filter.get_hash_num_per_seed(),
@@ -140,19 +135,12 @@ main(int argc, char** argv)
                     << std::endl;
         }
       }
-      size_t bytes_done = record.id.size() + record.comment.size() + miss_pos;
-      double percent_done = (double)bytes_done / (double)file_size * 100.0;
-      for (unsigned i = 0; i < (unsigned)(percent_done) - percentage; i++) {
-        pbar.update();
-      }
-      percentage = (unsigned)(percent_done);
+      pbar.seek(miss_pos);
     }
     writer.write(record.id, record.comment, seq);
   }
   timer.stop();
-  for (unsigned i = 0; i < 100 - percentage; i++) {
-    pbar.update();
-  }
+  pbar.complete();
   std::cout << std::endl;
   timer.print_done();
 
