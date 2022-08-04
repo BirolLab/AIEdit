@@ -1,6 +1,7 @@
 #include "file_management.hpp"
 
 #include <ctime>
+#include <filesystem>
 #include <nlohmann/json.hpp>
 
 #include "pattern_database.hpp"
@@ -77,4 +78,10 @@ ai_edit::EditsFile::write(const std::string& seq,
     after[edit.position - miss_position] = edit.content;
   }
   file << before << "\t" << after << "\t" << distance << std::endl;
+}
+
+size_t
+ai_edit::get_file_size(const std::string& path)
+{
+  return std::filesystem::file_size(std::filesystem::path(path));
 }

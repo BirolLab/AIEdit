@@ -90,7 +90,10 @@ ai_edit::Timer::to_string() const
 void
 ai_edit::Timer::print_done() const
 {
-  std::cout << "DONE (" << this->to_string() << ")" << std::endl;
+  std::cout << "\033[1;32m"
+            << "DONE"
+            << "\033[0m"
+            << "(" << this->to_string() << ")" << std::endl;
 }
 
 void

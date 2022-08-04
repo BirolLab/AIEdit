@@ -16,7 +16,8 @@ dependencies = [
 include_dirs = [
     include_directories('include'),
     include_directories('vendor/argparse/include'),
-    include_directories('vendor/json/single_include')
+    include_directories('vendor/json/single_include'),
+    include_directories('vendor/progressbar/include')
 ]
 
 sources = run_command('scripts/list_sources.sh', check: true).stdout().strip().split()

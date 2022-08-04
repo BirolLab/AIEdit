@@ -93,6 +93,14 @@ write_database_file(const ai_edit::PatternDatabase& database,
                     const unsigned pattern_length,
                     const std::string& path);
 
+/**
+ * Get the size of a file in bytes.
+ * @param path Path to file.
+ * @return Size of the file in bytes.
+ */
+size_t
+get_file_size(const std::string& path);
+
 }
 
 #endif // AI_EDIT_FILE_MANAGEMENT
