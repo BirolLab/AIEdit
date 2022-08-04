@@ -27,8 +27,8 @@ main(int argc, char** argv)
   progressbar pbar(100, args.verbosity < 2);
   pbar.set_todo_char(" ");
   pbar.set_done_char("\033[1;34m█\033[0m");
-  pbar.set_opening_bracket_char("[");
-  pbar.set_closing_bracket_char("]");
+  pbar.set_opening_bracket_char("|");
+  pbar.set_closing_bracket_char("|");
 
   ai_edit::print_logo();
   ai_edit::print_args(args);
@@ -142,10 +142,10 @@ main(int argc, char** argv)
       }
       size_t bytes_done = record.id.size() + record.comment.size() + miss_pos;
       double percent_done = (double)bytes_done / (double)file_size * 100.0;
-      if ((unsigned)(percent_done) > percentage) {
-        percentage = (unsigned)(percent_done);
+      for (unsigned i = 0; i < (unsigned)(percent_done) - percentage; i++) {
         pbar.update();
       }
+      percentage = (unsigned)(percent_done);
     }
     writer.write(record.id, record.comment, seq);
   }
