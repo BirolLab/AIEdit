@@ -79,10 +79,11 @@ update_seq(std::string& seq,
            const std::string& edits,
            nthash::SeedNtHash& hash_function)
 {
+  hash_function.roll_back();
   for (unsigned i = 0; i < edits.size(); i++) {
     seq[base_position + edit_positions[i]] = edits[i];
   }
-  hash_function.change_seq(seq, false);
+  hash_function.roll();
 }
 
 /**
@@ -177,8 +178,9 @@ ai_edit::apply_edits(std::string& seq,
                      nthash::SeedNtHash& hash_function,
                      const std::vector<Edit>& edits)
 {
+  hash_function.roll_back();
   for (const auto& edit : edits) {
     seq[edit.position] = edit.content;
   }
-  hash_function.change_seq(seq, false);
+  hash_function.roll();
 }
