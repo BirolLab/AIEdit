@@ -25,7 +25,7 @@ predict_signature(const ai_edit::Pattern& pattern,
     for (unsigned i_seed = 0; i_seed < seeds.size(); i_seed++) {
       bool miss = false;
       auto seed = seeds[i_seed];
-      unsigned overlap = std::min(slide, pattern_length);
+      unsigned overlap = std::min(slide + 1, pattern_length);
       for (unsigned pos = 0; pos < overlap; pos++) {
         bool is_error = pattern[pos] == ai_edit::PatternValue::MISMATCH;
         bool is_care = seed[seed.size() - 1 - slide + pos] == '1';
