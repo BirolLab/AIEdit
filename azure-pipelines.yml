@@ -15,14 +15,3 @@ jobs:
       echo "##vso[task.prependpath]$CONDA/bin"
       conda install --yes --file requirements.txt
     displayName: 'Install required software'
-
-  - script: meson build && cd build && ninja
-    displayName: 'Build the project'
-
-  - script: |
-      cd build && meson test
-      if [[ $? -ne 0 ]]; then
-        cat meson-logs/testlog.txt
-        exit 1
-      fi
-    displayName: 'Run tests'
