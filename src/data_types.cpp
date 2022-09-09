@@ -13,6 +13,16 @@ ai_edit::create_signature(const size_t length, const unsigned num_seeds)
   return signature;
 }
 
+ai_edit::Pattern
+ai_edit::create_pattern(const size_t length)
+{
+  Pattern pattern = new PatternValue[length];
+  for (size_t i = 0; i < length; i++) {
+    pattern[i] = PatternValue::CLEAN;
+  }
+  return pattern;
+}
+
 std::vector<std::string>
 ai_edit::signature_to_string_vec(const ai_edit::Signature& signature,
                                  const unsigned signature_length,

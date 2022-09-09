@@ -33,6 +33,13 @@ Signature
 create_signature(const size_t length, const unsigned num_seeds);
 
 /**
+ * Create a new edit pattern object.
+ * @param length Pattern length
+ */
+Pattern
+create_pattern(const size_t length);
+
+/**
  * Convert a signature to a vector of strings.
  * @param signature Input signature.
  * @return Vector of strings, each a row of the given signature.
