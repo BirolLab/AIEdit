@@ -145,6 +145,7 @@ public:
   bool forward() const { return forward_hash <= reverse_hash; }
   unsigned get_hash_num() const { return hash_num; }
   unsigned get_k() const { return k; }
+  size_t get_seq_len() const { return seq_len; }
 
   uint64_t get_forward_hash() const { return forward_hash; }
   uint64_t get_reverse_hash() const { return reverse_hash; }
@@ -380,6 +381,7 @@ public:
   unsigned get_hash_num() const { return nthash.get_hash_num(); }
   unsigned get_hash_num_per_seed() const { return hash_num_per_seed; }
   unsigned get_k() const { return nthash.get_k(); }
+  size_t get_seq_len() const { return nthash.get_seq_len(); }
 
   uint64_t* get_forward_hash() const { return forward_hash.get(); }
   uint64_t* get_reverse_hash() const { return reverse_hash.get(); }
