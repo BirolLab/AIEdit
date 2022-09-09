@@ -1,7 +1,7 @@
 #include <btllib/bloom_filter.hpp>
 #include <nthash/nthash.hpp>
 
-#include "data_types.hpp"
+#include "editing.hpp"
 
 struct MismatchTestData
 {
