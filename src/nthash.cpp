@@ -334,7 +334,7 @@ BlindNtHash::sub(const std::vector<unsigned>& positions,
 uint64_t**
 SeedNtHash::peek_window(unsigned n)
 {
-  btllib::check_error(nthash.pos + n >= nthash.seq_len,
+  btllib::check_error(nthash.pos + n + nthash.get_k() > nthash.seq_len,
                       "SeedNtHash: Peek window out of bounds");
   uint64_t** window_hashes = new uint64_t*[n];
   std::unique_ptr<uint64_t[]> fh_no_monomers_tmp(new uint64_t[blocks.size()]);
