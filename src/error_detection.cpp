@@ -24,10 +24,13 @@ ai_edit::update_signature(nthash::SeedNtHash& hash_fn,
   unsigned num_seeds = filter.get_seeds().size();
   unsigned num_hashes_per_seed = hash_fn.get_hash_num_per_seed();
   hash_fn.roll_back();
-  uint64_t** hashes = hash_fn.peek_window(signature_length);
+  unsigned peek_len =
+    std::min(signature_length,
+             hash_fn.get_seq_len() - hash_fn.get_pos() - hash_fn.get_k());
+  uint64_t** hashes = hash_fn.peek_window(peek_len);
   hash_fn.roll();
   uint64_t* seed_hashes = new uint64_t[num_hashes_per_seed];
-  for (size_t i = 0; i < signature_length; i++) {
+  for (size_t i = 0; i < peek_len; i++) {
     for (unsigned j = 0; j < num_seeds; j++) {
       std::copy(hashes[i] + j * num_hashes_per_seed,
                 hashes[i] + (j + 1) * num_hashes_per_seed,
@@ -38,6 +41,11 @@ ai_edit::update_signature(nthash::SeedNtHash& hash_fn,
       } else {
         signature[i][j] = SignatureValue::HIT;
       }
+    }
+  }
+  for (size_t i = peek_len; i < signature_length; i++) {
+    for (unsigned j = 0; j < num_seeds; j++) {
+      signature[i][j] = SignatureValue::HIT;
     }
   }
   return has_miss;
