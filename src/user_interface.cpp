@@ -169,7 +169,7 @@ ai_edit::ProgressBar::start_seq(const std::string& id,
 }
 
 void
-ai_edit::ProgressBar::seek(const size_t position)
+ai_edit::ProgressBar::seek(const uint64_t position)
 {
   if (!show) {
     return;
