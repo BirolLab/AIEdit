@@ -76,7 +76,7 @@ private:
   size_t file_size;
   bool show;
   unsigned percentage_done;
-  size_t seq_info_bytes;
+  uint64_t seq_info_bytes;
 
 public:
   ProgressBar(size_t file_size, bool show)
@@ -105,7 +105,7 @@ public:
    *
    * @param miss_position The position of the current base in the sequence.
    */
-  void seek(const size_t position);
+  void seek(const uint64_t position);
 
   /**
    * Move the progress bar to the end.
