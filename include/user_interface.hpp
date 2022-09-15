@@ -111,6 +111,8 @@ public:
    * Move the progress bar to the end.
    */
   void complete();
+
+  bool is_shown() { return show; }
 };
 
 struct EditingLog

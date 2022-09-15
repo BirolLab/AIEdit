@@ -24,7 +24,7 @@ main(int argc, char** argv)
   auto args = ai_edit::parse_args(argc, argv);
   ai_edit::Timer timer;
   ai_edit::ProgressBar pbar(ai_edit::get_file_size(args.assembly_path),
-                            args.verbosity < 2);
+                            args.verbosity == 1);
 
   ai_edit::print_logo();
   ai_edit::print_args(args);
@@ -77,7 +77,10 @@ main(int argc, char** argv)
 
   // EDITING PROCEDURE
   ai_edit::EditingLog edit_log;
-  std::cout << "Detecting errors and editing assembly... " << std::endl;
+  std::cout << "Detecting errors and editing assembly... " << std::flush;
+  if (pbar.is_shown()) {
+    std::cout << std::endl;
+  }
   timer.start();
   for (auto record : reader) {
     std::string& seq = record.seq;
