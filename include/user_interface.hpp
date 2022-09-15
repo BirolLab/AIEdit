@@ -156,7 +156,7 @@ print_args(const ai_edit::ProgramArguments& args);
 
 /**
  * Print information about the pattern database to stdout.
- * @param database Popluated pattern database.
+ * @param database Populated pattern database.
  */
 void
 print_database_information(const PatternDatabase& database,
