@@ -76,14 +76,16 @@ private:
   size_t file_size;
   bool show;
   unsigned percentage_done;
-  uint64_t seq_info_bytes;
+  size_t bytes_read;
+  size_t seq_position;
 
 public:
   ProgressBar(size_t file_size, bool show)
     : file_size(file_size)
     , show(show)
     , percentage_done(0)
-    , seq_info_bytes(0)
+    , bytes_read(0)
+    , seq_position(0)
   {
     pbar = new progressbar(100, show);
     pbar->set_todo_char(" ");

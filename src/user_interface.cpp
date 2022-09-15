@@ -165,17 +165,19 @@ void
 ai_edit::ProgressBar::start_seq(const std::string& id,
                                 const std::string& comment)
 {
-  seq_info_bytes = id.size() + comment.size();
+  bytes_read += id.size() + comment.size();
+  seq_position = 0;
 }
 
 void
-ai_edit::ProgressBar::seek(const uint64_t position)
+ai_edit::ProgressBar::seek(const size_t position)
 {
   if (!show) {
     return;
   }
-  double current_byte = seq_info_bytes + position;
-  unsigned p = (unsigned)(current_byte / (double)file_size * 100.0);
+  bytes_read += position - seq_position;
+  seq_position = position;
+  unsigned p = (unsigned)((double)bytes_read / (double)file_size * 100.0);
   for (unsigned i = 0; i < p - percentage_done; i++) {
     pbar->update();
   }
