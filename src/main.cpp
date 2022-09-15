@@ -114,12 +114,13 @@ main(int argc, char** argv)
       if (edits.size() > 0) {
         edits_file.write(seq,
                          record.id,
+                         record.comment,
                          miss_pos,
                          pattern,
                          args.pattern_length,
                          edits,
                          query_result.distance);
-        vcf_file.write(seq, record.id, edits);
+        vcf_file.write(seq, record.id, record.comment, edits);
         ai_edit::apply_edits(seq, hash_function, edits);
         ++edit_log.num_patterns;
         edit_log.num_edits += edits.size();

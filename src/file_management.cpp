@@ -44,33 +44,35 @@ ai_edit::VCFWriter::write_headers(const std::string& assembly_path)
 void
 ai_edit::VCFWriter::write(const std::string& seq,
                           const std::string& seq_id,
+                          const std::string& seq_comment,
                           const std::vector<ai_edit::Edit>& edits)
 {
-
   for (const auto& edit : edits) {
-    file << seq_id << "\t";             // CHROM
-    file << edit.position + 1 << "\t";  // POS
-    file << ".\t";                      // ID
-    file << seq[edit.position] << "\t"; // REF
-    file << edit.content << "\t";       // ALT
-    file << ".\t";                      // QUAL
-    file << "PASS\t";                   // FILTER
-    file << ".\t";                      // INFO
-    file << "GT\t";                     // FORMAT
-    file << "1/1" << std::endl;         // INTEGRATION
+    file << seq_id << " " << seq_comment << "\t"; // CHROM
+    file << edit.position + 1 << "\t";            // POS
+    file << ".\t";                                // ID
+    file << seq[edit.position] << "\t";           // REF
+    file << edit.content << "\t";                 // ALT
+    file << ".\t";                                // QUAL
+    file << "PASS\t";                             // FILTER
+    file << ".\t";                                // INFO
+    file << "GT\t";                               // FORMAT
+    file << "1/1" << std::endl;                   // INTEGRATION
   }
 }
 
 void
 ai_edit::EditsFile::write(const std::string& seq,
                           const std::string& seq_id,
+                          const std::string& seq_comment,
                           const size_t miss_position,
                           const ai_edit::Pattern& pattern,
                           const unsigned pattern_length,
                           const std::vector<ai_edit::Edit>& edits,
                           const unsigned distance)
 {
-  file << "\"" << seq_id << "\"\t" << miss_position + 1 << "\t";
+  file << "\"" << seq_id << " " << seq_comment << "\"\t" << miss_position + 1
+       << "\t";
   std::string before = std::string(pattern_length, '-');
   std::string after = std::string(pattern_length, '-');
   for (const auto& edit : edits) {

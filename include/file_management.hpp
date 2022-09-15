@@ -29,6 +29,7 @@ public:
    * Add a new row to the file.
    * @param seq Sequence contents.
    * @param seq_id Sequence name.
+   * @param seq_comment Sequence comment in header.
    * @param miss_position Position of the edit pattern.
    * @param pattern Edit pattern.
    * @param pattern_length Edit pattern length.
@@ -38,6 +39,7 @@ public:
    */
   void write(const std::string& seq,
              const std::string& seq_id,
+             const std::string& seq_comment,
              const size_t miss_position,
              const ai_edit::Pattern& pattern,
              const unsigned pattern_length,
@@ -71,10 +73,12 @@ public:
    * Add a new row to the file.
    * @param seq Sequence contents.
    * @param seq_id Sequence name.
+   * @param seq_comment Sequence comment in header.
    * @param edits List of edits
    */
   void write(const std::string& seq,
              const std::string& seq_id,
+             const std::string& seq_comment,
              const std::vector<ai_edit::Edit>& edits);
 };
 
