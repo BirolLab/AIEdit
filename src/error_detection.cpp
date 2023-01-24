@@ -8,8 +8,14 @@ ai_edit::roll_to_next_miss(nthash::SeedNtHash& hash_fn,
     if (!hash_fn.roll()) {
       return false;
     }
-    if (!filter.contains(hash_fn.hashes())) {
-      return true;
+    for (unsigned i = 0; i < filter.get_seeds().size(); i++) {
+      uint64_t* seed_hashes = new uint64_t[hash_fn.get_hash_num_per_seed()];
+      std::copy(hash_fn.hashes(),
+                hash_fn.hashes() + hash_fn.get_hash_num_per_seed(),
+                seed_hashes);
+      if (!filter.contains(seed_hashes)) {
+        return true;
+      }
     }
   }
 }
