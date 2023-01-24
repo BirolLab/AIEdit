@@ -13,7 +13,7 @@ public:
    * @param signature Hit/miss signature to query
    * @return Detected edit pattern
    */
-  virtual EditPattern get_pattern(const Signature& signature) = 0;
+  virtual EditPattern get_pattern(Signature& signature) = 0;
 };
 
 };
