@@ -4,14 +4,15 @@ bool
 ai_edit::roll_to_next_miss(nthash::SeedNtHash& hash_fn,
                            const btllib::SeedBloomFilter& filter)
 {
+  unsigned h = hash_fn.get_hash_num_per_seed();
   while (true) {
     if (!hash_fn.roll()) {
       return false;
     }
     for (unsigned i = 0; i < filter.get_seeds().size(); i++) {
-      uint64_t* seed_hashes = new uint64_t[hash_fn.get_hash_num_per_seed()];
-      std::copy(hash_fn.hashes(),
-                hash_fn.hashes() + hash_fn.get_hash_num_per_seed(),
+      uint64_t* seed_hashes = new uint64_t[h];
+      std::copy(hash_fn.hashes() + i * h,
+                hash_fn.hashes() + (i + 1) * h,
                 seed_hashes);
       if (!filter.contains(seed_hashes)) {
         return true;
