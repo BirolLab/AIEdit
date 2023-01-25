@@ -21,15 +21,12 @@ BloomFilterErrorDetector::next_error()
 bool
 BloomFilterErrorDetector::check_miss()
 {
-    bool a = false;
     for (const uint64_t* seed_hashes : seq_iter.get_hashes()) {
         if (!bf.contains(seed_hashes)) {
-            std::cout << "MISS ";
-            a = true;
+            return true;
         }
     }
-    std::cout << std::endl;
-    return a;
+    return false;
 }
 
 }
