@@ -3,12 +3,6 @@
 namespace aiedit {
 
 bool
-BloomFilterErrorDetector::has_error()
-{
-    return seq_iter.has_next();
-}
-
-void
 BloomFilterErrorDetector::next_error()
 {
     bool has_miss = false;
@@ -16,6 +10,7 @@ BloomFilterErrorDetector::next_error()
         seq_iter.next();
         has_miss = check_miss();
     }
+    return has_miss;
 }
 
 bool

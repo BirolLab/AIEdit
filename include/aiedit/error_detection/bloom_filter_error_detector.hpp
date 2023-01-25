@@ -16,15 +16,10 @@ class BloomFilterErrorDetector : public ErrorDetector
     {}
 
     /**
-     * Check if the iterator can advance
-     * @return `true` if the iterator has reached the end
-     */
-    bool has_error() override;
-
-    /**
      * Advance the sequence iterator to the next miss position
+     * @return `false` if iteration has ended
      */
-    void next_error() override;
+    bool next_error() override;
 
   private:
     const btllib::SeedBloomFilter& bf;

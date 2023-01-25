@@ -18,16 +18,10 @@ class ErrorDetector
     virtual ~ErrorDetector() = default;
 
     /**
-     * Check if the sequence has any more errors
-     * @return `true` if there are any more errors in the sequence, `false`
-     * otherwise
-     */
-    virtual bool has_error() = 0;
-
-    /**
      * Advance the sequence iterator to the next erroneous position
+     * @return `false` if iteration has ended
      */
-    virtual void next_error() = 0;
+    virtual bool next_error() = 0;
 };
 
 }

@@ -45,8 +45,8 @@ class SequenceIterator
     char get_base(size_t position);
 
     /**
-     * Get the position of the current k-mer
-     * @return Position of the current k-mer's first character in the sequence
+     * Get the position of the current base
+     * @return Position of the current k-mer's last character in the sequence
      */
     size_t get_position();
 

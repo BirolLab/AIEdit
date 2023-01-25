@@ -34,7 +34,7 @@ ProgramArguments::parse(int argc, char** argv)
       .nargs(0);
 
     parser.add_argument("--pattern-length", "-w")
-      .help("Number of bases to scan for mismatches")
+      .help("Number of bases to scan for errors after each detection")
       .default_value((unsigned)5)
       .scan<'u', unsigned>();
 

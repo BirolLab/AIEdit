@@ -31,7 +31,7 @@ SequenceIterator::previous()
 bool
 SequenceIterator::has_next()
 {
-    return nthash->get_pos() + nthash->get_k() < seq.size() - nthash->get_k();
+    return get_position() < seq.size() - nthash->get_k();
 }
 
 char
@@ -43,7 +43,7 @@ SequenceIterator::get_base(size_t position)
 size_t
 SequenceIterator::get_position()
 {
-    return nthash->get_pos();
+    return nthash->get_pos() + nthash->get_k() - 1;
 }
 
 SequenceIterator::HashVector
