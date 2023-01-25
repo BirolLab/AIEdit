@@ -1,4 +1,4 @@
-#include "aiedit/error_correction/bf_mismatch_corrector.hpp"
+#include "aiedit/error_correction/bloom_filter_mismatch_corrector.hpp"
 
 namespace {
 

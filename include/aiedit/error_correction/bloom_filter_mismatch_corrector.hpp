@@ -1,5 +1,5 @@
-#ifndef AIEDIT_BF_MISMATCH_CORRECTOR_HPP
-#define AIEDIT_BF_MISMATCH_CORRECTOR_HPP
+#ifndef AIEDIT_BLOOM_FILTER_MISMATCH_CORRECTOR_HPP
+#define AIEDIT_BLOOM_FILTER_MISMATCH_CORRECTOR_HPP
 
 #include <btllib/bloom_filter.hpp>
 
@@ -55,4 +55,4 @@ class BloomFilterMismatchCorrector : public ErrorCorrector
 
 }
 
-#endif // AIEDIT_BF_MISMATCH_CORRECTOR_HPP
+#endif // AIEDIT_BLOOM_FILTER_MISMATCH_CORRECTOR_HPP
