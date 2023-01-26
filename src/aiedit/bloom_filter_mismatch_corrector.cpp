@@ -61,7 +61,8 @@ BloomFilterMismatchCorrector::get_candidates(const std::vector<size_t>& position
 }
 
 void
-BloomFilterMismatchCorrector::update_seq(const std::vector<size_t>& positions, const std::string& new_bases)
+BloomFilterMismatchCorrector::update_seq(const std::vector<size_t>& positions,
+                                         const std::string& new_bases)
 {
     for (unsigned i = 0; i < positions.size(); i++) {
         seq_iter.update(positions[i], new_bases[i]);
@@ -86,7 +87,6 @@ BloomFilterMismatchCorrector::check_fixes()
 bool
 BloomFilterMismatchCorrector::fix(const EditPattern& pattern)
 {
-    auto base_position = seq_iter.get_position();
     auto mismatch_positions = get_mismatch_positions(pattern);
     std::string backup;
     for (const auto& pos : mismatch_positions) {
@@ -104,16 +104,25 @@ BloomFilterMismatchCorrector::fix(const EditPattern& pattern)
         }
     }
     if (fixing_combination.empty()) {
+        update_seq(mismatch_positions, backup);
         return false;
     }
-    for (unsigned i = 0; i < mismatch_positions.size(); i++) {
-        size_t pos = base_position + i;
-        std::string reference = backup[i] + "";
-        std::string updated = fixing_combination[i] + "";
-        edits.push_back(Edit(pos, Edit::Type::MISMATCH, reference, updated));
-    }
+    add_edits(mismatch_positions, backup, fixing_combination);
     update_seq(mismatch_positions, fixing_combination);
     return true;
+}
+
+void
+BloomFilterMismatchCorrector::add_edits(const std::vector<size_t>& positions,
+                                        const std::string& reference,
+                                        const std::string& updated)
+{
+    for (unsigned i = 0; i < positions.size(); i++) {
+        size_t pos = positions[i];
+        std::string ref = reference[i] + "";
+        std::string alt = updated[i] + "";
+        edits.push_back(Edit(pos, Edit::Type::MISMATCH, ref, alt));
+    }
 }
 
 }

@@ -68,7 +68,11 @@ main(int argc, char** argv)
             aiedit::Signature signature(seq.peek_hashes(bf.get_seeds()[0].size()), bf);
             auto pattern = pattern_detector->get_pattern(signature);
             bool fixed = err_corrector.fix(pattern);
-            num_patterns += fixed ? 1 : 0;
+            if (fixed) {
+                ++num_patterns;
+            } else {
+                seq.next(bf.get_k() + args.pattern_length);
+            }
         }
         vcf_file.write(record.id, record.comment, err_corrector.get_edits());
         writer.write(record.id, record.comment, seq.get_sequence());

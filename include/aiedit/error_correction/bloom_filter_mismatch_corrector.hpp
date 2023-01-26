@@ -51,6 +51,16 @@ class BloomFilterMismatchCorrector : public ErrorCorrector
      * @return `true` if the signature contains no misses
      */
     bool check_fixes();
+
+    /**
+     * Add local changes to list of fixes
+     * @param positions List of updated positions in the sequence
+     * @param reference Original content of the positions
+     * @param updated Updated value in the positions
+     */
+    void add_edits(const std::vector<size_t>& positions,
+                   const std::string& reference,
+                   const std::string& updated);
 };
 
 }

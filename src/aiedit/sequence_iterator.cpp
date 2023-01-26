@@ -17,9 +17,11 @@ SequenceIterator::to_hash_vector(const uint64_t* nthash_hashes)
 }
 
 void
-SequenceIterator::next()
+SequenceIterator::next(unsigned n)
 {
-    nthash->roll();
+    for (unsigned i = 0; i < n; i++) {
+        nthash->roll();
+    }
 }
 
 void

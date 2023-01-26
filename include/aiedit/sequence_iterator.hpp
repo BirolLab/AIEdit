@@ -23,7 +23,7 @@ class SequenceIterator
     /**
      * Advance to the next k-mer
      */
-    void next();
+    void next(unsigned n = 1);
 
     /**
      * Roll to the previous k-mer
