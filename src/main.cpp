@@ -1,162 +1,85 @@
 #include <btllib/bloom_filter.hpp>
-#include <btllib/nthash.hpp>
 #include <btllib/seq_reader.hpp>
 #include <btllib/seq_writer.hpp>
 #include <filesystem>
 #include <fstream>
+#include <nlohmann/json.hpp>
 
-#include "data_types.hpp"
-#include "editing.hpp"
-#include "error_detection.hpp"
-#include "file_management.hpp"
-#include "nthash/nthash.hpp"
-#include "pattern_database.hpp"
-#include "user_interface.hpp"
+#include "args.hpp"
+#include "cli.hpp"
+#include "timer.hpp"
+#include "vcf_writer.hpp"
 
-#define BENCHMARK(CODE)                                                        \
-  timer.start();                                                               \
-  CODE timer.stop();                                                           \
-  timer.print_done();
+#include "aiedit/error_detection/bloom_filter_error_detector.hpp"
+#include "aiedit/error_detection/error_detector.hpp"
+
+#include "aiedit/pattern_detection/pattern_database.hpp"
+#include "aiedit/pattern_detection/pattern_detector.hpp"
+
+#include "aiedit/error_correction/bloom_filter_mismatch_corrector.hpp"
+#include "aiedit/error_correction/error_corrector.hpp"
+
+size_t
+get_file_size(const std::string& path)
+{
+    return std::filesystem::file_size(std::filesystem::path(path));
+}
 
 int
 main(int argc, char** argv)
 {
-  auto args = ai_edit::parse_args(argc, argv);
-  ai_edit::Timer timer;
-  ai_edit::ProgressBar pbar(ai_edit::get_file_size(args.assembly_path),
-                            args.verbosity == 1);
+    ProgramArguments args;
+    args.parse(argc, argv);
 
-  ai_edit::print_logo();
-  ai_edit::print_args(args);
-  std::cout << std::endl;
+    CommandLineInterface cli(args.verbosity);
 
-  // LOAD THE BLOOM FILTER
-  std::cout << "Loading Bloom filter... " << std::flush;
-  BENCHMARK(btllib::SeedBloomFilter bloom_filter(args.bloom_filter_path);)
-  if (args.verbosity > 0) {
-    ai_edit::print_bloom_filter_information(bloom_filter,
-                                            args.bloom_filter_path);
-    std::cout << std::endl;
-  }
+    cli.print_logo();
+    cli.print_args(args);
 
-  // POPULATE PATTERN DATABASE
-  std::cout << "Populating pattern database... " << std::flush;
-  BENCHMARK(auto database = ai_edit::build_database(bloom_filter.get_seeds(),
-                                                    args.pattern_length,
-                                                    args.signature_length);)
-  std::cout << "Saving database... " << std::flush;
-  std::string db_file_path = args.out_path / std::filesystem::path("db.json");
-  BENCHMARK(ai_edit::write_database_file(database,
-                                         args.signature_length,
-                                         bloom_filter.get_seeds().size(),
-                                         args.pattern_length,
-                                         db_file_path);)
-  if (args.verbosity > 0) {
-    ai_edit::print_database_information(database,
-                                        args.signature_length,
-                                        args.pattern_length);
-    std::cout << std::endl;
-  }
+    cli.start_timer("Loading Bloom filter");
+    btllib::SeedBloomFilter bf(args.bf_path);
+    cli.stop_timer();
+    cli.print_bloom_filter_information(bf, args.bf_path);
 
-  // PREPARE FOR EDITING
-  unsigned seq_reader_flags;
-  if (args.seq_reader_long_mode) {
-    seq_reader_flags = btllib::SeqReader::Flag::LONG_MODE;
-  } else {
-    seq_reader_flags = btllib::SeqReader::Flag::SHORT_MODE;
-  }
-  btllib::SeqReader reader(args.assembly_path, seq_reader_flags);
-  auto edited_file_path = args.out_path / std::filesystem::path("edited.fa");
-  btllib::SeqWriter writer(edited_file_path, btllib::SeqWriter::FASTA);
-  auto edits_file_path = args.out_path / std::filesystem::path("edits.tsv");
-  ai_edit::EditsFile edits_file(edits_file_path);
-  auto vcf_file_path = args.out_path / std::filesystem::path("variants.vcf");
-  ai_edit::VCFWriter vcf_file(vcf_file_path, args.assembly_path);
-  auto signature = ai_edit::create_signature(args.signature_length,
-                                             bloom_filter.get_seeds().size());
+    aiedit::PatternDetector* pattern_detector = nullptr;
+    cli.start_timer("Populating pattern database");
+    pattern_detector = new aiedit::PatternDatabase(args.pattern_length, bf.get_seeds());
+    std::ofstream db_file(args.out_path / std::filesystem::path("db.json"));
+    auto db_json = dynamic_cast<aiedit::PatternDatabase*>(pattern_detector)->to_json();
+    db_file << db_json.dump(4);
+    db_file.flush();
+    cli.stop_timer();
 
-  // EDITING PROCEDURE
-  ai_edit::EditingLog edit_log;
-  std::cout << "Detecting errors and editing assembly... " << std::flush;
-  if (pbar.is_shown()) {
-    std::cout << std::endl;
-  }
-  timer.start();
-  for (auto record : reader) {
-    std::string& seq = record.seq;
-    pbar.start_seq(record.id, record.comment);
-    nthash::SeedNtHash hash_function(seq,
-                                     bloom_filter.get_seeds(),
-                                     bloom_filter.get_hash_num_per_seed(),
-                                     bloom_filter.get_k());
-    while (ai_edit::roll_to_next_miss(hash_function, bloom_filter)) {
-      size_t miss_pos = hash_function.get_pos() + hash_function.get_k() - 1;
-      if (args.verbosity > 1) {
-        std::cout << "[" << record.id << "] Miss at " << miss_pos + 1 << ": "
-                  << std::flush;
-      }
-      ai_edit::update_signature(hash_function,
-                                bloom_filter,
-                                signature,
-                                args.signature_length);
-      auto query_result = ai_edit::query(signature,
-                                         args.signature_length,
-                                         bloom_filter.get_seeds().size(),
-                                         database);
-      auto pattern = query_result.entry.pattern;
-      auto edits = ai_edit::get_edits(seq,
-                                      miss_pos,
-                                      pattern,
-                                      args.pattern_length,
-                                      bloom_filter,
-                                      hash_function,
-                                      args.signature_length);
-      if (edits.size() > 0) {
-        edits_file.write(seq,
-                         record.id,
-                         record.comment,
-                         miss_pos,
-                         pattern,
-                         args.pattern_length,
-                         edits,
-                         query_result.distance);
-        vcf_file.write(seq, record.id, record.comment, edits);
-        ai_edit::apply_edits(seq, hash_function, edits);
-        ++edit_log.num_patterns;
-        edit_log.num_edits += edits.size();
-        if (args.verbosity > 1) {
-          std::cout << "Edited " << edits.size() << " base(s) with pattern "
-                    << ai_edit::pattern_to_string(pattern, args.pattern_length)
-                    << std::endl;
+    btllib::SeqReader reader(args.assembly_path, btllib::SeqReader::Flag::LONG_MODE);
+
+    std::string vcf_file_path = args.out_path / std::filesystem::path("variants.vcf");
+    VCFWriter vcf_file(vcf_file_path, args.assembly_path);
+
+    std::string edited_file_path = args.out_path / std::filesystem::path("edited.fa");
+    btllib::SeqWriter writer(edited_file_path, btllib::SeqWriter::FASTA);
+
+    cli.start_timer("Detecting and correcting errors");
+    unsigned num_patterns = 0, num_mismatches = 0;
+    for (auto record : reader) {
+        aiedit::SequenceIterator seq(record.seq, bf.get_seeds(), bf.get_hash_num_per_seed());
+        aiedit::BloomFilterErrorDetector err_detector(seq, bf);
+        aiedit::BloomFilterMismatchCorrector err_corrector(seq, bf);
+        while (err_detector.next_error()) {
+            aiedit::Signature signature(seq.peek_hashes(bf.get_seeds()[0].size()).data(), bf);
+            auto& pattern = pattern_detector->get_pattern(signature);
+            bool fixed = err_corrector.fix(pattern);
+            if (fixed) {
+                ++num_patterns;
+            } else {
+                seq.next(bf.get_k() + args.pattern_length);
+            }
         }
-      } else {
-        unsigned rolls = hash_function.get_k() + args.pattern_length;
-        for (unsigned i = 0; i < rolls; i++) {
-          hash_function.roll();
-        }
-        if (args.verbosity > 1) {
-          std::cout << "No edit pattern detected, skipped " << rolls << " bases"
-                    << std::endl;
-        }
-      }
-      pbar.seek(miss_pos);
+        vcf_file.write(record.id, record.comment, err_corrector.get_edits());
+        writer.write(record.id, record.comment, seq.get_sequence());
+        num_mismatches += err_corrector.get_edits().size();
     }
-    writer.write(record.id, record.comment, seq);
-  }
-  timer.stop();
-  pbar.complete();
-  std::cout << std::endl;
-  timer.print_done();
+    cli.stop_timer();
+    cli.print_num_edits(num_patterns, num_mismatches);
 
-  if (args.verbosity > 0) {
-    ai_edit::print_editing_log(edit_log);
-    std::cout << std::endl;
-  }
-
-  std::cout << "Results saved to " << args.out_path << std::endl;
-  if (args.verbosity > 0) {
-    ai_edit::print_output_files_list();
-  }
-
-  return 0;
+    return 0;
 }

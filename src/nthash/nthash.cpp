@@ -331,12 +331,13 @@ BlindNtHash::sub(const std::vector<unsigned>& positions,
            hashes_array.get());
 }
 
-uint64_t**
+std::vector<std::vector<uint64_t>>
 SeedNtHash::peek_window(unsigned n)
 {
   btllib::check_error(nthash.pos + n + nthash.get_k() > nthash.seq_len,
                       "SeedNtHash: Peek window out of bounds");
-  uint64_t** window_hashes = new uint64_t*[n];
+  std::vector<std::vector<uint64_t>> window_hashes;
+  window_hashes.reserve(n);
   std::unique_ptr<uint64_t[]> fh_no_monomers_tmp(new uint64_t[blocks.size()]);
   std::unique_ptr<uint64_t[]> rh_no_monomers_tmp(new uint64_t[blocks.size()]);
   std::unique_ptr<uint64_t[]> forward_hash_tmp(new uint64_t[blocks.size()]);
@@ -355,7 +356,8 @@ SeedNtHash::peek_window(unsigned n)
               reverse_hash.get(),
               blocks.size() * sizeof(uint64_t));
   for (unsigned i = 0; i < n; i++) {
-    window_hashes[i] = new uint64_t[nthash.hash_num];
+    std::vector<uint64_t> hashes_i;
+    hashes_i.reserve(nthash.hash_num);
     ntmsm64(nthash.seq + nthash.pos + i, 
             blocks, 
             monomers, 
@@ -367,9 +369,8 @@ SeedNtHash::peek_window(unsigned n)
             forward_hash_tmp.get(),
             reverse_hash_tmp.get(),
             hval_temp.get());
-    std::memcpy(window_hashes[i],
-                hval_temp.get(),
-                nthash.hash_num * sizeof(uint64_t));
+    hashes_i.insert(hashes_i.end(), hval_temp.get(), hval_temp.get() + nthash.hash_num);
+    window_hashes.push_back(hashes_i);
   }
   return window_hashes;
 }

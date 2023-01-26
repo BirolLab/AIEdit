@@ -3,7 +3,7 @@ project(
     'cpp', 
     version: '0.1', 
     license: 'GPL-3', 
-    default_options: ['cpp_std=c++17', 'werror=true']
+    default_options: ['cpp_std=c++17', 'werror=true', 'warning_level=3']
 )
 
 compiler = meson.get_compiler('cpp')
@@ -17,7 +17,6 @@ include_dirs = [
     include_directories('include'),
     include_directories('vendor/argparse/include'),
     include_directories('vendor/json/single_include'),
-    include_directories('vendor/progressbar/include')
 ]
 
 sources = run_command('scripts/list_sources.sh', check: true).stdout().strip().split()
@@ -30,7 +29,7 @@ executable(
     install: true
 )
 
-# TESTS ------------------------------------------------------------------------
+# --------------------------------- TESTS ---------------------------------
 catch2 = dependency('Catch2', method : 'cmake', modules : ['Catch2::Catch2WithMain'], required: false)
 
 if not catch2.found()
@@ -47,4 +46,3 @@ foreach test_file : tests
                            include_directories: include_dirs)
     test(test_name, test_exec)
 endforeach
-# ------------------------------------------------------------------------------
