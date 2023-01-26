@@ -7,10 +7,11 @@ SequenceIterator::to_hash_vector(const uint64_t* nthash_hashes)
 {
     HashVector hashes;
     for (unsigned i = 0; i < seeds.size(); i++) {
-        uint64_t* seed_hashes = new uint64_t[nthash->get_hash_num_per_seed()];
+        std::vector<uint64_t> seed_hashes;
+        seed_hashes.reserve(nthash->get_hash_num_per_seed());
         size_t i_begin = i * nthash->get_hash_num_per_seed();
         size_t i_end = i_begin + nthash->get_hash_num_per_seed();
-        std::copy(nthash_hashes + i_begin, nthash_hashes + i_end, seed_hashes);
+        seed_hashes.insert(seed_hashes.end(), nthash_hashes + i_begin, nthash_hashes + i_end);
         hashes.push_back(seed_hashes);
     }
     return hashes;
@@ -25,9 +26,11 @@ SequenceIterator::next(unsigned n)
 }
 
 void
-SequenceIterator::previous()
+SequenceIterator::previous(unsigned n)
 {
-    nthash->roll_back();
+    for (unsigned i = 0; i < n; i++) {
+        nthash->roll_back();
+    }
 }
 
 bool
@@ -60,16 +63,16 @@ SequenceIterator::get_sequence()
     return seq;
 }
 
-SequenceIterator::HashVector*
+std::vector<SequenceIterator::HashVector>
 SequenceIterator::peek_hashes(unsigned window_size)
 {
-    HashVector* hashes = new HashVector[window_size];
+    std::vector<HashVector> hashes;
+    hashes.reserve(window_size);
     nthash->roll_back();
-    auto peeked_hashes = nthash->peek_window(window_size);
-    nthash->roll();
-    for (unsigned i = 0; i < window_size; i++) {
-        hashes[i] = to_hash_vector(peeked_hashes[i]);
+    for (const auto& peeked_hashes : nthash->peek_window(window_size)) {
+        hashes.push_back(to_hash_vector(peeked_hashes.data()));
     }
+    nthash->roll();
     return hashes;
 }
 

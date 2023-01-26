@@ -2,6 +2,7 @@
 #define AIEDIT_EDIT_PATTERN_HPP
 
 #include <cstddef>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -44,7 +45,7 @@ class EditPattern
     std::string to_string() const;
 
   private:
-    Edit::Type* values;
+    std::shared_ptr<Edit::Type[]> values;
     const size_t length;
 };
 

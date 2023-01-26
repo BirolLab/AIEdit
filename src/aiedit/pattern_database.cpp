@@ -20,7 +20,7 @@ PatternDatabase::initialize()
                 pattern.set(i, Edit::Type::NONE);
             }
         }
-        auto signature = predict_signature(pattern);
+        Signature signature = predict_signature(pattern);
         entries.push_back(std::make_pair(pattern, signature));
     }
 }
@@ -68,19 +68,19 @@ PatternDatabase::get_distance(Signature& observed, Signature& from_database)
     return distance;
 }
 
-EditPattern
+const EditPattern&
 PatternDatabase::get_pattern(Signature& signature)
 {
-    EditPattern* result = nullptr;
+    int i_result = -1;
     unsigned min_dist = std::numeric_limits<unsigned>::max();
-    for (auto& entry : entries) {
-        unsigned dist = get_distance(signature, entry.second);
-        if (result == nullptr || dist <= min_dist) {
-            result = &entry.first;
+    for (unsigned i = 0; i < entries.size(); i++) {
+        unsigned dist = get_distance(signature, entries[i].second);
+        if (i_result == -1 || dist <= min_dist) {
+            i_result = i;
             min_dist = dist;
         }
     }
-    return *result;
+    return entries[i_result].first;
 }
 
 nlohmann::json

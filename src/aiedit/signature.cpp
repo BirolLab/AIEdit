@@ -18,9 +18,9 @@ std::vector<std::string>
 Signature::to_string_vector()
 {
     std::vector<std::string> rows;
-    for (size_t i = 0; i < length; i++) {
+    for (size_t i = 0; i < get_length(); i++) {
         std::string row;
-        for (size_t j = 0; j < num_seeds; j++) {
+        for (size_t j = 0; j < get_num_seeds(); j++) {
             row.append(is_miss[i][j] ? "X" : "-");
         }
         rows.emplace_back(row);

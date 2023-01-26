@@ -367,7 +367,7 @@ public:
    */
   bool peek_back(char char_in);
 
-  uint64_t** peek_window(unsigned n);
+  std::vector<std::vector<uint64_t>> peek_window(unsigned n);
 
   const uint64_t* hashes() const { return nthash.hashes(); }
 

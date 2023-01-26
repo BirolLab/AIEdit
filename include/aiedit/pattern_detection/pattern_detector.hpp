@@ -22,7 +22,7 @@ class PatternDetector
      * @param signature Hit/miss signature to query
      * @return Detected edit pattern
      */
-    virtual EditPattern get_pattern(Signature& signature) = 0;
+    virtual const EditPattern& get_pattern(Signature& signature) = 0;
 };
 
 }

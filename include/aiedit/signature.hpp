@@ -14,22 +14,21 @@ class Signature
 {
   public:
     Signature(size_t length, unsigned num_seeds)
-      : length(length)
-      , num_seeds(num_seeds)
     {
-        is_miss = new bool*[length];
         for (unsigned i = 0; i < length; i++) {
-            is_miss[i] = new bool[num_seeds];
+            is_miss.push_back(std::vector<bool>(num_seeds, false));
         }
     }
 
     Signature(const SequenceIterator::HashVector* hashes, const btllib::SeedBloomFilter& bf)
-      : Signature(bf.get_seeds()[0].size(), bf.get_seeds().size())
     {
-        for (unsigned i = 0; i < length; i++) {
-            for (unsigned j = 0; j < num_seeds; j++) {
-                is_miss[i][j] = !bf.contains(hashes[i][j]);
+        is_miss.reserve(bf.get_seeds()[0].size());
+        for (unsigned i = 0; i < bf.get_seeds()[0].size(); i++) {
+            std::vector<bool> row(bf.get_seeds().size());
+            for (unsigned j = 0; j < bf.get_seeds().size(); j++) {
+                row.push_back(!bf.contains(hashes[i][j]));
             }
+            is_miss.push_back(row);
         }
     }
 
@@ -57,10 +56,18 @@ class Signature
      */
     std::vector<std::string> to_string_vector();
 
+    /**
+     * @return Length of the signature
+     */
+    size_t get_length() { return is_miss.size(); }
+
+    /**
+     * @return Number of spaced seeds in the signature
+     */
+    unsigned get_num_seeds() { return is_miss[0].size(); }
+
   private:
-    bool** is_miss;
-    size_t length;
-    unsigned num_seeds;
+    std::vector<std::vector<bool>> is_miss;
 };
 
 }

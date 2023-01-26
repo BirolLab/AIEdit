@@ -10,7 +10,7 @@ namespace aiedit {
 class SequenceIterator
 {
   public:
-    using HashVector = std::vector<const uint64_t*>;
+    using HashVector = std::vector<std::vector<uint64_t>>;
 
     SequenceIterator(std::string& seq,
                      const std::vector<std::string>& seeds,
@@ -22,13 +22,15 @@ class SequenceIterator
 
     /**
      * Advance to the next k-mer
+     * @param n Number of bases to roll
      */
     void next(unsigned n = 1);
 
     /**
      * Roll to the previous k-mer
+     * @param n Number of bases to roll
      */
-    void previous();
+    void previous(unsigned n = 1);
 
     /**
      * Check if the iterator can advance
@@ -73,7 +75,7 @@ class SequenceIterator
      * @param window_size Number of iteration to peek
      * @return Array of vectors containing the hash arrays (from `get_hashes`)
      */
-    HashVector* peek_hashes(unsigned window_size);
+    std::vector<HashVector> peek_hashes(unsigned window_size);
 
     /**
      * Update a base's value
@@ -94,6 +96,8 @@ class SequenceIterator
      * @param position Base's position
      */
     void remove(size_t position);
+
+    ~SequenceIterator() { delete nthash; }
 
   private:
     std::string& seq;

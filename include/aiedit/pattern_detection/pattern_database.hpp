@@ -25,7 +25,7 @@ class PatternDatabase : public PatternDetector
      * @param signature Hit/miss signature to query
      * @return Query result
      */
-    EditPattern get_pattern(Signature& signature) override;
+    const EditPattern& get_pattern(Signature& signature) override;
 
     /**
      * Get a JSON representation of the database

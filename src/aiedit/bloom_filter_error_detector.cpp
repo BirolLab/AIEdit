@@ -16,7 +16,7 @@ BloomFilterErrorDetector::next_error()
 bool
 BloomFilterErrorDetector::check_miss()
 {
-    for (const uint64_t* seed_hashes : seq_iter.get_hashes()) {
+    for (const auto& seed_hashes : seq_iter.get_hashes()) {
         if (!bf.contains(seed_hashes)) {
             return true;
         }

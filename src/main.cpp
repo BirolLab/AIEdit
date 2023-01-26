@@ -65,8 +65,8 @@ main(int argc, char** argv)
         aiedit::BloomFilterErrorDetector err_detector(seq, bf);
         aiedit::BloomFilterMismatchCorrector err_corrector(seq, bf);
         while (err_detector.next_error()) {
-            aiedit::Signature signature(seq.peek_hashes(bf.get_seeds()[0].size()), bf);
-            auto pattern = pattern_detector->get_pattern(signature);
+            aiedit::Signature signature(seq.peek_hashes(bf.get_seeds()[0].size()).data(), bf);
+            auto& pattern = pattern_detector->get_pattern(signature);
             bool fixed = err_corrector.fix(pattern);
             if (fixed) {
                 ++num_patterns;
