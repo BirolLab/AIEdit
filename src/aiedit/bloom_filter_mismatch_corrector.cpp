@@ -64,9 +64,11 @@ void
 BloomFilterMismatchCorrector::update_seq(const std::vector<size_t>& positions,
                                          const std::string& new_bases)
 {
+    seq_iter.previous();
     for (unsigned i = 0; i < positions.size(); i++) {
         seq_iter.update(positions[i], new_bases[i]);
     }
+    seq_iter.next();
 }
 
 bool
@@ -98,7 +100,7 @@ BloomFilterMismatchCorrector::fix(const EditPattern& pattern)
         bool fixed = check_fixes();
         if (fixed && fixing_combination.empty()) {
             fixing_combination = new_bases;
-        } else if (!fixing_combination.empty()) {
+        } else if (fixed && !fixing_combination.empty()) {
             fixing_combination = std::string(mismatch_positions.size(), 'N');
             break;
         }
@@ -119,8 +121,8 @@ BloomFilterMismatchCorrector::add_edits(const std::vector<size_t>& positions,
 {
     for (unsigned i = 0; i < positions.size(); i++) {
         size_t pos = positions[i];
-        std::string ref = reference[i] + "";
-        std::string alt = updated[i] + "";
+        std::string ref(1, reference[i]);
+        std::string alt(1, updated[i]);
         edits.push_back(Edit(pos, Edit::Type::MISMATCH, ref, alt));
     }
 }
