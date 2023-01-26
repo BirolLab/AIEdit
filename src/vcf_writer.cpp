@@ -25,8 +25,8 @@ VCFWriter::write(const std::string& seq_id,
         file << seq_id << " " << seq_comment << "\t"; // CHROM
         file << edit.position + 1 << "\t";            // POS
         file << ".\t";                                // ID
-        file << edit.reference << "\t";               // REF
-        file << edit.updated << "\t";                 // ALT
+        file << edit.before << "\t";               // REF
+        file << edit.after << "\t";                 // ALT
         file << ".\t";                                // QUAL
         file << "PASS\t";                             // FILTER
         file << ".\t";                                // INFO

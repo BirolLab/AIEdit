@@ -18,14 +18,14 @@ class Edit
 
     const size_t position;
     const Type type;
-    const std::string reference;
-    const std::string updated;
+    const std::string before;
+    const std::string after;
 
-    Edit(size_t position, Type type, std::string reference, std::string updated)
+    Edit(size_t position, Type type, std::string before, std::string after)
       : position(position)
       , type(type)
-      , reference(reference)
-      , updated(updated)
+      , before(before)
+      , after(after)
     {}
 };
 
