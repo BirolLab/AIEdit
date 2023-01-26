@@ -14,10 +14,9 @@
 - [btllib](https://github.com/bcgsc/btllib) [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/btllib/README.html)
 - [catch2](https://github.com/catchorg/Catch2) (optional, required only for running tests) [![install with conda](https://anaconda.org/conda-forge/catch2/badges/installer/conda.svg)](https://anaconda.org/conda-forge/catch2)
 
-No need to install—available in the `vendor` folder as git submodules:
+No need to install, available in the `vendor` folder as git submodules:
 - [argparse](https://github.com/p-ranav/argparse)
 - [json](https://github.com/nlohmann/json)
-- [progressbar](https://github.com/gipert/progressbar)
 
 # Compilation
 
@@ -55,18 +54,17 @@ Usage: AIEdit [options]
 Artificially-intelligent long read genome polisher
 
 Optional arguments:
--h --help               shows help message and exits [default: false]
--v --version            prints version information and exits [default: false]
--a --assembly           Path to assembly file [required]
--b --bloom-filter       Path to btllib SeedBloomFilter populated with reads and seeds [required]
---long-mode             Optimize seq. reader for long data (>5kbp) [default: false]
--o --out-path           Path to output directory for storing results [default: "."]
--n --signature-length   Number of frames in each pattern [default: 10]
---verbose               Print a more detailed log to stdout [default: false]
--w --pattern-length     Number of bases to scan for mismatches [default: 5]
+  -h, --help          	shows help message and exits 
+  -v, --version       	prints version information and exits 
+  -a, --assembly      	Path to assembly file [required]
+  -b, --bloom-filter  	Path to btllib SeedBloomFilter populated with reads and seeds [required]
+  --long-mode         	Optimize seq. reader for long data (>5kbp) 
+  -o, --out-path      	Path to output directory for storing results [default: "."]
+  -V                  	Level of details printed to stdout 
+  -w, --pattern-length	Number of bases to scan for errors after each detection [default: 5]
 ```
 
-Use [ntHits](https://github.com/bcgsc/ntHits/tree/refactor) to generate the Bloom filter (`-b`).
+Use [ntHits](https://github.com/bcgsc/ntHits/tree/refactor) to generate the Bloom filter (for AIEdit's `-b` argument).
 
 AIEdit will read the necessary parameters, such as the spaced seed patterns, from the Bloom filter file.
 
@@ -83,5 +81,6 @@ Information about the Bloom filter and the time elapsed for each step of the alg
 
 In the output folder (specified by `-o`), the following files are created:
 
-- `mismatches.tsv` containing all the detected mismatch patterns
-- `db.json` which is a dump of the pattern database in JSON format
+- `db.json`, a dump of the pattern database in JSON format
+- `edited.fa`, the edited sequences in FASTA format
+- `variants.vcf`, list of edits in VCF format
