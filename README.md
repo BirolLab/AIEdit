@@ -11,6 +11,8 @@
  
 # Dependencies
 
+- C++ compiler with c++17 and OpenMP support
+- [Meson](https://mesonbuild.com/)
 - [btllib](https://github.com/bcgsc/btllib) [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/btllib/README.html)
 - [catch2](https://github.com/catchorg/Catch2) (optional, required only for running tests) [![install with conda](https://anaconda.org/conda-forge/catch2/badges/installer/conda.svg)](https://anaconda.org/conda-forge/catch2)
 
@@ -54,14 +56,15 @@ Usage: AIEdit [options]
 Artificially-intelligent long read genome polisher
 
 Optional arguments:
-  -h, --help          	shows help message and exits 
-  -v, --version       	prints version information and exits 
-  -a, --assembly      	Path to assembly file [required]
-  -b, --bloom-filter  	Path to btllib SeedBloomFilter populated with reads and seeds [required]
-  --long-mode         	Optimize seq. reader for long data (>5kbp) 
-  -o, --out-path      	Path to output directory for storing results [default: "."]
-  -V                  	Level of details printed to stdout 
-  -w, --pattern-length	Number of bases to scan for errors after each detection [default: 5]
+-h --help           	shows help message and exits [default: false]
+-v --version        	prints version information and exits [default: false]
+-a --assembly       	Path to assembly file [required]
+-b --bloom-filter   	Path to btllib SeedBloomFilter populated with reads and seeds [required]
+--long-mode         	Optimize seq. reader for long data (>5kbp) [default: false]
+-o --out-path       	Path to output directory for storing results [default: "."]
+-t --num-threads    	Number of sequences to process in parallel [default: 8]
+-V                  	Level of details printed to stdout [default: false]
+-w --pattern-length 	Number of bases to scan for errors after each detection [default: 5]
 ```
 
 Use [ntHits](https://github.com/bcgsc/ntHits/tree/refactor) to generate the Bloom filter (for AIEdit's `-b` argument).
