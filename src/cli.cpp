@@ -2,39 +2,6 @@
 #include "aiedit/version.hpp"
 
 void
-ProgressBar::start_seq(const std::string& id, const std::string& comment)
-{
-    bytes_read += id.size() + comment.size();
-    seq_position = 0;
-}
-
-void
-ProgressBar::seek(const size_t position)
-{
-    if (!show) {
-        return;
-    }
-    bytes_read += position - seq_position;
-    seq_position = position;
-    unsigned p = (unsigned)((double)bytes_read / (double)file_size * 100.0);
-    for (unsigned i = 0; i < p - percentage_done; i++) {
-        pbar->update();
-    }
-    percentage_done = p;
-}
-
-void
-ProgressBar::complete()
-{
-    if (!show) {
-        return;
-    }
-    for (unsigned i = 0; i < 100 - percentage_done; i++) {
-        pbar->update();
-    }
-}
-
-void
 CommandLineInterface::print_logo()
 {
     std::cout << LOGO << "\tv" << aiedit::VERSION << std::endl << std::endl;
