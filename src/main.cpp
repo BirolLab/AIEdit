@@ -73,6 +73,8 @@ main(int argc, char** argv)
             } else {
                 seq.next(bf.get_k() + args.pattern_length);
             }
+            size_t seq_len = seq.get_sequence().size();
+            cli.log_edit(record.id, seq.get_position(), seq_len, pattern.to_string(), fixed);
         }
         vcf_file.write(record.id, record.comment, err_corrector.get_edits());
         writer.write(record.id, record.comment, seq.get_sequence());

@@ -16,10 +16,38 @@
 
 class CommandLineInterface
 {
+    enum Color
+    {
+        FG_RED = 31,
+        FG_GREEN = 32,
+        FG_BLUE = 34,
+        FG_YELLOW = 33,
+        FG_DEFAULT = 39,
+        BG_RED = 41,
+        BG_GREEN = 42,
+        BG_BLUE = 44,
+        BG_YELLOW = 43,
+        BG_DEFAULT = 49
+    };
+
   public:
     CommandLineInterface(unsigned verbosity)
       : verbosity(verbosity)
     {}
+
+    /**
+     * Log an edit to stdout
+     * @param seq_id Sequence ID
+     * @param seq_len Sequence length
+     * @param position Position of the pattern in the sequence
+     * @param pattern_string String representation of the edit pattern
+     * @param fixed Indicates if a fix was detected
+     */
+    void log_edit(const std::string& seq_id,
+                  size_t seq_len,
+                  size_t position,
+                  const std::string& pattern_string,
+                  bool fixed);
 
     /**
      * Print AIEdit's logo in ASCII art to stdout.F
@@ -59,6 +87,14 @@ class CommandLineInterface
   private:
     unsigned verbosity;
     Timer timer;
+
+    /**
+     * Add unicode color to a string
+     * @param text Text to be printed
+     * @param color Color code
+     * @return Colored string
+     */
+    std::string add_color(const std::string& text, Color color);
 };
 
 #endif // CLI_HPP

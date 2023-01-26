@@ -2,6 +2,27 @@
 #include "aiedit/version.hpp"
 
 void
+CommandLineInterface::log_edit(const std::string& seq_id,
+                               size_t position,
+                               size_t seq_len,
+                               const std::string& pattern_string,
+                               bool fixed)
+{
+    if (verbosity < 2) {
+        return;
+    }
+    Color c = (fixed ? Color::FG_GREEN : Color::FG_RED);
+    std::string fixed_text = (fixed ? "FIXED  " : "IGNORED");
+    double progress = (double)position / (double)seq_len * 100.0;
+    std::cout << "[" << seq_id << "] ";
+    std::cout << add_color(fixed_text, c) << "  ";
+    std::cout << pattern_string << " ";
+    std::cout << " @" << position << "/" << seq_len << "bp ";
+    std::cout << "(" << (unsigned)progress << "%)";
+    std::cout << std::endl;
+}
+
+void
 CommandLineInterface::print_logo()
 {
     std::cout << LOGO << "\tv" << aiedit::VERSION << std::endl << std::endl;
@@ -54,6 +75,12 @@ void
 CommandLineInterface::stop_timer()
 {
     timer.stop();
-    std::cout << "\033[1;32mDONE\033[0m";
+    std::cout << add_color("DONE", Color::FG_GREEN);
     std::cout << " (" << timer.to_string() << ")" << std::endl;
+}
+
+std::string
+CommandLineInterface::add_color(const std::string& text, Color color)
+{
+    return "\033[1;" + std::to_string(color) + "m" + text + "\033[0m";
 }
