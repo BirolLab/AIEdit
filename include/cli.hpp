@@ -85,7 +85,7 @@ class CommandLineInterface
     void stop_timer();
 
   private:
-    unsigned verbosity;
+    const unsigned verbosity;
     Timer timer;
 
     /**

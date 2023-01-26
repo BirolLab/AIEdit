@@ -10,7 +10,7 @@ class ProgramArguments
     std::filesystem::path assembly_path;
     std::filesystem::path bf_path;
     std::filesystem::path out_path;
-    unsigned verbosity;
+    unsigned verbosity = 0;
     unsigned pattern_length;
     unsigned num_threads;
 
