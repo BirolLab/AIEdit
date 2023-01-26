@@ -60,20 +60,20 @@ CommandLineInterface::print_bloom_filter_information(const btllib::SeedBloomFilt
 void
 CommandLineInterface::print_args(const ProgramArguments& args)
 {
-    if (verbosity < 2) {
+    if (verbosity < 1) {
         return;
     }
-    std::cout << "Assembly file     (-a)  = " << args.assembly_path << std::endl;
-    std::cout << "Bloom filter file (-b)  = " << args.bf_path << std::endl;
-    std::cout << "Pattern length    (-w)  = " << args.pattern_length << std::endl;
+    std::cout << "- Assembly file     (-a)  = " << args.assembly_path << std::endl;
+    std::cout << "- Bloom filter file (-b)  = " << args.bf_path << std::endl;
+    std::cout << "- Pattern length    (-w)  = " << args.pattern_length << std::endl;
     std::cout << std::endl;
 }
 
 void
 CommandLineInterface::print_num_edits(unsigned num_patterns, unsigned num_mismatches)
 {
-    std::cout << "- Number of error patterns = " << num_patterns << std::endl;
-    std::cout << "- Number of mismatches     = " << num_mismatches << std::endl;
+    std::cout << "Number of error patterns = " << num_patterns << std::endl;
+    std::cout << "Number of mismatches     = " << num_mismatches << std::endl;
 }
 
 void
