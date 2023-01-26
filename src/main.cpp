@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include <omp.h>
 
 #include "args.hpp"
 #include "cli.hpp"
@@ -30,6 +31,8 @@ main(int argc, char** argv)
 {
     ProgramArguments args;
     args.parse(argc, argv);
+    
+    omp_set_num_threads(args.num_threads);
 
     CommandLineInterface cli(args.verbosity);
 
@@ -60,6 +63,7 @@ main(int argc, char** argv)
 
     cli.start_timer("Detecting and correcting errors");
     unsigned num_patterns = 0, num_mismatches = 0;
+#pragma omp parallel shared(reader)
     for (auto record : reader) {
         aiedit::SequenceIterator seq(record.seq, bf.get_seeds(), bf.get_hash_num_per_seed());
         aiedit::BloomFilterErrorDetector err_detector(seq, bf);

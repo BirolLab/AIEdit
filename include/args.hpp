@@ -12,6 +12,7 @@ class ProgramArguments
     std::filesystem::path out_path;
     unsigned verbosity;
     unsigned pattern_length;
+    unsigned num_threads;
 
     void parse(int argc, char** argv);
 };

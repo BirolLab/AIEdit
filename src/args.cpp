@@ -25,6 +25,11 @@ ProgramArguments::parse(int argc, char** argv)
       .help("Path to output directory for storing results")
       .default_value(".");
 
+    parser.add_argument("--num-threads", "-t")
+      .help("Number of sequences to process in parallel")
+      .default_value((unsigned)8)
+      .scan<'u', unsigned>();
+
     parser.add_argument("-V")
       .action([&](const auto&) { ++verbosity; })
       .append()
@@ -49,5 +54,6 @@ ProgramArguments::parse(int argc, char** argv)
     assembly_path = std::filesystem::path(parser.get("-a"));
     bf_path = std::filesystem::path(parser.get("-b"));
     out_path = std::filesystem::path(parser.get("-o"));
+    num_threads = parser.get<unsigned>("-t");
     pattern_length = parser.get<unsigned>("-w");
 }
