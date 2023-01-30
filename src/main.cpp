@@ -84,11 +84,14 @@ main(int argc, char** argv)
                 } else {
                     seq_iter.next(bf.get_k() + args.pattern_length);
                 }
-                cli.log_edit(record.id,
-                             seq_iter.get_position(),
-                             seq_iter.get_sequence().size(),
-                             pattern.to_string(),
-                             fixed);
+#pragma omp critical
+                {
+                    cli.log_edit(record.id,
+                                 fixed,
+                                 pattern.to_string(),
+                                 seq_iter.get_position(),
+                                 seq_iter.get_sequence().size());
+                }
             }
 #pragma omp critical
             {

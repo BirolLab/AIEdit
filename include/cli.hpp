@@ -38,16 +38,16 @@ class CommandLineInterface
     /**
      * Log an edit to stdout
      * @param seq_id Sequence ID
-     * @param seq_len Sequence length
-     * @param position Position of the pattern in the sequence
-     * @param pattern_string String representation of the edit pattern
      * @param fixed Indicates if a fix was detected
+     * @param pattern_string String representation of the edit pattern
+     * @param position Position of the pattern in the sequence
+     * @param seq_len Sequence length
      */
     void log_edit(const std::string& seq_id,
-                  size_t seq_len,
-                  size_t position,
+                  bool fixed,
                   const std::string& pattern_string,
-                  bool fixed);
+                  size_t position,
+                  size_t seq_len);
 
     /**
      * Print AIEdit's logo in ASCII art to stdout.F

@@ -3,22 +3,20 @@
 
 void
 CommandLineInterface::log_edit(const std::string& seq_id,
-                               size_t position,
-                               size_t seq_len,
+                               bool fixed,
                                const std::string& pattern_string,
-                               bool fixed)
+                               size_t position,
+                               size_t seq_len)
 {
     if (verbosity < 2) {
         return;
     }
     Color c = (fixed ? Color::FG_GREEN : Color::FG_RED);
     std::string fixed_text = (fixed ? "FIXED  " : "IGNORED");
-    double progress = (double)position / (double)seq_len * 100.0;
     std::cout << "[" << seq_id << "] ";
     std::cout << add_color(fixed_text, c) << "  ";
     std::cout << pattern_string << " ";
-    std::cout << " @" << position << "/" << seq_len << "bp ";
-    std::cout << "(" << (unsigned)progress << "%)";
+    std::cout << " @" << position << "/" << seq_len << "bp";
     std::cout << std::endl;
 }
 
