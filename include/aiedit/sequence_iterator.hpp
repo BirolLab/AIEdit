@@ -12,12 +12,20 @@ class SequenceIterator
   public:
     using HashVector = std::vector<std::vector<uint64_t>>;
 
+    SequenceIterator(std::string& seq, const std::vector<std::string>& seeds, unsigned num_hashes)
+      : SequenceIterator(seq, seeds, num_hashes, 0, seq.size())
+    {}
+
     SequenceIterator(std::string& seq,
                      const std::vector<std::string>& seeds,
-                     const unsigned num_hashes)
+                     unsigned num_hashes,
+                     size_t begin,
+                     size_t end)
       : seq(seq)
       , seeds(seeds)
-      , nthash(new nthash::SeedNtHash(seq, seeds, num_hashes, seeds[0].size()))
+      , nthash(new nthash::SeedNtHash(seq, seeds, num_hashes, seeds[0].size(), begin))
+      , begin(begin)
+      , end(end)
     {}
 
     /**
@@ -103,6 +111,7 @@ class SequenceIterator
     std::string& seq;
     const std::vector<std::string>& seeds;
     nthash::SeedNtHash* nthash;
+    const size_t begin, end;
 
     /**
      * Convert an ntHash hash array to a vector of hashes

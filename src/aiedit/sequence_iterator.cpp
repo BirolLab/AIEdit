@@ -36,7 +36,7 @@ SequenceIterator::previous(unsigned n)
 bool
 SequenceIterator::has_next()
 {
-    return get_position() < seq.size() - nthash->get_k();
+    return get_position() < end - nthash->get_k();
 }
 
 char

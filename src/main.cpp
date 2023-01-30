@@ -31,7 +31,7 @@ main(int argc, char** argv)
 {
     ProgramArguments args;
     args.parse(argc, argv);
-    
+
     omp_set_num_threads(args.num_threads);
 
     CommandLineInterface cli(args.verbosity);
@@ -63,26 +63,40 @@ main(int argc, char** argv)
 
     cli.start_timer("Detecting and correcting errors");
     unsigned num_patterns = 0, num_mismatches = 0;
-#pragma omp parallel shared(reader)
+    unsigned num_hashes = bf.get_hash_num_per_seed();
+    unsigned kmer_length = bf.get_seeds()[0].size();
     for (auto record : reader) {
-        aiedit::SequenceIterator seq(record.seq, bf.get_seeds(), bf.get_hash_num_per_seed());
-        aiedit::BloomFilterErrorDetector err_detector(seq, bf);
-        aiedit::BloomFilterMismatchCorrector err_corrector(seq, bf);
-        while (err_detector.next_error()) {
-            aiedit::Signature signature(seq.peek_hashes(bf.get_seeds()[0].size()).data(), bf);
-            auto& pattern = pattern_detector->get_pattern(signature);
-            bool fixed = err_corrector.fix(pattern);
-            if (fixed) {
-                ++num_patterns;
-            } else {
-                seq.next(bf.get_k() + args.pattern_length);
+        const size_t chunk_size = record.seq.size() / args.num_threads;
+        std::string& seq = record.seq;
+#pragma omp parallel for
+        for (unsigned i = 0; i < args.num_threads; i++) {
+            size_t begin = i * chunk_size;
+            size_t end = i < args.num_threads - 1 ? (i + 1) * chunk_size : seq.size();
+            aiedit::SequenceIterator seq_iter(seq, bf.get_seeds(), num_hashes, begin, end);
+            aiedit::BloomFilterErrorDetector err_detector(seq_iter, bf);
+            aiedit::BloomFilterMismatchCorrector err_corrector(seq_iter, bf);
+            while (err_detector.next_error()) {
+                aiedit::Signature signature(seq_iter.peek_hashes(kmer_length).data(), bf);
+                auto& pattern = pattern_detector->get_pattern(signature);
+                bool fixed = err_corrector.fix(pattern);
+                if (fixed) {
+                    ++num_patterns;
+                } else {
+                    seq_iter.next(bf.get_k() + args.pattern_length);
+                }
+                cli.log_edit(record.id,
+                             seq_iter.get_position(),
+                             seq_iter.get_sequence().size(),
+                             pattern.to_string(),
+                             fixed);
             }
-            size_t seq_len = seq.get_sequence().size();
-            cli.log_edit(record.id, seq.get_position(), seq_len, pattern.to_string(), fixed);
+#pragma omp critical
+            {
+                vcf_file.write(record.id, record.comment, err_corrector.get_edits());
+                num_mismatches += err_corrector.get_edits().size();
+            }
         }
-        vcf_file.write(record.id, record.comment, err_corrector.get_edits());
-        writer.write(record.id, record.comment, seq.get_sequence());
-        num_mismatches += err_corrector.get_edits().size();
+        writer.write(record.id, record.comment, seq);
     }
     cli.stop_timer();
     cli.print_num_edits(num_patterns, num_mismatches);
