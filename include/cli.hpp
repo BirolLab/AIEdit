@@ -45,7 +45,6 @@ class CommandLineInterface
      */
     void log_edit(const std::string& seq_id,
                   bool fixed,
-                  const std::string& pattern_string,
                   size_t position,
                   size_t seq_len);
 

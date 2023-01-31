@@ -45,6 +45,17 @@ SequenceIterator::get_base(size_t position)
     return seq[position];
 }
 
+std::string
+SequenceIterator::get_bases(const std::vector<size_t>& positions)
+{
+    std::string sub_seq;
+    sub_seq.reserve(positions.size());
+    for (const auto& pos : positions) {
+        sub_seq += seq[pos];
+    }
+    return sub_seq;
+}
+
 size_t
 SequenceIterator::get_position()
 {

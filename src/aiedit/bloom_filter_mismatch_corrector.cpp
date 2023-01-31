@@ -1,3 +1,5 @@
+#include <bitset>
+
 #include "aiedit/error_correction/bloom_filter_mismatch_corrector.hpp"
 
 namespace {
@@ -35,11 +37,101 @@ get_combinations(std::string prefix,
 
 namespace aiedit {
 
+void
+PatternDatabase::initialize()
+{
+    for (unsigned p = 0; p < (1U << (pattern_length - 1)); p++) {
+        std::string pattern_string = "1" + std::bitset<64>(p).to_string() + "1";
+        std::reverse(pattern_string.begin(), pattern_string.end());
+        EditPattern pattern(pattern_length);
+        for (unsigned i = 0; i < pattern_length; i++) {
+            bool is_mismatch = pattern_string[i] == '1';
+            if (is_mismatch) {
+                pattern.set(i, Edit::Type::MISMATCH);
+            } else {
+                pattern.set(i, Edit::Type::NONE);
+            }
+        }
+        Signature signature = predict_signature(pattern);
+        entries.push_back(std::make_pair(pattern, signature));
+    }
+}
+
+Signature
+PatternDatabase::predict_signature(EditPattern& pattern)
+{
+    Signature signature(seeds[0].size(), seeds.size());
+    for (unsigned slide = 0; slide < seeds[0].size(); slide++) {
+        for (unsigned i_seed = 0; i_seed < seeds.size(); i_seed++) {
+            bool miss = false;
+            auto seed = seeds[i_seed];
+            unsigned overlap = std::min(slide + 1, pattern_length);
+            for (unsigned pos = 0; pos < overlap; pos++) {
+                bool is_error = pattern.get(pos) == Edit::Type::MISMATCH;
+                bool is_care = seed[seed.size() - 1 - slide + pos] == '1';
+                if (is_error && is_care) {
+                    miss = true;
+                }
+            }
+            signature.set(slide, i_seed, miss);
+        }
+    }
+    return signature;
+}
+
+unsigned
+PatternDatabase::get_distance(Signature& observed, Signature& from_database)
+{
+    unsigned distance = 0;
+    for (unsigned i = 0; i < seeds[0].size(); i++) {
+        for (unsigned j = 0; j < seeds.size(); j++) {
+            bool t = observed.has_miss(i, j);
+            bool d = from_database.has_miss(i, j);
+            if (t != d) {
+                for (auto& entry : entries) {
+                    bool c = entry.second.has_miss(i, j);
+                    if (t == c) {
+                        ++distance;
+                    }
+                }
+            }
+        }
+    }
+    return distance;
+}
+
+const EditPattern&
+PatternDatabase::query(Signature& signature)
+{
+    int i_result = -1;
+    unsigned min_dist = std::numeric_limits<unsigned>::max();
+    for (unsigned i = 0; i < entries.size(); i++) {
+        unsigned dist = get_distance(signature, entries[i].second);
+        if (i_result == -1 || dist <= min_dist) {
+            i_result = i;
+            min_dist = dist;
+        }
+    }
+    return entries[i_result].first;
+}
+
+nlohmann::json
+PatternDatabase::to_json()
+{
+    nlohmann::json db_json;
+    for (auto& entry : entries) {
+        auto pattern = entry.first.to_string();
+        auto signature = entry.second.to_string_vector();
+        db_json[pattern] = signature;
+    }
+    return db_json;
+}
+
 std::vector<size_t>
-BloomFilterMismatchCorrector::get_mismatch_positions(const EditPattern& pattern)
+BloomFilterMismatchCorrector::get_mismatch_positions(const size_t base_position,
+                                                     const EditPattern& pattern)
 {
     std::vector<size_t> positions;
-    size_t base_position = seq_iter.get_position();
     for (size_t i = 0; i < pattern.get_length(); i++) {
         if (pattern.get(i) == Edit::Type::MISMATCH) {
             positions.push_back(base_position + i);
@@ -48,20 +140,9 @@ BloomFilterMismatchCorrector::get_mismatch_positions(const EditPattern& pattern)
     return positions;
 }
 
-std::vector<std::string>
-BloomFilterMismatchCorrector::get_candidates(const std::vector<size_t>& positions)
-{
-    std::string original;
-    for (const auto& pos : positions) {
-        original += seq_iter.get_base(pos);
-    }
-    std::vector<std::string> candidates;
-    get_combinations("", original.size(), original, candidates);
-    return candidates;
-}
-
 void
-BloomFilterMismatchCorrector::update_seq(const std::vector<size_t>& positions,
+BloomFilterMismatchCorrector::update_seq(SequenceIterator& seq_iter,
+                                         const std::vector<size_t>& positions,
                                          const std::string& new_bases)
 {
     seq_iter.previous();
@@ -72,7 +153,7 @@ BloomFilterMismatchCorrector::update_seq(const std::vector<size_t>& positions,
 }
 
 bool
-BloomFilterMismatchCorrector::check_fixes()
+BloomFilterMismatchCorrector::check_fixes(SequenceIterator& seq_iter)
 {
     auto signature_hashes = seq_iter.peek_hashes(seq_iter.get_seed_length());
     for (unsigned i = 0; i < seq_iter.get_seed_length(); i++) {
@@ -87,17 +168,18 @@ BloomFilterMismatchCorrector::check_fixes()
 }
 
 bool
-BloomFilterMismatchCorrector::fix(const EditPattern& pattern)
+BloomFilterMismatchCorrector::fix(SequenceIterator& seq_iter)
 {
-    auto mismatch_positions = get_mismatch_positions(pattern);
-    std::string backup;
-    for (const auto& pos : mismatch_positions) {
-        backup += seq_iter.get_base(pos);
-    }
+    Signature signature(seq_iter, bf);
+    auto pattern = db.query(signature);
+    auto mismatch_positions = get_mismatch_positions(seq_iter.get_position(), pattern);
+    std::string original = seq_iter.get_bases(mismatch_positions);
     std::string fixing_combination;
-    for (const auto& new_bases : get_candidates(mismatch_positions)) {
-        update_seq(mismatch_positions, new_bases);
-        bool fixed = check_fixes();
+    std::vector<std::string> candidates;
+    get_combinations("", original.size(), original, candidates);
+    for (const auto& new_bases : candidates) {
+        update_seq(seq_iter, mismatch_positions, new_bases);
+        bool fixed = check_fixes(seq_iter);
         if (fixed && fixing_combination.empty()) {
             fixing_combination = new_bases;
         } else if (fixed && !fixing_combination.empty()) {
@@ -106,11 +188,11 @@ BloomFilterMismatchCorrector::fix(const EditPattern& pattern)
         }
     }
     if (fixing_combination.empty()) {
-        update_seq(mismatch_positions, backup);
+        update_seq(seq_iter, mismatch_positions, original);
         return false;
     }
-    add_edits(mismatch_positions, backup, fixing_combination);
-    update_seq(mismatch_positions, fixing_combination);
+    add_edits(mismatch_positions, original, fixing_combination);
+    update_seq(seq_iter, mismatch_positions, fixing_combination);
     return true;
 }
 

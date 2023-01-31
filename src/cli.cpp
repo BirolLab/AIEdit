@@ -4,7 +4,6 @@
 void
 CommandLineInterface::log_edit(const std::string& seq_id,
                                bool fixed,
-                               const std::string& pattern_string,
                                size_t position,
                                size_t seq_len)
 {
@@ -15,8 +14,7 @@ CommandLineInterface::log_edit(const std::string& seq_id,
     std::string fixed_text = (fixed ? "FIXED  " : "IGNORED");
     std::cout << "[" << seq_id << "] ";
     std::cout << add_color(fixed_text, c) << "  ";
-    std::cout << pattern_string << " ";
-    std::cout << " @" << position << "/" << seq_len << "bp";
+    std::cout << "@" << position << "/" << seq_len << "bp";
     std::cout << std::endl;
 }
 
@@ -51,6 +49,7 @@ CommandLineInterface::print_args(const ProgramArguments& args)
     }
     std::cout << "- Assembly file     (-a)  = " << args.assembly_path << std::endl;
     std::cout << "- Bloom filter file (-b)  = " << args.bf_path << std::endl;
+    std::cout << "- Number of threads (-t)  = " << args.pattern_length << std::endl;
     std::cout << "- Pattern length    (-w)  = " << args.pattern_length << std::endl;
     std::cout << std::endl;
 }

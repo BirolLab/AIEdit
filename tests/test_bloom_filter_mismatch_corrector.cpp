@@ -15,8 +15,8 @@ TEST_CASE("Test Bloom filter mismatch correction", "[error_correction]")
                                       test_data.num_hashes_per_seed);
     seq_iter.next(test_data.miss_position - seq_iter.get_seed_length() + 2);
     std::cout << seq_iter.get_position() << std::endl;
-    aiedit::BloomFilterMismatchCorrector err_corrector(seq_iter, *test_data.bf);
-    REQUIRE(err_corrector.fix(test_data.get_pattern()));
+    aiedit::BloomFilterMismatchCorrector err_corrector(test_data.pattern_length, *test_data.bf);
+    REQUIRE(err_corrector.fix(seq_iter));
     auto true_edits = test_data.get_true_edits();
     REQUIRE(err_corrector.get_edits().size() == true_edits.size());
     for (size_t i = 0; i < err_corrector.get_edits().size(); i++) {

@@ -55,6 +55,13 @@ class SequenceIterator
     char get_base(size_t position);
 
     /**
+     * Build a subsequence of the original sequence
+     * @param positions Positions of the bases
+     * @return String build from the positions
+     */
+    std::string get_bases(const std::vector<size_t>& positions);
+
+    /**
      * Get the position of the current base
      * @return Position of the current k-mer's last character in the sequence
      */

@@ -12,22 +12,27 @@ namespace aiedit {
 class ErrorCorrector
 {
   protected:
-    SequenceIterator& seq_iter;
     std::vector<Edit> edits;
+    const unsigned pattern_length;
 
   public:
-    ErrorCorrector(SequenceIterator& seq_iter)
-      : seq_iter(seq_iter)
+    ErrorCorrector(unsigned pattern_length)
+      : pattern_length(pattern_length)
     {}
 
     virtual ~ErrorCorrector() = default;
 
     /**
      * Fix the errors at the current position of the sequence iterator
-     * @param pattern Edit pattern for the current position
+     * @param seq_iter Sequence iterator pointing to the region to be edited
      * @return `true` if the sequence was edited
      */
-    virtual bool fix(const EditPattern& pattern) = 0;
+    virtual bool fix(SequenceIterator& seq_iter) = 0;
+
+    /**
+     * Clear the list of edits
+     */
+    void clear_edits() { edits.clear(); }
 
     /**
      * Get a list of applied edits

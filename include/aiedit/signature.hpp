@@ -32,6 +32,10 @@ class Signature
         }
     }
 
+    Signature(SequenceIterator& seq_iter, const btllib::SeedBloomFilter& bf)
+      : Signature(seq_iter.peek_hashes(bf.get_seeds()[0].size()).data(), bf)
+    {}
+
     /**
      * Set a value for an element in the signature
      * @param position Position in the signature
