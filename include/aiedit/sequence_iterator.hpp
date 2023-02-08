@@ -99,19 +99,6 @@ class SequenceIterator
      */
     void update(size_t position, char value);
 
-    /**
-     * Insert a base in a position
-     * @param position Final position of the new base
-     * @param value Value to insert
-     */
-    void insert(size_t position, char value);
-
-    /**
-     * Delete a base in a position
-     * @param position Base's position
-     */
-    void remove(size_t position);
-
     ~SequenceIterator() { delete nthash; }
 
   private:

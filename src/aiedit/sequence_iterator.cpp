@@ -99,12 +99,4 @@ SequenceIterator::update(size_t position, char value)
     seq[position] = value;
 }
 
-void
-SequenceIterator::insert(size_t position, char value)
-{}
-
-void
-SequenceIterator::remove(size_t position)
-{}
-
 }

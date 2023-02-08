@@ -40,7 +40,7 @@ main(int argc, char** argv)
     cli.start_timer("Loading Bloom filter");
     btllib::SeedBloomFilter bf(args.bf_path);
     cli.stop_timer();
-    cli.print_bloom_filter_information(bf, args.bf_path);
+    cli.print_bloom_filter_information(bf);
 
     cli.start_timer("Initializing");
     aiedit::BloomFilterMismatchCorrector mismatch_corrector(args.pattern_length, bf);

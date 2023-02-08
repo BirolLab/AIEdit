@@ -55,11 +55,9 @@ class CommandLineInterface
 
     /**
      * Print information about a btllib::SeedBloomFilter
-     * @param bloom_filter The input Bloom filter.
-     * @param path The path where the Bloom filter was read.
+     * @param bf The input Bloom filter.
      */
-    void print_bloom_filter_information(const btllib::SeedBloomFilter& filter,
-                                        const std::string& path);
+    void print_bloom_filter_information(const btllib::SeedBloomFilter& bf);
 
     /**
      * Print parsed command-line arguments to stdout.

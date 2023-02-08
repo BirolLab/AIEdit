@@ -25,8 +25,7 @@ CommandLineInterface::print_logo()
 }
 
 void
-CommandLineInterface::print_bloom_filter_information(const btllib::SeedBloomFilter& bf,
-                                                     const std::string& path)
+CommandLineInterface::print_bloom_filter_information(const btllib::SeedBloomFilter& bf)
 {
     if (verbosity < 1) {
         return;
