@@ -1,4 +1,5 @@
-compilers
+c-compiler
+cxx-compiler
 meson
 btllib
 openmp
