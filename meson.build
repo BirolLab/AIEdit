@@ -10,7 +10,8 @@ compiler = meson.get_compiler('cpp')
 
 dependencies = [
     dependency('openmp'),
-    compiler.find_library('btllib')
+    compiler.find_library('btllib'),
+    dependency('Torch', method : 'cmake', modules : ['torch_cpu'])
 ]
 
 include_dirs = [
