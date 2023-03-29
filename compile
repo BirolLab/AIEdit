@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+cmake_prefix_path=$(python -c "import torch;import os;print(os.path.join(torch.utils.cmake_prefix_path, 'Torch'))")
+
+meson setup build --cmake-prefix-path $cmake_prefix_path
+cd build
+ninja
