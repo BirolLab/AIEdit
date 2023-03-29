@@ -23,7 +23,7 @@ include_dirs = [
 sources = run_command('scripts/list_sources.sh', check: true).stdout().strip().split()
 
 executable(
-    'ai-edit',
+    'aiedit',
     ['src/main.cpp'] + sources,
     dependencies: dependencies,
     include_directories: include_dirs,
