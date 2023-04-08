@@ -184,14 +184,10 @@ def main():
     training_stats = train(model, data, args.e)
     print("Training DONE")
     print("Saving artifacts... ", end="", flush=True)
-    torch.save(model.state_dict(), os.path.join(args.o, "model.pt"))
+    traced_script_module = torch.jit.trace(model, data[0][0])
+    traced_script_module.save(os.path.join(args.o, "model.pt"))
     plot_training_stats(training_stats, args.o)
     print("\b\b\b\b DONE")
-    with torch.no_grad():
-        print(data[0][0])
-        print(data[1][0])
-        print(torch.sigmoid(model(data[0][0])))
-
 
 if __name__ == "__main__":
     main()
