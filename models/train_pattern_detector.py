@@ -11,9 +11,6 @@ import prettytable
 import torch
 import tqdm
 
-# define x_train, y_train as a data type
-dataset_type = tuple[list[torch.Tensor], list[torch.Tensor]]
-
 
 class PatternDetector(torch.nn.Module):
 
@@ -33,6 +30,14 @@ class PatternDetector(torch.nn.Module):
 
 
 @dataclasses.dataclass
+class Dataset:
+    x_train: list[torch.Tensor]
+    y_train: list[torch.Tensor]
+    x_test: list[torch.Tensor]
+    y_test: list[torch.Tensor]
+
+
+@dataclasses.dataclass
 class EpochStats:
     training_loss: float
     validation_error: float
@@ -49,6 +54,10 @@ def parse_args() -> argparse.Namespace:
                         help="number of training epochs",
                         default=10,
                         type=int)
+    parser.add_argument("-a",
+                        help="Data augmentation ratio",
+                        default=0.1,
+                        type=float)
     parser.add_argument(
         "seeds",
         help="spaced seed patterns"
@@ -108,31 +117,61 @@ def get_pattern_tensor(pattern_string: str) -> torch.Tensor:
 
 
 def shuffle_data(signatures: list[torch.Tensor],
-                 patterns: list[torch.Tensor]) -> dataset_type:
+                 patterns: list[torch.Tensor]) -> Dataset:
     shuffled = list(zip(signatures, patterns))
     random.shuffle(shuffled)
-    return tuple(zip(*shuffled))
+    x, y = tuple(zip(*shuffled))
+    return list(x), list(y)
 
 
+def augment_data(data: Dataset, ratio: float) -> None:
+    x_train, y_train, x_test, y_test = [], [], [], []
+    for x, y in zip(data.x_train, data.y_train):
+        miss_positions = []
+        for i, j in itertools.product(range(x.size()[1]), range(x.size()[2])):
+            if x[0][i][j] == 0.0:
+                miss_positions.append((i, j))
+        random.shuffle(miss_positions)
+        miss_positions = miss_positions[:int(len(miss_positions) * ratio * 2)]
+        for_train = True
+        for i, j in miss_positions:
+            x_c, y_c = torch.clone(x), torch.clone(y)
+            x_c[0][i][j] = 1.0
+            if for_train:
+                x_train.append(x_c)
+                y_train.append(y_c)
+            else:
+                x_test.append(x_c)
+                y_test.append(y_c)
+            for_train = not for_train
+    data.x_train.extend(x_train)
+    data.y_train.extend(y_train)
+    data.x_test.extend(x_test)
+    data.y_test.extend(y_test)
 
-def prepare_data(seeds: list[str], pattern_length: int) -> dataset_type:
+
+def prepare_data(seeds: list[str], pattern_length: int,
+                 augmentation_ratio: float) -> Dataset:
     pattern_strings = get_pattern_strings(pattern_length)
-    signatures = [get_signature(seeds, p) for p in pattern_strings]
-    patterns = [get_pattern_tensor(p) for p in pattern_strings]
-    return shuffle_data(signatures, patterns)
+    x_train = [get_signature(seeds, p) for p in pattern_strings]
+    y_train = [get_pattern_tensor(p) for p in pattern_strings]
+    x_train, y_train = shuffle_data(x_train, y_train)
+    data = Dataset(x_train, y_train, [], [])
+    augment_data(data, augmentation_ratio)
+    return data
 
 
-def get_validation_error(model: PatternDetector, data: dataset_type) -> float:
+def get_validation_error(model: PatternDetector, data: Dataset) -> float:
     num_accurate = 0
     with torch.no_grad():
-        for x, y_true in zip(*data):
+        for x, y_true in zip(data.x_test, data.y_test):
             y_pred = torch.round(torch.sigmoid(model(x)))
             if torch.equal(y_pred, y_true):
                 num_accurate += 1
-    return 1 - num_accurate / len(data[0])
+    return 1 - num_accurate / len(data.x_test)
 
 
-def train(model: PatternDetector, data: dataset_type,
+def train(model: PatternDetector, data: Dataset,
           num_epochs: int) -> list[EpochStats]:
     loss_function = torch.nn.BCEWithLogitsLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
@@ -146,7 +185,7 @@ def train(model: PatternDetector, data: dataset_type,
     stats = []
     for _ in epochs:
         total_loss = 0
-        for x, y_true in zip(*data):
+        for x, y_true in zip(data.x_train, data.y_train):
             y_pred = model(x)
             loss = loss_function(y_pred, y_true)
             total_loss += loss.item()
@@ -154,7 +193,7 @@ def train(model: PatternDetector, data: dataset_type,
             loss.backward()
             optimizer.step()
         epoch_stats = EpochStats(
-            training_loss=total_loss / len(data[0]),
+            training_loss=total_loss / len(data.x_train),
             validation_error=get_validation_error(model, data),
         )
         stats.append(epoch_stats)
@@ -179,15 +218,18 @@ def main():
     model = PatternDetector(args.seeds, args.w)
     print_model_summary(model)
     print("Preparing data... ", end="", flush=True)
-    data = prepare_data(args.seeds, args.w)
+    data = prepare_data(args.seeds, args.w, args.a)
     print("\b\b\b\b DONE")
+    print(f"  - Training samples: {len(data.x_train)}")
+    print(f"  - Testing samples: {len(data.x_test)}")
     training_stats = train(model, data, args.e)
     print("Training DONE")
-    print("Saving artifacts... ", end="", flush=True)
-    traced_script_module = torch.jit.trace(model, data[0][0])
+    print("Saving results... ", end="", flush=True)
+    traced_script_module = torch.jit.trace(model, data.x_train[0])
     traced_script_module.save(os.path.join(args.o, "model.pt"))
     plot_training_stats(training_stats, args.o)
     print("\b\b\b\b DONE")
+
 
 if __name__ == "__main__":
     main()
