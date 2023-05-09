@@ -5,16 +5,15 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <omp.h>
+#include <torch/script.h>
 
 #include "args.hpp"
 #include "cli.hpp"
 #include "timer.hpp"
 #include "vcf_writer.hpp"
 
-#include "aiedit/error_correction/bloom_filter_mismatch_corrector.hpp"
-#include "aiedit/error_correction/error_corrector.hpp"
+#include "aiedit/error_correction/mismatch_corrector.hpp"
 #include "aiedit/error_detection/bloom_filter_error_detector.hpp"
-#include "aiedit/error_detection/error_detector.hpp"
 
 size_t
 get_file_size(const std::string& path)
@@ -42,8 +41,13 @@ main(int argc, char** argv)
     cli.stop_timer();
     cli.print_bloom_filter_information(bf);
 
+    cli.start_timer("Loading pattern model");
+    torch::jit::script::Module model = torch::jit::load(args.model_path);
+    cli.stop_timer();
+    cli.print_bloom_filter_information(bf);
+
     cli.start_timer("Initializing");
-    aiedit::BloomFilterMismatchCorrector mismatch_corrector(args.pattern_length, bf);
+    aiedit::MismatchCorrector mismatch_corrector(args.pattern_length, bf, model);
     btllib::SeqReader reader(args.assembly_path, btllib::SeqReader::Flag::LONG_MODE);
     VCFWriter vcf_file(vcf_file_path, args.assembly_path);
     btllib::SeqWriter writer(edited_file_path, btllib::SeqWriter::FASTA);

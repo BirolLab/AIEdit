@@ -21,6 +21,8 @@ ProgramArguments::parse(int argc, char** argv)
       .default_value(false)
       .implicit_value(true);
 
+    parser.add_argument("--model", "-m").help("Path to pattern detector model").required();
+
     parser.add_argument("--out-path", "-o")
       .help("Path to output directory for storing results")
       .default_value(".");

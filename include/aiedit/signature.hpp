@@ -4,37 +4,18 @@
 #include <btllib/bloom_filter.hpp>
 #include <cstddef>
 #include <string>
-#include <vector>
+#include <torch/script.h>
 
 #include "aiedit/sequence_iterator.hpp"
 
 namespace aiedit {
 
+using ModelInput = std::vector<torch::jit::IValue>;
+
 class Signature
 {
   public:
-    Signature(size_t length, unsigned num_seeds)
-    {
-        for (unsigned i = 0; i < length; i++) {
-            is_miss.push_back(std::vector<bool>(num_seeds, false));
-        }
-    }
-
-    Signature(const SequenceIterator::HashVector* hashes, const btllib::SeedBloomFilter& bf)
-    {
-        is_miss.reserve(bf.get_seeds()[0].size());
-        for (unsigned i = 0; i < bf.get_seeds()[0].size(); i++) {
-            std::vector<bool> row(bf.get_seeds().size());
-            for (unsigned j = 0; j < bf.get_seeds().size(); j++) {
-                row.push_back(!bf.contains(hashes[i][j]));
-            }
-            is_miss.push_back(row);
-        }
-    }
-
-    Signature(SequenceIterator& seq_iter, const btllib::SeedBloomFilter& bf)
-      : Signature(seq_iter.peek_hashes(bf.get_seeds()[0].size()).data(), bf)
-    {}
+    Signature(int length, unsigned num_seeds) { values = torch::zeros({ 1, length, num_seeds }); }
 
     /**
      * Set a value for an element in the signature
@@ -63,15 +44,20 @@ class Signature
     /**
      * @return Length of the signature
      */
-    size_t get_length() { return is_miss.size(); }
+    size_t get_length();
 
     /**
      * @return Number of spaced seeds in the signature
      */
-    unsigned get_num_seeds() { return is_miss[0].size(); }
+    size_t get_num_seeds();
+
+    /**
+     * @return Tensor representing the signature
+     */
+    const torch::Tensor& get_tensor() const { return values; }
 
   private:
-    std::vector<std::vector<bool>> is_miss;
+    torch::Tensor values;
 };
 
 }

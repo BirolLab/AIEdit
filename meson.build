@@ -1,17 +1,20 @@
 project(
     'AIEdit',
-    'cpp', 
-    version: '0.1', 
-    license: 'GPL-3', 
-    default_options: ['cpp_std=c++17', 'werror=true', 'warning_level=3']
+    'cpp',
+    version: '0.1',
+    license: 'GPL-3',
+    default_options: [
+        'cpp_std=c++17',
+        'werror=true',
+        'warning_level=3',
+        'optimization=2',
+    ],
 )
-
-compiler = meson.get_compiler('cpp')
 
 dependencies = [
     dependency('openmp'),
-    compiler.find_library('btllib'),
-    dependency('Torch', method : 'cmake', modules : ['torch_cpu'])
+    meson.get_compiler('cpp').find_library('btllib', static: true),
+    dependency('Torch', method: 'cmake', modules: ['torch_cpu', 'c10', 'torch'], include_type: 'system'),
 ]
 
 include_dirs = [
@@ -20,30 +23,43 @@ include_dirs = [
     include_directories('vendor/json/single_include'),
 ]
 
-sources = run_command('scripts/list_sources.sh', check: true).stdout().strip().split()
+sources = run_command(
+    'scripts/list_sources.sh',
+    check: true,
+).stdout().strip().split()
 
 executable(
     'aiedit',
     ['src/main.cpp'] + sources,
     dependencies: dependencies,
     include_directories: include_dirs,
-    install: true
+    install: true,
 )
 
 # --------------------------------- TESTS ---------------------------------
-catch2 = dependency('Catch2', method : 'cmake', modules : ['Catch2::Catch2WithMain'], required: false)
+catch2 = dependency(
+    'Catch2',
+    method: 'cmake',
+    modules: ['Catch2::Catch2WithMain'],
+    required: false,
+)
 
 if not catch2.found()
-  error('Tests require catch2 to be installed.')
+    error('Tests require catch2 to be installed.')
 endif
 
-tests = run_command('scripts/list_tests.sh', check: true).stdout().strip().split()
+tests = run_command(
+    'scripts/list_tests.sh',
+    check: true,
+).stdout().strip().split()
 
 foreach test_file : tests
     test_name = test_file.split('.cpp')[0].split('/')[-1]
-    test_exec = executable(test_name, 
-                           sources + [test_file],
-                           dependencies: dependencies + [catch2],
-                           include_directories: include_dirs)
+    test_exec = executable(
+        test_name,
+        sources + [test_file],
+        dependencies: [catch2] + dependencies,
+        include_directories: include_dirs,
+    )
     test(test_name, test_exec)
 endforeach

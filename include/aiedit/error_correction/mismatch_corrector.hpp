@@ -2,83 +2,49 @@
 #define AIEDIT_BLOOM_FILTER_MISMATCH_CORRECTOR_HPP
 
 #include <btllib/bloom_filter.hpp>
-#include <nlohmann/json.hpp>
+#include <torch/script.h>
 
+#include "aiedit/edit_pattern.hpp"
 #include "aiedit/error_correction/error_corrector.hpp"
 #include "aiedit/signature.hpp"
 
 namespace aiedit {
 
-class PatternDatabase
-{
-    friend class BloomFilterMismatchCorrector;
-    PatternDatabase() = delete;
-
-  private:
-    PatternDatabase(unsigned pattern_length, const std::vector<std::string>& seeds)
-      : pattern_length(pattern_length)
-      , seeds(seeds)
-    {
-        initialize();
-    }
-
-    /**
-     * Find the closest pattern mapped to the given signature
-     * @param signature Hit/miss signature to query
-     * @return Query result
-     */
-    const EditPattern& query(Signature& signature);
-
-    /**
-     * Get a JSON representation of the database
-     * @return Database in JSON format
-     */
-    nlohmann::json to_json();
-
-    const unsigned pattern_length;
-
-    /**
-     * Initialize the pattern database
-     */
-    void initialize();
-
-    /**
-     * Predict the hit/miss signature for the given edit pattern
-     * @return Predicted signature
-     */
-    Signature predict_signature(EditPattern& pattern);
-
-    /**
-     * Compute the distance between two signatures
-     * @param observed The observed hits and miss signature
-     * @param from_database A postulated signature from the database
-     * @return Distance between `observed` and `from_database`
-     */
-    unsigned get_distance(Signature& observed, Signature& from_database);
-
-    const std::vector<std::string>& seeds;
-    std::vector<std::pair<EditPattern, Signature>> entries;
-};
-
-class BloomFilterMismatchCorrector : public ErrorCorrector
+class MismatchCorrector : public ErrorCorrector
 {
   public:
-    BloomFilterMismatchCorrector(unsigned pattern_length, const btllib::SeedBloomFilter& bf)
+    MismatchCorrector(unsigned pattern_length,
+                      const btllib::SeedBloomFilter& bf,
+                      torch::jit::script::Module& model)
       : ErrorCorrector(pattern_length)
       , bf(bf)
-      , db(pattern_length, bf.get_seeds())
+      , model(model)
     {}
 
     /**
      * Fix the mismatches in the current position of the sequence iterator
-     * @param pattern Edit pattern for the current position
+     * @param seq_iter Sequence iterator pointing to the mismatch region
      * @return `true` if any edits were applied
      */
     bool fix(SequenceIterator& seq_iter) override;
 
   private:
     const btllib::SeedBloomFilter& bf;
-    PatternDatabase db;
+    torch::jit::script::Module& model;
+
+    /**
+     * Prepare model input by updating the signature values
+     * @param
+     * @return Signature object containing model's input tensor
+     */
+    ModelInput get_model_input(SequenceIterator& seq_iter);
+
+    /**
+     * Get the edit pattern detected by the model
+     * @param signature Input signature
+     * @return Model's output as pattern object
+     */
+    EditPattern get_pattern(ModelInput& signature);
 
     /**
      * Get the positions in the sequence that need to be updated

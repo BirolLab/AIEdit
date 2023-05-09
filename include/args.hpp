@@ -9,6 +9,7 @@ class ProgramArguments
   public:
     std::filesystem::path assembly_path;
     std::filesystem::path bf_path;
+    std::filesystem::path model_path;
     std::filesystem::path out_path;
     unsigned verbosity = 0;
     unsigned pattern_length;
