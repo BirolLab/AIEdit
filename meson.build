@@ -7,14 +7,21 @@ project(
         'cpp_std=c++17',
         'werror=true',
         'warning_level=3',
-        'optimization=2',
+        'optimization=3',
     ],
 )
 
+compiler = meson.get_compiler('cpp')
+
 dependencies = [
     dependency('openmp'),
-    meson.get_compiler('cpp').find_library('btllib', static: true),
-    dependency('Torch', method: 'cmake', modules: ['torch_cpu', 'c10', 'torch'], include_type: 'system'),
+    compiler.find_library('btllib'),
+    dependency(
+        'Torch',
+        method: 'cmake',
+        modules: ['torch_cpu', 'c10'],
+        include_type: 'system',
+    ),
 ]
 
 include_dirs = [
@@ -37,29 +44,31 @@ executable(
 )
 
 # --------------------------------- TESTS ---------------------------------
-catch2 = dependency(
-    'Catch2',
-    method: 'cmake',
-    modules: ['Catch2::Catch2WithMain'],
-    required: false,
-)
-
-if not catch2.found()
-    error('Tests require catch2 to be installed.')
-endif
-
-tests = run_command(
-    'scripts/list_tests.sh',
-    check: true,
-).stdout().strip().split()
-
-foreach test_file : tests
-    test_name = test_file.split('.cpp')[0].split('/')[-1]
-    test_exec = executable(
-        test_name,
-        sources + [test_file],
-        dependencies: [catch2] + dependencies,
-        include_directories: include_dirs,
+if get_option('buildtype') != 'release'
+    catch2 = dependency(
+        'Catch2',
+        method: 'cmake',
+        modules: ['Catch2::Catch2WithMain'],
+        required: false,
     )
-    test(test_name, test_exec)
-endforeach
+
+    if not catch2.found()
+        error('Tests require catch2 to be installed.')
+    endif
+
+    tests = run_command(
+        'scripts/list_tests.sh',
+        check: true,
+    ).stdout().strip().split()
+
+    foreach test_file : tests
+        test_name = test_file.split('.cpp')[0].split('/')[-1]
+        test_exec = executable(
+            test_name,
+            sources + [test_file],
+            dependencies: [catch2] + dependencies,
+            include_directories: include_dirs,
+        )
+        test(test_name, test_exec)
+    endforeach
+endif
