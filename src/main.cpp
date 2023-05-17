@@ -3,9 +3,9 @@
 #include <btllib/seq_writer.hpp>
 #include <filesystem>
 #include <fstream>
+#include <fdeep/fdeep.hpp>
 #include <nlohmann/json.hpp>
 #include <omp.h>
-#include <torch/script.h>
 
 #include "args.hpp"
 #include "cli.hpp"
@@ -42,7 +42,7 @@ main(int argc, char** argv)
     cli.print_bloom_filter_information(bf);
 
     cli.start_timer("Loading pattern model");
-    torch::jit::script::Module model = torch::jit::load(args.model_path);
+    const auto model = fdeep::load_model(args.model_path);
     cli.stop_timer();
     cli.print_bloom_filter_information(bf);
 

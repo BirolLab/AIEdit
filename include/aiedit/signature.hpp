@@ -3,19 +3,19 @@
 
 #include <btllib/bloom_filter.hpp>
 #include <cstddef>
+#include <fdeep/fdeep.hpp>
 #include <string>
-#include <torch/script.h>
 
 #include "aiedit/sequence_iterator.hpp"
 
 namespace aiedit {
 
-using ModelInput = std::vector<torch::jit::IValue>;
-
 class Signature
 {
   public:
-    Signature(int length, unsigned num_seeds) { values = torch::zeros({ 1, length, num_seeds }); }
+    Signature(int length, unsigned num_seeds)
+      : values(fdeep::tensor_shape(length, num_seeds), 0)
+    {}
 
     /**
      * Set a value for an element in the signature
@@ -36,12 +36,6 @@ class Signature
     bool has_miss(size_t position, unsigned seed_index);
 
     /**
-     * Get the signature as a vector of strings
-     * @return Vector of strings, 'X' indicates a miss for a position/seed
-     */
-    std::vector<std::string> to_string_vector();
-
-    /**
      * @return Length of the signature
      */
     size_t get_length();
@@ -54,10 +48,10 @@ class Signature
     /**
      * @return Tensor representing the signature
      */
-    const torch::Tensor& get_tensor() const { return values; }
+    const fdeep::tensor& get_tensor() const { return values; }
 
   private:
-    torch::Tensor values;
+    fdeep::tensor values;
 };
 
 }

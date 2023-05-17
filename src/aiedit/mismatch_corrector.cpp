@@ -1,5 +1,5 @@
 #include <bitset>
-#include <torch/script.h>
+#include <fdeep/fdeep.hpp>
 
 #include "aiedit/error_correction/mismatch_corrector.hpp"
 
@@ -38,7 +38,7 @@ get_combinations(std::string prefix,
 
 namespace aiedit {
 
-ModelInput
+fdeep::tensor
 MismatchCorrector::get_model_input(SequenceIterator& seq_iter)
 {
     unsigned signature_length = pattern_length + bf.get_seeds()[0].size() - 1;
@@ -46,22 +46,19 @@ MismatchCorrector::get_model_input(SequenceIterator& seq_iter)
     auto hashes = seq_iter.peek_hashes(signature.get_length());
     for (size_t i = 0; i < signature.get_length(); i++) {
         for (size_t j = 0; j < signature.get_num_seeds(); j++) {
-            signature.set(i, j, bf.contains(hashes[i][j]));
+            signature.set(i, j, !bf.contains(hashes[i][j]));
         }
     }
-    std::vector<torch::jit::IValue> model_input;
-    model_input.push_back(signature.get_tensor());
-    return model_input;
+    return signature.get_tensor();
 }
 
 EditPattern
-MismatchCorrector::get_pattern(ModelInput& model_input)
+MismatchCorrector::get_pattern(const fdeep::tensor& model_input)
 {
-    auto model_output = model.forward(model_input).toTensor();
-    model_output = torch::round(torch::sigmoid(model_output));
+    auto model_output = model.predict({ model_input });
     EditPattern pattern(pattern_length);
     for (size_t i = 0; i < pattern.get_length(); i++) {
-        if (model_output[0][i].item<float>() == 1.0) {
+        if (model_output[0].get(fdeep::tensor_pos(i)) >= 0.5) {
             pattern.set(i, Edit::MISMATCH);
         } else {
             pattern.set(i, Edit::NONE);

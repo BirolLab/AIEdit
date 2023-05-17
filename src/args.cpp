@@ -55,6 +55,7 @@ ProgramArguments::parse(int argc, char** argv)
 
     assembly_path = std::filesystem::path(parser.get("-a"));
     bf_path = std::filesystem::path(parser.get("-b"));
+    model_path = std::filesystem::path(parser.get("-m"));
     out_path = std::filesystem::path(parser.get("-o"));
     num_threads = parser.get<unsigned>("-t");
     pattern_length = parser.get<unsigned>("-w");

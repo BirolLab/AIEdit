@@ -16,18 +16,15 @@ compiler = meson.get_compiler('cpp')
 dependencies = [
     dependency('openmp'),
     compiler.find_library('btllib'),
-    dependency(
-        'Torch',
-        method: 'cmake',
-        modules: ['torch_cpu', 'c10'],
-        include_type: 'system',
-    ),
 ]
 
 include_dirs = [
     include_directories('include'),
     include_directories('vendor/argparse/include'),
     include_directories('vendor/json/single_include'),
+    include_directories('vendor/FunctionalPlus/include_all_in_one/include'),
+    include_directories('vendor/frugally-deep/include'),
+    include_directories('vendor/eigen'),
 ]
 
 sources = run_command(

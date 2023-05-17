@@ -2,7 +2,7 @@
 #define AIEDIT_BLOOM_FILTER_MISMATCH_CORRECTOR_HPP
 
 #include <btllib/bloom_filter.hpp>
-#include <torch/script.h>
+#include <fdeep/fdeep.hpp>
 
 #include "aiedit/edit_pattern.hpp"
 #include "aiedit/error_correction/error_corrector.hpp"
@@ -15,7 +15,7 @@ class MismatchCorrector : public ErrorCorrector
   public:
     MismatchCorrector(unsigned pattern_length,
                       const btllib::SeedBloomFilter& bf,
-                      torch::jit::script::Module& model)
+                      const fdeep::model& model)
       : ErrorCorrector(pattern_length)
       , bf(bf)
       , model(model)
@@ -30,21 +30,21 @@ class MismatchCorrector : public ErrorCorrector
 
   private:
     const btllib::SeedBloomFilter& bf;
-    torch::jit::script::Module& model;
+    const fdeep::model& model;
 
     /**
      * Prepare model input by updating the signature values
      * @param
      * @return Signature object containing model's input tensor
      */
-    ModelInput get_model_input(SequenceIterator& seq_iter);
+    fdeep::tensor get_model_input(SequenceIterator& seq_iter);
 
     /**
      * Get the edit pattern detected by the model
      * @param signature Input signature
      * @return Model's output as pattern object
      */
-    EditPattern get_pattern(ModelInput& signature);
+    EditPattern get_pattern(const fdeep::tensor& signature);
 
     /**
      * Get the positions in the sequence that need to be updated
