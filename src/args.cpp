@@ -14,7 +14,7 @@ void ProgramArguments::parse(int argc, char** argv)
     parser.add_argument("--assembly", "-a").help("Path to assembly file").required();
 
     parser.add_argument("--bloom-filter", "-b")
-      .help("Path to btllib SeedBloomFilter populated with reads and seeds")
+      .help("Path to btllib SeedBloomFilter file")
       .required();
 
     parser.add_argument("--model", "-m").help("Path to pattern detector model").required();
@@ -24,14 +24,14 @@ void ProgramArguments::parse(int argc, char** argv)
       .default_value(".");
 
     parser.add_argument("--num-threads", "-t")
-      .help("Number of sequences to process in parallel")
+      .help("Number of threads to run in parallel")
       .default_value((unsigned)8)
       .scan<'u', unsigned>();
 
     parser.add_argument("-V")
       .action([&](const auto&) { ++verbosity; })
       .append()
-      .help("Level of details printed to stdout")
+      .help("Level of details printed to stdout (V: basic info, VV: detailed logs)")
       .default_value(false)
       .implicit_value(true)
       .nargs(0);

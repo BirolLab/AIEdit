@@ -44,9 +44,11 @@ int main(int argc, char** argv)
     cli.stop_timer();
     cli.print_bloom_filter_information(bf);
 
+    cli.start_timer("Loading pattern detector model");
     const auto model = fdeep::load_model(args.model_path, false, 0);
     const auto model_json = nlohmann::json::parse(std::ifstream(args.model_path));
     const unsigned pattern_length = model_json["pattern_length"];
+    cli.stop_timer();
     cli.print_model_information(model_json);
 
     btllib::check_error(!verify_seeds(bf.get_seeds(), model_json["seeds"]),
