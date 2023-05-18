@@ -1,10 +1,9 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch_test_macros.hpp>
 
-#include <nthash/nthash.hpp>
+#include "data.hpp"
 
 #include "error_detector.hpp"
-#include "tests/data.hpp"
 
 TEST_CASE("Test Bloom filter error detector", "[error_detection]")
 {

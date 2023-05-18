@@ -1,7 +1,7 @@
 #ifndef AIEDIT_SEQ_HPP
 #define AIEDIT_SEQ_HPP
 
-#include <nthash/nthash.hpp>
+#include <btllib/nthash.hpp>
 #include <string>
 #include <vector>
 
@@ -24,7 +24,7 @@ class SequenceIterator
                      size_t end)
       : seq(seq)
       , seeds(seeds)
-      , nthash(new nthash::SeedNtHash(seq, seeds, num_hashes, seeds[0].size(), begin))
+      , nthash(new btllib::SeedNtHash(seq, seeds, num_hashes, seeds[0].size(), begin))
       , begin(begin)
       , end(end)
     {}
@@ -106,7 +106,7 @@ class SequenceIterator
 
     std::string& seq;
     const std::vector<std::string>& seeds;
-    nthash::SeedNtHash* nthash;
+    btllib::SeedNtHash* nthash;
     const size_t begin, end;
 
     /**

@@ -19,8 +19,6 @@ dependencies = [
 ]
 
 include_dirs = [
-    include_directories('include'),
-    include_directories('src'),
     include_directories('vendor/argparse/include'),
     include_directories('vendor/json/single_include'),
     include_directories('vendor/FunctionalPlus/include_all_in_one/include'),
@@ -65,7 +63,7 @@ if get_option('buildtype') != 'release'
             test_name,
             sources + [test_file],
             dependencies: [catch2] + dependencies,
-            include_directories: include_dirs,
+            include_directories: ['src'] + include_dirs,
         )
         test(test_name, test_exec)
     endforeach
