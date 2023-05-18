@@ -2,8 +2,7 @@
 
 namespace aiedit {
 
-bool
-BloomFilterErrorDetector::next_error()
+bool BloomFilterErrorDetector::next_error()
 {
     bool has_miss = false;
     while (seq_iter.has_next() && !has_miss) {
@@ -13,8 +12,7 @@ BloomFilterErrorDetector::next_error()
     return has_miss;
 }
 
-bool
-BloomFilterErrorDetector::check_miss()
+bool BloomFilterErrorDetector::check_miss()
 {
     for (const auto& seed_hashes : seq_iter.get_hashes()) {
         if (!bf.contains(seed_hashes)) {
@@ -24,4 +22,4 @@ BloomFilterErrorDetector::check_miss()
     return false;
 }
 
-}
+}  // namespace aiedit

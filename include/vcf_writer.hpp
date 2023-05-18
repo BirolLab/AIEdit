@@ -9,6 +9,7 @@
 class VCFWriter
 {
   private:
+
     std::ofstream file;
 
     /**
@@ -17,13 +18,13 @@ class VCFWriter
     void write_headers(const std::string& assembly_path);
 
   public:
+
     /**
      * Construct a new VCF file writer.
      * @param path Path to the new VCF file.
      * @param assembly_path Path to the input assembly file.
      */
-    VCFWriter(const std::string& path, const std::string& assembly_path)
-      : file(path)
+    VCFWriter(const std::string& path, const std::string& assembly_path) : file(path)
     {
         write_headers(assembly_path);
     }
@@ -40,4 +41,4 @@ class VCFWriter
                const std::vector<aiedit::Edit>& edits);
 };
 
-#endif // FILE_MANAGERS_HPP
+#endif  // FILE_MANAGERS_HPP

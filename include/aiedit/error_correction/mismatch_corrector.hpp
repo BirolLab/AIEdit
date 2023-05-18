@@ -13,6 +13,7 @@ namespace aiedit {
 class MismatchCorrector : public ErrorCorrector
 {
   public:
+
     MismatchCorrector(unsigned pattern_length,
                       const btllib::SeedBloomFilter& bf,
                       const fdeep::model& model)
@@ -29,6 +30,7 @@ class MismatchCorrector : public ErrorCorrector
     bool fix(SequenceIterator& seq_iter) override;
 
   private:
+
     const btllib::SeedBloomFilter& bf;
     const fdeep::model& model;
 
@@ -81,6 +83,6 @@ class MismatchCorrector : public ErrorCorrector
                    const std::string& updated);
 };
 
-}
+}  // namespace aiedit
 
-#endif // AIEDIT_BLOOM_FILTER_MISMATCH_CORRECTOR_HPP
+#endif  // AIEDIT_BLOOM_FILTER_MISMATCH_CORRECTOR_HPP

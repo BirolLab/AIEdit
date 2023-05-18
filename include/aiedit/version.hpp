@@ -9,4 +9,4 @@ static const std::string VERSION = "0.0.1";
 
 }
 
-#endif // AIEDIT_VERSION_HPP
+#endif  // AIEDIT_VERSION_HPP

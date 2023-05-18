@@ -10,6 +10,7 @@ namespace aiedit {
 class SequenceIterator
 {
   public:
+
     using HashVector = std::vector<std::vector<uint64_t>>;
 
     SequenceIterator(std::string& seq, const std::vector<std::string>& seeds, unsigned num_hashes)
@@ -102,6 +103,7 @@ class SequenceIterator
     ~SequenceIterator() { delete nthash; }
 
   private:
+
     std::string& seq;
     const std::vector<std::string>& seeds;
     nthash::SeedNtHash* nthash;
@@ -115,6 +117,6 @@ class SequenceIterator
     HashVector to_hash_vector(const uint64_t* nthash_hashes);
 };
 
-}
+}  // namespace aiedit
 
-#endif // AIEDIT_SEQ_HPP
+#endif  // AIEDIT_SEQ_HPP

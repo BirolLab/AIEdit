@@ -13,10 +13,8 @@ namespace aiedit {
 class EditPattern
 {
   public:
-    EditPattern(size_t length)
-      : values(new Edit::Type[length])
-      , length(length)
-    {}
+
+    EditPattern(size_t length) : values(new Edit::Type[length]), length(length) {}
 
     /**
      * Update the edit pattern array
@@ -45,10 +43,11 @@ class EditPattern
     std::string to_string() const;
 
   private:
+
     std::shared_ptr<Edit::Type[]> values;
     const size_t length;
 };
 
-}
+}  // namespace aiedit
 
-#endif // AIEDIT_EDIT_PATTERN_HPP
+#endif  // AIEDIT_EDIT_PATTERN_HPP

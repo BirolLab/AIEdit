@@ -13,9 +13,9 @@
 
 namespace nthash {
 
-#define MS_TAB(CHAR, ROT)                                                      \
-  (MS_TAB_31L[CHAR][(ROT) < 31 ? (ROT) : (ROT) % 31] | /* NOLINT */            \
-   MS_TAB_33R[CHAR][(ROT) < 33 ? (ROT) : (ROT) % 33])  /* NOLINT */
+#define MS_TAB(CHAR, ROT)                                             \
+    (MS_TAB_31L[CHAR][(ROT) < 31 ? (ROT) : (ROT) % 31] | /* NOLINT */ \
+     MS_TAB_33R[CHAR][(ROT) < 33 ? (ROT) : (ROT) % 33])  /* NOLINT */
 
 // offset for the complement base in the random seeds table
 const uint8_t CP_OFF = 0x07;
@@ -62,6 +62,6 @@ extern const uint64_t DIMER_TAB[4 * 4];
 extern const uint64_t TRIMER_TAB[4 * 4 * 4];
 extern const uint64_t TETRAMER_TAB[4 * 4 * 4 * 4];
 
-} // namespace nthash
+}  // namespace nthash
 
 #endif

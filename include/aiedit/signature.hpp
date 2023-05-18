@@ -13,9 +13,8 @@ namespace aiedit {
 class Signature
 {
   public:
-    Signature(int length, unsigned num_seeds)
-      : values(fdeep::tensor_shape(length, num_seeds), 0)
-    {}
+
+    Signature(int length, unsigned num_seeds) : values(fdeep::tensor_shape(length, num_seeds), 0) {}
 
     /**
      * Set a value for an element in the signature
@@ -51,9 +50,10 @@ class Signature
     const fdeep::tensor& get_tensor() const { return values; }
 
   private:
+
     fdeep::tensor values;
 };
 
-}
+}  // namespace aiedit
 
-#endif // AIEDIT_SIGNATURE_HPP
+#endif  // AIEDIT_SIGNATURE_HPP

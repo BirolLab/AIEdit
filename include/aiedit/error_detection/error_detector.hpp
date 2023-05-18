@@ -8,12 +8,12 @@ namespace aiedit {
 class ErrorDetector
 {
   protected:
+
     SequenceIterator& seq_iter;
 
   public:
-    ErrorDetector(SequenceIterator& seq_iter)
-      : seq_iter(seq_iter)
-    {}
+
+    ErrorDetector(SequenceIterator& seq_iter) : seq_iter(seq_iter) {}
 
     virtual ~ErrorDetector() = default;
 
@@ -24,6 +24,6 @@ class ErrorDetector
     virtual bool next_error() = 0;
 };
 
-}
+}  // namespace aiedit
 
-#endif // AIEDIT_ERROR_DETECTOR
+#endif  // AIEDIT_ERROR_DETECTOR

@@ -1,12 +1,12 @@
 #ifndef CLI_HPP
 #define CLI_HPP
 
-#define LOGO                                                                                       \
-    "           _____ ______    _ _ _            \n"                                               \
-    "     /\\   |_   _|  ____|  | /_\\ |         \n"                                               \
-    "    /  \\    | | | |__   __| | | |_         \n"                                               \
-    "   / /\\ \\   | | |  __| / _` | | __|       \n"                                               \
-    "  / ____ \\ _| |_| |___| (_| | | |_         \n"                                               \
+#define LOGO                                         \
+    "           _____ ______    _ _ _            \n" \
+    "     /\\   |_   _|  ____|  | /_\\ |         \n" \
+    "    /  \\    | | | |__   __| | | |_         \n" \
+    "   / /\\ \\   | | |  __| / _` | | __|       \n" \
+    "  / ____ \\ _| |_| |___| (_| | | |_         \n" \
     " /_/    \\_\\_____|______\\__,_|_|\\__|"
 
 #include <btllib/bloom_filter.hpp>
@@ -32,9 +32,8 @@ class CommandLineInterface
     };
 
   public:
-    CommandLineInterface(unsigned verbosity)
-      : verbosity(verbosity)
-    {}
+
+    CommandLineInterface(unsigned verbosity) : verbosity(verbosity) {}
 
     /**
      * Log an edit to stdout
@@ -86,6 +85,7 @@ class CommandLineInterface
     void stop_timer();
 
   private:
+
     const unsigned verbosity;
     Timer timer;
 
@@ -98,4 +98,4 @@ class CommandLineInterface
     std::string add_color(const std::string& text, Color color);
 };
 
-#endif // CLI_HPP
+#endif  // CLI_HPP

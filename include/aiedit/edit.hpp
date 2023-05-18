@@ -8,6 +8,7 @@ namespace aiedit {
 class Edit
 {
   public:
+
     enum Type
     {
         NONE = '-',
@@ -29,6 +30,6 @@ class Edit
     {}
 };
 
-}
+}  // namespace aiedit
 
-#endif // AIEDIT_EDIT_HPP
+#endif  // AIEDIT_EDIT_HPP

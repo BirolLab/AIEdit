@@ -7,6 +7,7 @@
 class ProgramArguments
 {
   public:
+
     std::filesystem::path assembly_path;
     std::filesystem::path bf_path;
     std::filesystem::path model_path;
@@ -17,4 +18,4 @@ class ProgramArguments
     void parse(int argc, char** argv);
 };
 
-#endif // ARGS_HPP
+#endif  // ARGS_HPP

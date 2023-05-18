@@ -10,6 +10,7 @@ namespace aiedit {
 class BloomFilterErrorDetector : public ErrorDetector
 {
   public:
+
     BloomFilterErrorDetector(SequenceIterator& seq_iter, const btllib::SeedBloomFilter& bf)
       : ErrorDetector(seq_iter)
       , bf(bf)
@@ -22,6 +23,7 @@ class BloomFilterErrorDetector : public ErrorDetector
     bool next_error() override;
 
   private:
+
     const btllib::SeedBloomFilter& bf;
 
     /**
@@ -31,6 +33,6 @@ class BloomFilterErrorDetector : public ErrorDetector
     bool check_miss();
 };
 
-}
+}  // namespace aiedit
 
-#endif // AIEDIT_BLOOM_FILTER_ERROR_DETECTOR_HPP
+#endif  // AIEDIT_BLOOM_FILTER_ERROR_DETECTOR_HPP

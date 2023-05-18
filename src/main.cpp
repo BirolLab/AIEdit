@@ -16,16 +16,15 @@
 #include "aiedit/error_correction/mismatch_corrector.hpp"
 #include "aiedit/error_detection/bloom_filter_error_detector.hpp"
 
-inline bool
-verify_seeds(const std::vector<std::string>& bf_seeds, const std::vector<std::string>& model_seeds)
+inline bool verify_seeds(const std::vector<std::string>& bf_seeds,
+                         const std::vector<std::string>& model_seeds)
 {
     std::set<std::string> bf_set(bf_seeds.begin(), bf_seeds.end());
     std::set<std::string> model_set(model_seeds.begin(), model_seeds.end());
     return bf_set == model_set;
 }
 
-int
-main(int argc, char** argv)
+int main(int argc, char** argv)
 {
     ProgramArguments args;
     args.parse(argc, argv);

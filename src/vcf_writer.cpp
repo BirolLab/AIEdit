@@ -2,8 +2,7 @@
 #include "aiedit/edit.hpp"
 #include "aiedit/version.hpp"
 
-void
-VCFWriter::write_headers(const std::string& assembly_path)
+void VCFWriter::write_headers(const std::string& assembly_path)
 {
     char s[64];
     time_t t = time(0);
@@ -16,22 +15,21 @@ VCFWriter::write_headers(const std::string& assembly_path)
     file.flush();
 }
 
-void
-VCFWriter::write(const std::string& seq_id,
-                 const std::string& seq_comment,
-                 const std::vector<aiedit::Edit>& edits)
+void VCFWriter::write(const std::string& seq_id,
+                      const std::string& seq_comment,
+                      const std::vector<aiedit::Edit>& edits)
 {
     for (const auto& edit : edits) {
-        file << seq_id << " " << seq_comment << "\t"; // CHROM
-        file << edit.position + 1 << "\t";            // POS
-        file << ".\t";                                // ID
-        file << edit.before << "\t";               // REF
-        file << edit.after << "\t";                 // ALT
-        file << ".\t";                                // QUAL
-        file << "PASS\t";                             // FILTER
-        file << ".\t";                                // INFO
-        file << "GT\t";                               // FORMAT
-        file << "1/1" << std::endl;                   // INTEGRATION
+        file << seq_id << " " << seq_comment << "\t";  // CHROM
+        file << edit.position + 1 << "\t";             // POS
+        file << ".\t";                                 // ID
+        file << edit.before << "\t";                   // REF
+        file << edit.after << "\t";                    // ALT
+        file << ".\t";                                 // QUAL
+        file << "PASS\t";                              // FILTER
+        file << ".\t";                                 // INFO
+        file << "GT\t";                                // FORMAT
+        file << "1/1" << std::endl;                    // INTEGRATION
     }
     file.flush();
 }

@@ -12,13 +12,13 @@ namespace aiedit {
 class ErrorCorrector
 {
   protected:
+
     std::vector<Edit> edits;
     const unsigned pattern_length;
 
   public:
-    ErrorCorrector(unsigned pattern_length)
-      : pattern_length(pattern_length)
-    {}
+
+    ErrorCorrector(unsigned pattern_length) : pattern_length(pattern_length) {}
 
     virtual ~ErrorCorrector() = default;
 
@@ -42,6 +42,6 @@ class ErrorCorrector
     const std::vector<Edit>& get_edits() const { return edits; };
 };
 
-}
+}  // namespace aiedit
 
-#endif // AIEDIT_ERROR_CORRECTOR_HPP
+#endif  // AIEDIT_ERROR_CORRECTOR_HPP

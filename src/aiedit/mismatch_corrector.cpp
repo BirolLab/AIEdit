@@ -5,7 +5,7 @@
 
 namespace {
 
-static const char ALPHABET[4] = { 'A', 'C', 'G', 'T' };
+static const char ALPHABET[4] = {'A', 'C', 'G', 'T'};
 
 /**
  * Generate all possible ACGT strings of length k recursively, except the
@@ -17,11 +17,10 @@ static const char ALPHABET[4] = { 'A', 'C', 'G', 'T' };
  * concatenated as a single string.
  * @param combinations Container for the generated combinations.
  */
-void
-get_combinations(std::string prefix,
-                 unsigned k,
-                 const std::string& original,
-                 std::vector<std::string>& combinations)
+void get_combinations(std::string prefix,
+                      unsigned k,
+                      const std::string& original,
+                      std::vector<std::string>& combinations)
 {
     if (k == 0) {
         combinations.emplace_back(prefix);
@@ -34,12 +33,11 @@ get_combinations(std::string prefix,
     }
 }
 
-};
+};  // namespace
 
 namespace aiedit {
 
-fdeep::tensor
-MismatchCorrector::get_model_input(SequenceIterator& seq_iter)
+fdeep::tensor MismatchCorrector::get_model_input(SequenceIterator& seq_iter)
 {
     unsigned signature_length = pattern_length + bf.get_seeds()[0].size() - 1;
     Signature signature(signature_length, bf.get_seeds().size());
@@ -52,10 +50,9 @@ MismatchCorrector::get_model_input(SequenceIterator& seq_iter)
     return signature.get_tensor();
 }
 
-EditPattern
-MismatchCorrector::get_pattern(const fdeep::tensor& model_input)
+EditPattern MismatchCorrector::get_pattern(const fdeep::tensor& model_input)
 {
-    auto model_output = model.predict({ model_input });
+    auto model_output = model.predict({model_input});
     EditPattern pattern(pattern_length);
     for (size_t i = 0; i < pattern.get_length(); i++) {
         if (model_output[0].get(fdeep::tensor_pos(i)) >= 0.5) {
@@ -67,8 +64,8 @@ MismatchCorrector::get_pattern(const fdeep::tensor& model_input)
     return pattern;
 }
 
-std::vector<size_t>
-MismatchCorrector::get_mismatch_positions(const size_t base_position, const EditPattern& pattern)
+std::vector<size_t> MismatchCorrector::get_mismatch_positions(const size_t base_position,
+                                                              const EditPattern& pattern)
 {
     std::vector<size_t> positions;
     for (size_t i = 0; i < pattern.get_length(); i++) {
@@ -79,10 +76,9 @@ MismatchCorrector::get_mismatch_positions(const size_t base_position, const Edit
     return positions;
 }
 
-void
-MismatchCorrector::update_seq(SequenceIterator& seq_iter,
-                              const std::vector<size_t>& positions,
-                              const std::string& new_bases)
+void MismatchCorrector::update_seq(SequenceIterator& seq_iter,
+                                   const std::vector<size_t>& positions,
+                                   const std::string& new_bases)
 {
     seq_iter.previous();
     for (unsigned i = 0; i < positions.size(); i++) {
@@ -91,8 +87,7 @@ MismatchCorrector::update_seq(SequenceIterator& seq_iter,
     seq_iter.next();
 }
 
-bool
-MismatchCorrector::check_fixes(SequenceIterator& seq_iter)
+bool MismatchCorrector::check_fixes(SequenceIterator& seq_iter)
 {
     auto signature_hashes = seq_iter.peek_hashes(seq_iter.get_seed_length());
     for (unsigned i = 0; i < seq_iter.get_seed_length(); i++) {
@@ -106,8 +101,7 @@ MismatchCorrector::check_fixes(SequenceIterator& seq_iter)
     return true;
 }
 
-bool
-MismatchCorrector::fix(SequenceIterator& seq_iter)
+bool MismatchCorrector::fix(SequenceIterator& seq_iter)
 {
     auto model_input = get_model_input(seq_iter);
     auto pattern = get_pattern(model_input);
@@ -135,10 +129,9 @@ MismatchCorrector::fix(SequenceIterator& seq_iter)
     return true;
 }
 
-void
-MismatchCorrector::add_edits(const std::vector<size_t>& positions,
-                             const std::string& reference,
-                             const std::string& updated)
+void MismatchCorrector::add_edits(const std::vector<size_t>& positions,
+                                  const std::string& reference,
+                                  const std::string& updated)
 {
     for (unsigned i = 0; i < positions.size(); i++) {
         size_t pos = positions[i];
@@ -148,4 +141,4 @@ MismatchCorrector::add_edits(const std::vector<size_t>& positions,
     }
 }
 
-}
+}  // namespace aiedit

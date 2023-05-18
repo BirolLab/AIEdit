@@ -4,8 +4,7 @@
 #include <argparse/argparse.hpp>
 #include <iostream>
 
-void
-ProgramArguments::parse(int argc, char** argv)
+void ProgramArguments::parse(int argc, char** argv)
 {
     auto parser = argparse::ArgumentParser("AIEdit", aiedit::VERSION);
     parser.add_description("Artificially-intelligent long read genome polisher");

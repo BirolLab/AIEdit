@@ -7,10 +7,12 @@
 class Timer
 {
   private:
+
     std::chrono::time_point<std::chrono::system_clock> t_start;
     std::chrono::time_point<std::chrono::system_clock> t_end;
 
   public:
+
     /**
      * Register the current time as the timer's starting point.
      */
@@ -32,4 +34,4 @@ class Timer
     [[nodiscard]] std::string to_string() const;
 };
 
-#endif // TIMER_HPP
+#endif  // TIMER_HPP

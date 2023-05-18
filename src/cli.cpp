@@ -1,11 +1,10 @@
 #include "cli.hpp"
 #include "aiedit/version.hpp"
 
-void
-CommandLineInterface::log_edit(const std::string& seq_id,
-                               bool fixed,
-                               size_t position,
-                               size_t seq_len)
+void CommandLineInterface::log_edit(const std::string& seq_id,
+                                    bool fixed,
+                                    size_t position,
+                                    size_t seq_len)
 {
     if (verbosity < 2) {
         return;
@@ -18,14 +17,12 @@ CommandLineInterface::log_edit(const std::string& seq_id,
     std::cout << std::endl;
 }
 
-void
-CommandLineInterface::print_logo()
+void CommandLineInterface::print_logo()
 {
     std::cout << LOGO << "\tv" << aiedit::VERSION << std::endl << std::endl;
 }
 
-void
-CommandLineInterface::print_args(const ProgramArguments& args)
+void CommandLineInterface::print_args(const ProgramArguments& args)
 {
     if (verbosity < 1) {
         return;
@@ -36,8 +33,7 @@ CommandLineInterface::print_args(const ProgramArguments& args)
     std::cout << std::endl;
 }
 
-void
-CommandLineInterface::print_bloom_filter_information(const btllib::SeedBloomFilter& bf)
+void CommandLineInterface::print_bloom_filter_information(const btllib::SeedBloomFilter& bf)
 {
     if (verbosity < 1) {
         return;
@@ -53,8 +49,7 @@ CommandLineInterface::print_bloom_filter_information(const btllib::SeedBloomFilt
     std::cout << std::endl;
 }
 
-void
-CommandLineInterface::print_model_information(const nlohmann::json& model_json)
+void CommandLineInterface::print_model_information(const nlohmann::json& model_json)
 {
     if (verbosity < 1) {
         return;
@@ -68,30 +63,26 @@ CommandLineInterface::print_model_information(const nlohmann::json& model_json)
     std::cout << std::endl;
 }
 
-void
-CommandLineInterface::print_num_edits(unsigned num_patterns, unsigned num_mismatches)
+void CommandLineInterface::print_num_edits(unsigned num_patterns, unsigned num_mismatches)
 {
     std::cout << "Number of error patterns = " << num_patterns << std::endl;
     std::cout << "Number of mismatches     = " << num_mismatches << std::endl;
 }
 
-void
-CommandLineInterface::start_timer(const std::string& message)
+void CommandLineInterface::start_timer(const std::string& message)
 {
     std::cout << message << "... " << std::flush;
     timer.start();
 }
 
-void
-CommandLineInterface::stop_timer()
+void CommandLineInterface::stop_timer()
 {
     timer.stop();
     std::cout << add_color("DONE", Color::FG_GREEN);
     std::cout << " (" << timer.to_string() << ")" << std::endl;
 }
 
-std::string
-CommandLineInterface::add_color(const std::string& text, Color color)
+std::string CommandLineInterface::add_color(const std::string& text, Color color)
 {
     return "\033[1;" + std::to_string(color) + "m" + text + "\033[0m";
 }
