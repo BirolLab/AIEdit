@@ -24,5 +24,5 @@ Timer::elapsed_seconds() const
 std::string
 Timer::to_string() const
 {
-    return std::to_string(this->elapsed_seconds()) + "s";
+    return std::to_string(this->elapsed_seconds()) + " s";
 }

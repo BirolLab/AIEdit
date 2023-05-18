@@ -25,6 +25,18 @@ CommandLineInterface::print_logo()
 }
 
 void
+CommandLineInterface::print_args(const ProgramArguments& args)
+{
+    if (verbosity < 1) {
+        return;
+    }
+    std::cout << "- Assembly file     (-a)  = " << args.assembly_path << std::endl;
+    std::cout << "- Bloom filter file (-b)  = " << args.bf_path << std::endl;
+    std::cout << "- Number of threads (-t)  = " << args.num_threads << std::endl;
+    std::cout << std::endl;
+}
+
+void
 CommandLineInterface::print_bloom_filter_information(const btllib::SeedBloomFilter& bf)
 {
     if (verbosity < 1) {
@@ -38,18 +50,21 @@ CommandLineInterface::print_bloom_filter_information(const btllib::SeedBloomFilt
     for (size_t i = 0; i < bf.get_seeds().size(); i++) {
         std::cout << "- Seed " << i + 1 << ": " << bf.get_seeds()[i] << std::endl;
     }
+    std::cout << std::endl;
 }
 
 void
-CommandLineInterface::print_args(const ProgramArguments& args)
+CommandLineInterface::print_model_information(const nlohmann::json& model_json)
 {
     if (verbosity < 1) {
         return;
     }
-    std::cout << "- Assembly file     (-a)  = " << args.assembly_path << std::endl;
-    std::cout << "- Bloom filter file (-b)  = " << args.bf_path << std::endl;
-    std::cout << "- Number of threads (-t)  = " << args.num_threads << std::endl;
-    std::cout << "- Pattern length    (-w)  = " << args.pattern_length << std::endl;
+    const auto keras_version = model_json["architecture"]["keras_version"];
+    const auto backend = model_json["architecture"]["backend"];
+    std::cout << "- Pattern length = " << model_json["pattern_length"] << std::endl;
+    std::cout << "- Model hash     = " << model_json["hash"] << std::endl;
+    std::cout << "- Keras version  = " << keras_version << std::endl;
+    std::cout << "- Keras backend  = " << backend << std::endl;
     std::cout << std::endl;
 }
 

@@ -1,11 +1,12 @@
 #include <btllib/bloom_filter.hpp>
 #include <btllib/seq_reader.hpp>
 #include <btllib/seq_writer.hpp>
+#include <fdeep/fdeep.hpp>
 #include <filesystem>
 #include <fstream>
-#include <fdeep/fdeep.hpp>
 #include <nlohmann/json.hpp>
 #include <omp.h>
+#include <set>
 
 #include "args.hpp"
 #include "cli.hpp"
@@ -15,10 +16,12 @@
 #include "aiedit/error_correction/mismatch_corrector.hpp"
 #include "aiedit/error_detection/bloom_filter_error_detector.hpp"
 
-size_t
-get_file_size(const std::string& path)
+inline bool
+verify_seeds(const std::vector<std::string>& bf_seeds, const std::vector<std::string>& model_seeds)
 {
-    return std::filesystem::file_size(std::filesystem::path(path));
+    std::set<std::string> bf_set(bf_seeds.begin(), bf_seeds.end());
+    std::set<std::string> model_set(model_seeds.begin(), model_seeds.end());
+    return bf_set == model_set;
 }
 
 int
@@ -41,13 +44,16 @@ main(int argc, char** argv)
     cli.stop_timer();
     cli.print_bloom_filter_information(bf);
 
-    cli.start_timer("Loading pattern model");
-    const auto model = fdeep::load_model(args.model_path);
-    cli.stop_timer();
-    cli.print_bloom_filter_information(bf);
+    const auto model = fdeep::load_model(args.model_path, false, 0);
+    const auto model_json = nlohmann::json::parse(std::ifstream(args.model_path));
+    const unsigned pattern_length = model_json["pattern_length"];
+    cli.print_model_information(model_json);
+
+    btllib::check_error(!verify_seeds(bf.get_seeds(), model_json["seeds"]),
+                        "Bloom filter and model spaced seed set are not the same");
 
     cli.start_timer("Initializing");
-    aiedit::MismatchCorrector mismatch_corrector(args.pattern_length, bf, model);
+    aiedit::MismatchCorrector mismatch_corrector(pattern_length, bf, model);
     btllib::SeqReader reader(args.assembly_path, btllib::SeqReader::Flag::LONG_MODE);
     VCFWriter vcf_file(vcf_file_path, args.assembly_path);
     btllib::SeqWriter writer(edited_file_path, btllib::SeqWriter::FASTA);
@@ -70,7 +76,7 @@ main(int argc, char** argv)
                 if (fixed) {
                     ++num_patterns;
                 } else {
-                    seq_iter.next(bf.get_k() + args.pattern_length);
+                    seq_iter.next(bf.get_k() + pattern_length);
                 }
 #pragma omp critical
                 {

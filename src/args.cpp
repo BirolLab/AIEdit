@@ -16,11 +16,6 @@ ProgramArguments::parse(int argc, char** argv)
       .help("Path to btllib SeedBloomFilter populated with reads and seeds")
       .required();
 
-    parser.add_argument("--long-mode")
-      .help("Optimize seq. reader for long data (>5kbp)")
-      .default_value(false)
-      .implicit_value(true);
-
     parser.add_argument("--model", "-m").help("Path to pattern detector model").required();
 
     parser.add_argument("--out-path", "-o")
@@ -40,11 +35,6 @@ ProgramArguments::parse(int argc, char** argv)
       .implicit_value(true)
       .nargs(0);
 
-    parser.add_argument("--pattern-length", "-w")
-      .help("Number of bases to scan for errors after each detection")
-      .default_value((unsigned)5)
-      .scan<'u', unsigned>();
-
     try {
         parser.parse_args(argc, argv);
     } catch (const std::runtime_error& err) {
@@ -58,5 +48,4 @@ ProgramArguments::parse(int argc, char** argv)
     model_path = std::filesystem::path(parser.get("-m"));
     out_path = std::filesystem::path(parser.get("-o"));
     num_threads = parser.get<unsigned>("-t");
-    pattern_length = parser.get<unsigned>("-w");
 }

@@ -10,6 +10,7 @@
     " /_/    \\_\\_____|______\\__,_|_|\\__|"
 
 #include <btllib/bloom_filter.hpp>
+#include <nlohmann/json.hpp>
 
 #include "args.hpp"
 #include "timer.hpp"
@@ -43,15 +44,18 @@ class CommandLineInterface
      * @param position Position of the pattern in the sequence
      * @param seq_len Sequence length
      */
-    void log_edit(const std::string& seq_id,
-                  bool fixed,
-                  size_t position,
-                  size_t seq_len);
+    void log_edit(const std::string& seq_id, bool fixed, size_t position, size_t seq_len);
 
     /**
-     * Print AIEdit's logo in ASCII art to stdout.F
+     * Print AIEdit's logo in ASCII art to stdout.
      */
     void print_logo();
+
+    /**
+     * Print parsed command-line arguments to stdout.
+     * @param args Object containing program arguments.
+     */
+    void print_args(const ProgramArguments& args);
 
     /**
      * Print information about a btllib::SeedBloomFilter
@@ -60,10 +64,10 @@ class CommandLineInterface
     void print_bloom_filter_information(const btllib::SeedBloomFilter& bf);
 
     /**
-     * Print parsed command-line arguments to stdout.
-     * @param args Object containing program arguments.
+     * Print information about a btllib::SeedBloomFilter
+     * @param bf The input Bloom filter.
      */
-    void print_args(const ProgramArguments& args);
+    void print_model_information(const nlohmann::json& model_json);
 
     /**
      * Print the number of edits to stdout.
