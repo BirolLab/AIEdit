@@ -1,10 +1,14 @@
 import argparse
 import dataclasses
 import itertools
+import json
 import os
 import random
 import re
+import subprocess
 import sys
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 import keras
 import keras.layers
@@ -13,6 +17,17 @@ import keras.metrics
 import keras.optimizers
 import matplotlib.pyplot as plt
 import numpy as np
+
+DEFAULT_SEEDS = [
+    "1111111111110111111111111",
+    "1111111111100011111111111",
+    "1111111111000001111111111",
+    "1111111111001001111111111",
+    "1111111100001000011111111",
+    "1111111110001000111111111",
+    "1111111000001000001111111",
+    "1111111111101011111111111",
+]
 
 
 @dataclasses.dataclass
@@ -35,8 +50,8 @@ def get_model(seeds: list[str], pattern_length: int) -> keras.Sequential:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-o", help="directory to store results", default=".")
+    parser = argparse.ArgumentParser("AIEdit pattern detector training script")
+    parser.add_argument("-o", help="output model file path", required=True)
     parser.add_argument("-w",
                         help="maximum pattern length",
                         default=5,
@@ -46,15 +61,18 @@ def parse_args() -> argparse.Namespace:
                         default=10,
                         type=int)
     parser.add_argument("-a",
-                        help="Data augmentation ratio",
+                        help="data augmentation ratio",
                         default=0.1,
                         type=float)
-    parser.add_argument(
-        "seeds",
-        help="spaced seed patterns"
-        "(or path to text file with seeds in separate lines)",
-        nargs="+",
-    )
+    parser.add_argument("seeds",
+                        help="spaced seed patterns"
+                        " (or path to text file with seeds in separate lines)",
+                        nargs="*",
+                        default=DEFAULT_SEEDS)
+    parser.add_argument('--plot-stats',
+                        action='store_true',
+                        help="plot training stats"
+                        " (stored in training.png next to the model)")
     args = parser.parse_args()
     if not re.match(r"^[01]+$", args.seeds[0]):
         with open(args.seeds[0]) as f:
@@ -63,6 +81,8 @@ def parse_args() -> argparse.Namespace:
         msg = "Seed patterns should be the same length"
         print(msg, file=sys.stderr)
         exit(1)
+    print(f"Training for w={args.w} and {len(args.seeds)} spaced seeds:")
+    print(*args.seeds, sep=os.linesep)
     return args
 
 
@@ -165,26 +185,42 @@ def plot_training_stats(stats: dict, out_path: str) -> None:
     ax[1].set_xlabel("Epoch")
     ax[1].set_ylabel("Validation accuracy")
     fig.tight_layout()
-    plt.savefig(os.path.join(out_path, "training.png"))
+    plt.savefig(os.path.join(os.path.dirname(out_path), "training.png"))
+
+
+def save_model(model: keras.Model, pattern_width: int, seeds: list[str],
+               out_path: str):
+    model_temp_h5 = out_path + '.h5'
+    model.save(model_temp_h5, include_optimizer=False)
+    current_dir = os.path.dirname(__file__)
+    script_path = os.path.join(os.path.dirname(current_dir), 'vendor',
+                               'frugally-deep', 'keras_export',
+                               'convert_model.py')
+    args = ['python', script_path, model_temp_h5, out_path, '--no-tests']
+    call_result = subprocess.call(args, stderr=subprocess.PIPE)
+    if call_result != 0:
+        print(call_result.stderr)
+    else:
+        os.remove(model_temp_h5)
+    with open(out_path) as json_file:
+        json_data = json.load(json_file)
+    json_data['pattern_width'] = pattern_width
+    json_data['seeds'] = seeds
+    with open(out_path, 'w') as json_file:
+        json.dump(json_data, json_file)
 
 
 def main():
     args = parse_args()
     model = get_model(args.seeds, args.w)
     model.summary()
-    print("Preparing data... ", end="", flush=True)
     data = prepare_data(args.seeds, args.w, args.a)
-    print("\b\b\b\b DONE")
-    print(f"  - Training samples: {len(data.x_train)}")
-    print(f"  - Testing samples: {len(data.x_test)}")
+    print(f"Training samples: {len(data.x_train)}")
+    print(f"Testing samples: {len(data.x_test)}")
     training_stats = train(model, data, args.e)
-    print("Training DONE")
-    print("Saving results... ", end="", flush=True)
-    model.save(os.path.join(args.o, 'model.h5'), include_optimizer=False)
-    plot_training_stats(training_stats, args.o)
-    print("\b\b\b\b DONE")
-    print(data.x_test[0])
-    print(model.predict(np.array([data.x_test[0]])))
+    save_model(model, args.w, args.seeds, args.o)
+    if args.plot_stats:
+        plot_training_stats(training_stats, args.o)
 
 
 if __name__ == "__main__":
