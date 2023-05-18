@@ -13,12 +13,16 @@
 
 - C++ compiler with c++17 and OpenMP support
 - [Meson](https://mesonbuild.com/)
-- [btllib](https://github.com/bcgsc/btllib) [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/btllib/README.html)
-- [catch2](https://github.com/catchorg/Catch2) (optional, required only for running tests) [![install with conda](https://anaconda.org/conda-forge/catch2/badges/installer/conda.svg)](https://anaconda.org/conda-forge/catch2)
+- [btllib](https://github.com/bcgsc/btllib)
+- [ntHash](https://github.com/bcgsc/ntHash)
+- [catch2](https://github.com/catchorg/Catch2) (optional, required only for running tests)
 
 No need to install, available in the `vendor` folder as git submodules:
 - [argparse](https://github.com/p-ranav/argparse)
 - [json](https://github.com/nlohmann/json)
+- [frugally-deep](https://github.com/Dobiasd/frugally-deep)
+- [FunctionalPlus](https://github.com/Dobiasd/FunctionalPlus)
+- [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
 
 # Compilation
 
@@ -32,17 +36,16 @@ cd AIEdit
 Create a directory named `build` for compiling and installing AIEdit:
 
 ```shell
-meson build
+meson setup build
 ```
 
 Finally, build the project:
 
 ```shell
-cd build
-ninja
+meson compile -C build
 ```
 
-This will create the executable `ai-edit` in the `build` directory.
+This will create the executable `aiedit` in the `build` directory.
 
 # Run Tests
 
@@ -56,18 +59,17 @@ Usage: AIEdit [options]
 Artificially-intelligent long read genome polisher
 
 Optional arguments:
--h --help           	shows help message and exits [default: false]
--v --version        	prints version information and exits [default: false]
--a --assembly       	Path to assembly file [required]
--b --bloom-filter   	Path to btllib SeedBloomFilter populated with reads and seeds [required]
---long-mode         	Optimize seq. reader for long data (>5kbp) [default: false]
--o --out-path       	Path to output directory for storing results [default: "."]
--t --num-threads    	Number of sequences to process in parallel [default: 8]
--V                  	Level of details printed to stdout [default: false]
--w --pattern-length 	Number of bases to scan for errors after each detection [default: 5]
+-h --help         	shows help message and exits [default: false]
+-v --version      	prints version information and exits [default: false]
+-a --assembly     	Path to assembly file [required]
+-b --bloom-filter 	Path to btllib SeedBloomFilter file [required]
+-m --model        	Path to pattern detector model [required]
+-o --out-path     	Path to output directory for storing results [default: "."]
+-t --num-threads  	Number of threads to run in parallel [default: 8]
+-V                	Level of details printed to stdout (V: basic info, VV: detailed logs) [default: false]
 ```
 
-Use [ntHits](https://github.com/bcgsc/ntHits/tree/refactor) to generate the Bloom filter (for AIEdit's `-b` argument).
+Use [ntHits](https://github.com/bcgsc/ntHits) to generate the Bloom filter (for AIEdit's `-b` argument).
 
 AIEdit will read the necessary parameters, such as the spaced seed patterns, from the Bloom filter file.
 
