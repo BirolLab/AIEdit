@@ -15,6 +15,8 @@
 #include "args.hpp"
 #include "timer.hpp"
 
+namespace aiedit {
+
 class CommandLineInterface
 {
     enum Color
@@ -97,5 +99,7 @@ class CommandLineInterface
      */
     std::string add_color(const std::string& text, Color color);
 };
+
+}  // namespace aiedit
 
 #endif  // CLI_HPP

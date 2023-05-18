@@ -1,23 +1,22 @@
-#ifndef AIEDIT_BLOOM_FILTER_MISMATCH_CORRECTOR_HPP
-#define AIEDIT_BLOOM_FILTER_MISMATCH_CORRECTOR_HPP
+#ifndef AIEDIT_MISMATCH_CORRECTOR_HPP
+#define AIEDIT_MISMATCH_CORRECTOR_HPP
 
 #include <btllib/bloom_filter.hpp>
 #include <fdeep/fdeep.hpp>
 
-#include "aiedit/edit_pattern.hpp"
-#include "aiedit/error_correction/error_corrector.hpp"
-#include "aiedit/signature.hpp"
+#include "edit_pattern.hpp"
+#include "signature.hpp"
 
 namespace aiedit {
 
-class MismatchCorrector : public ErrorCorrector
+class MismatchCorrector
 {
   public:
 
     MismatchCorrector(unsigned pattern_length,
                       const btllib::SeedBloomFilter& bf,
                       const fdeep::model& model)
-      : ErrorCorrector(pattern_length)
+      : pattern_length(pattern_length)
       , bf(bf)
       , model(model)
     {}
@@ -27,12 +26,26 @@ class MismatchCorrector : public ErrorCorrector
      * @param seq_iter Sequence iterator pointing to the mismatch region
      * @return `true` if any edits were applied
      */
-    bool fix(SequenceIterator& seq_iter) override;
+    bool fix(SequenceIterator& seq_iter);
+
+    /**
+     * Clear the list of edits
+     */
+    void clear_edits() { edits.clear(); }
+
+    /**
+     * Get a list of applied edits
+     * @return List of pairs containing the positions, type, and value of the
+     * fixes
+     */
+    const std::vector<Edit>& get_edits() const { return edits; };
 
   private:
 
+    const unsigned pattern_length;
     const btllib::SeedBloomFilter& bf;
     const fdeep::model& model;
+    std::vector<Edit> edits;
 
     /**
      * Prepare model input by updating the signature values
@@ -85,4 +98,4 @@ class MismatchCorrector : public ErrorCorrector
 
 }  // namespace aiedit
 
-#endif  // AIEDIT_BLOOM_FILTER_MISMATCH_CORRECTOR_HPP
+#endif  // AIEDIT_MISMATCH_CORRECTOR_HPP

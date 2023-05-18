@@ -1,4 +1,4 @@
-#include "aiedit/edit_pattern.hpp"
+#include "edit_pattern.hpp"
 
 namespace aiedit {
 

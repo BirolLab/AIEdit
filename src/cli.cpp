@@ -1,5 +1,7 @@
 #include "cli.hpp"
-#include "aiedit/version.hpp"
+#include "version.hpp"
+
+namespace aiedit {
 
 void CommandLineInterface::log_edit(const std::string& seq_id,
                                     bool fixed,
@@ -86,3 +88,5 @@ std::string CommandLineInterface::add_color(const std::string& text, Color color
 {
     return "\033[1;" + std::to_string(color) + "m" + text + "\033[0m";
 }
+
+}  // namespace aiedit

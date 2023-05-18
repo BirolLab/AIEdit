@@ -1,7 +1,7 @@
+#include "mismatch_corrector.hpp"
+
 #include <bitset>
 #include <fdeep/fdeep.hpp>
-
-#include "aiedit/error_correction/mismatch_corrector.hpp"
 
 namespace {
 

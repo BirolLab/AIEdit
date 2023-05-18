@@ -1,4 +1,4 @@
-#include "aiedit/sequence_iterator.hpp"
+#include "sequence_iterator.hpp"
 
 namespace aiedit {
 

@@ -1,18 +1,18 @@
-#ifndef AIEDIT_BLOOM_FILTER_ERROR_DETECTOR_HPP
-#define AIEDIT_BLOOM_FILTER_ERROR_DETECTOR_HPP
+#ifndef AIEDIT_ERROR_DETECTOR_HPP
+#define AIEDIT_ERROR_DETECTOR_HPP
 
 #include <btllib/bloom_filter.hpp>
 
-#include "aiedit/error_detection/error_detector.hpp"
+#include "sequence_iterator.hpp"
 
 namespace aiedit {
 
-class BloomFilterErrorDetector : public ErrorDetector
+class ErrorDetector
 {
   public:
 
-    BloomFilterErrorDetector(SequenceIterator& seq_iter, const btllib::SeedBloomFilter& bf)
-      : ErrorDetector(seq_iter)
+    ErrorDetector(SequenceIterator& seq_iter, const btllib::SeedBloomFilter& bf)
+      : seq_iter(seq_iter)
       , bf(bf)
     {}
 
@@ -20,19 +20,20 @@ class BloomFilterErrorDetector : public ErrorDetector
      * Advance the sequence iterator to the next miss position
      * @return `false` if iteration has ended
      */
-    bool next_error() override;
+    bool find_next();
 
   private:
 
+    SequenceIterator& seq_iter;
     const btllib::SeedBloomFilter& bf;
 
     /**
      * Check if the current position of the sequence iterator is a miss
      * @return `true` if the position is a miss
      */
-    bool check_miss();
+    bool is_miss();
 };
 
 }  // namespace aiedit
 
-#endif  // AIEDIT_BLOOM_FILTER_ERROR_DETECTOR_HPP
+#endif  // AIEDIT_ERROR_DETECTOR_HPP

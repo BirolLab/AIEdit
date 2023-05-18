@@ -1,8 +1,10 @@
 #include "args.hpp"
-#include "aiedit/version.hpp"
+#include "version.hpp"
 
 #include <argparse/argparse.hpp>
 #include <iostream>
+
+namespace aiedit {
 
 void ProgramArguments::parse(int argc, char** argv)
 {
@@ -48,3 +50,5 @@ void ProgramArguments::parse(int argc, char** argv)
     out_path = std::filesystem::path(parser.get("-o"));
     num_threads = parser.get<unsigned>("-t");
 }
+
+}  // namespace aiedit

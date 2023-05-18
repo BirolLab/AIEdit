@@ -3,7 +3,7 @@
 
 #include <nthash/nthash.hpp>
 
-#include "aiedit/error_detection/bloom_filter_error_detector.hpp"
+#include "error_detector.hpp"
 #include "tests/data.hpp"
 
 TEST_CASE("Test Bloom filter error detector", "[error_detection]")
@@ -12,7 +12,7 @@ TEST_CASE("Test Bloom filter error detector", "[error_detection]")
     aiedit::SequenceIterator seq_iter(test_data.seq,
                                       test_data.seeds,
                                       test_data.num_hashes_per_seed);
-    aiedit::BloomFilterErrorDetector bf_err_detector(seq_iter, *test_data.bf);
-    REQUIRE(bf_err_detector.next_error());
+    aiedit::ErrorDetector err_detector(seq_iter, *test_data.bf);
+    REQUIRE(err_detector.find_next());
     REQUIRE(seq_iter.get_position() == test_data.miss_position);
 }

@@ -1,10 +1,12 @@
-#ifndef FILE_MANAGERS_HPP
-#define FILE_MANAGERS_HPP
+#ifndef VCF_WRITER_HPP
+#define VCF_WRITER_HPP
 
 #include <fstream>
 #include <vector>
 
-#include "aiedit/edit.hpp"
+#include "edit.hpp"
+
+namespace aiedit {
 
 class VCFWriter
 {
@@ -41,4 +43,6 @@ class VCFWriter
                const std::vector<aiedit::Edit>& edits);
 };
 
-#endif  // FILE_MANAGERS_HPP
+}  // namespace aiedit
+
+#endif  // VCF_WRITER_HPP

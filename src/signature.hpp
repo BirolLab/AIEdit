@@ -6,7 +6,7 @@
 #include <fdeep/fdeep.hpp>
 #include <string>
 
-#include "aiedit/sequence_iterator.hpp"
+#include "sequence_iterator.hpp"
 
 namespace aiedit {
 

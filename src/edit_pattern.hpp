@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "aiedit/edit.hpp"
+#include "edit.hpp"
 
 namespace aiedit {
 

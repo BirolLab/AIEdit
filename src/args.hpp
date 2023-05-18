@@ -4,6 +4,8 @@
 #include <filesystem>
 #include <string>
 
+namespace aiedit {
+
 class ProgramArguments
 {
   public:
@@ -17,5 +19,7 @@ class ProgramArguments
 
     void parse(int argc, char** argv);
 };
+
+}  // namespace aiedit
 
 #endif  // ARGS_HPP

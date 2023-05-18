@@ -1,6 +1,7 @@
 #include "vcf_writer.hpp"
-#include "aiedit/edit.hpp"
-#include "aiedit/version.hpp"
+#include "version.hpp"
+
+namespace aiedit {
 
 void VCFWriter::write_headers(const std::string& assembly_path)
 {
@@ -33,3 +34,5 @@ void VCFWriter::write(const std::string& seq_id,
     }
     file.flush();
 }
+
+}  // namespace aiedit

@@ -1,7 +1,7 @@
 #include <btllib/bloom_filter.hpp>
 #include <nthash/nthash.hpp>
 
-#include "aiedit/edit_pattern.hpp"
+#include "edit_pattern.hpp"
 
 struct MismatchTestData {
     std::string seq = "ATCGGATCGATC";

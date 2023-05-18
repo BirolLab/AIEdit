@@ -13,8 +13,8 @@
 #include "timer.hpp"
 #include "vcf_writer.hpp"
 
-#include "aiedit/error_correction/mismatch_corrector.hpp"
-#include "aiedit/error_detection/bloom_filter_error_detector.hpp"
+#include "mismatch_corrector.hpp"
+#include "error_detector.hpp"
 
 inline bool verify_seeds(const std::vector<std::string>& bf_seeds,
                          const std::vector<std::string>& model_seeds)
@@ -26,14 +26,15 @@ inline bool verify_seeds(const std::vector<std::string>& bf_seeds,
 
 int main(int argc, char** argv)
 {
-    ProgramArguments args;
+    aiedit::ProgramArguments args;
     args.parse(argc, argv);
+
     std::string vcf_file_path = args.out_path / std::filesystem::path("variants.vcf");
     std::string edited_file_path = args.out_path / std::filesystem::path("edited.fa");
 
     omp_set_num_threads(args.num_threads);
 
-    CommandLineInterface cli(args.verbosity);
+    aiedit::CommandLineInterface cli(args.verbosity);
 
     cli.print_logo();
     cli.print_args(args);
@@ -54,7 +55,7 @@ int main(int argc, char** argv)
     cli.start_timer("Initializing");
     aiedit::MismatchCorrector mismatch_corrector(pattern_length, bf, model);
     btllib::SeqReader reader(args.assembly_path, btllib::SeqReader::Flag::LONG_MODE);
-    VCFWriter vcf_file(vcf_file_path, args.assembly_path);
+    aiedit::VCFWriter vcf_file(vcf_file_path, args.assembly_path);
     btllib::SeqWriter writer(edited_file_path, btllib::SeqWriter::FASTA);
     cli.stop_timer();
 
@@ -69,8 +70,8 @@ int main(int argc, char** argv)
             size_t begin = i * chunk_size;
             size_t end = i < args.num_threads - 1 ? (i + 1) * chunk_size : seq.size();
             aiedit::SequenceIterator seq_iter(seq, bf.get_seeds(), num_hashes, begin, end);
-            aiedit::BloomFilterErrorDetector err_detector(seq_iter, bf);
-            while (err_detector.next_error()) {
+            aiedit::ErrorDetector err_detector(seq_iter, bf);
+            while (err_detector.find_next()) {
                 bool fixed = mismatch_corrector.fix(seq_iter);
                 if (fixed) {
                     ++num_patterns;

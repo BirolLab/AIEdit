@@ -4,6 +4,8 @@
 #include <chrono>
 #include <string>
 
+namespace aiedit {
+
 class Timer
 {
   private:
@@ -33,5 +35,7 @@ class Timer
      */
     [[nodiscard]] std::string to_string() const;
 };
+
+}  // namespace aiedit
 
 #endif  // TIMER_HPP

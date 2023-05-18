@@ -20,6 +20,7 @@ dependencies = [
 
 include_dirs = [
     include_directories('include'),
+    include_directories('src'),
     include_directories('vendor/argparse/include'),
     include_directories('vendor/json/single_include'),
     include_directories('vendor/FunctionalPlus/include_all_in_one/include'),
