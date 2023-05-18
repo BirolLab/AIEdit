@@ -188,7 +188,7 @@ def plot_training_stats(stats: dict, out_path: str) -> None:
     plt.savefig(os.path.join(os.path.dirname(out_path), "training.png"))
 
 
-def save_model(model: keras.Model, pattern_width: int, seeds: list[str],
+def save_model(model: keras.Model, pattern_length: int, seeds: list[str],
                out_path: str):
     model_temp_h5 = out_path + '.h5'
     model.save(model_temp_h5, include_optimizer=False)
@@ -204,7 +204,7 @@ def save_model(model: keras.Model, pattern_width: int, seeds: list[str],
         os.remove(model_temp_h5)
     with open(out_path) as json_file:
         json_data = json.load(json_file)
-    json_data['pattern_width'] = pattern_width
+    json_data['pattern_length'] = pattern_length
     json_data['seeds'] = seeds
     with open(out_path, 'w') as json_file:
         json.dump(json_data, json_file)
