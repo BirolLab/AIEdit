@@ -11,6 +11,14 @@ project(
     ],
 )
 
+conf = configuration_data()
+conf.set('PROJECT_VERSION', meson.project_version())
+configure_file(
+    input: 'src/version.hpp.in',
+    output: 'version.hpp',
+    configuration: conf,
+)
+
 compiler = meson.get_compiler('cpp')
 
 dependencies = [
