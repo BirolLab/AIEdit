@@ -55,13 +55,11 @@ const std::string& SequenceIterator::get_sequence() { return seq; }
 
 std::vector<SequenceIterator::HashVector> SequenceIterator::peek_hashes(unsigned window_size)
 {
-    btllib::SeedNtHash h_copy(*nthash);
+    nthash::SeedNtHash h_copy(*nthash);
     std::vector<HashVector> hashes;
     hashes.reserve(window_size);
     hashes.push_back(to_hash_vector(h_copy.hashes()));
-    --window_size;
-    while (--window_size) {
-        h_copy.roll();
+    while (--window_size && h_copy.roll()) {
         hashes.push_back(to_hash_vector(h_copy.hashes()));
     }
     return hashes;
