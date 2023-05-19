@@ -13,8 +13,8 @@
 #include "timer.hpp"
 #include "vcf_writer.hpp"
 
-#include "mismatch_corrector.hpp"
 #include "error_detector.hpp"
+#include "mismatch_corrector.hpp"
 
 inline bool verify_seeds(const std::vector<std::string>& bf_seeds,
                          const std::vector<std::string>& model_seeds)
