@@ -6,25 +6,28 @@ namespace aiedit {
 void CommandLineInterface::log_edit(const std::string& seq_id,
                                     bool fixed,
                                     size_t position,
-                                    size_t seq_len)
+                                    size_t seq_len) const
 {
     if (verbosity < 2) {
         return;
     }
-    Color c = (fixed ? Color::FG_GREEN : Color::FG_RED);
-    std::string fixed_text = (fixed ? "FIXED  " : "IGNORED");
+    const Color c = (fixed ? Color::FG_GREEN : Color::FG_RED);
+    const std::string fixed_text = (fixed ? "FIXED  " : "IGNORED");
     std::cout << "[" << seq_id << "] ";
     std::cout << add_color(fixed_text, c) << "  ";
     std::cout << "@" << position << "/" << seq_len << "bp";
     std::cout << std::endl;
 }
 
-void CommandLineInterface::print_logo()
+void CommandLineInterface::print_logo() const
 {
+    if (verbosity < 1) {
+        return;
+    }
     std::cout << LOGO << "\tv" << aiedit::VERSION << std::endl << std::endl;
 }
 
-void CommandLineInterface::print_args(const ProgramArguments& args)
+void CommandLineInterface::print_args(const ProgramArguments& args) const
 {
     if (verbosity < 1) {
         return;
@@ -35,7 +38,7 @@ void CommandLineInterface::print_args(const ProgramArguments& args)
     std::cout << std::endl;
 }
 
-void CommandLineInterface::print_bloom_filter_information(const btllib::SeedBloomFilter& bf)
+void CommandLineInterface::print_bloom_filter_information(const btllib::SeedBloomFilter& bf) const
 {
     if (verbosity < 1) {
         return;
@@ -51,7 +54,7 @@ void CommandLineInterface::print_bloom_filter_information(const btllib::SeedBloo
     std::cout << std::endl;
 }
 
-void CommandLineInterface::print_model_information(const nlohmann::json& model_json)
+void CommandLineInterface::print_model_information(const nlohmann::json& model_json) const
 {
     if (verbosity < 1) {
         return;

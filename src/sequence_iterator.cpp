@@ -8,8 +8,8 @@ SequenceIterator::HashVector SequenceIterator::to_hash_vector(const uint64_t* nt
     for (unsigned i = 0; i < seeds.size(); i++) {
         std::vector<uint64_t> seed_hashes;
         seed_hashes.reserve(nthash->get_hash_num_per_seed());
-        size_t i_begin = i * nthash->get_hash_num_per_seed();
-        size_t i_end = i_begin + nthash->get_hash_num_per_seed();
+        const unsigned i_begin = i * nthash->get_hash_num_per_seed();
+        const unsigned i_end = i_begin + nthash->get_hash_num_per_seed();
         seed_hashes.insert(seed_hashes.end(), nthash_hashes + i_begin, nthash_hashes + i_end);
         hashes.push_back(seed_hashes);
     }
@@ -59,7 +59,7 @@ std::vector<SequenceIterator::HashVector> SequenceIterator::peek_hashes(unsigned
     std::vector<HashVector> hashes;
     hashes.reserve(window_size);
     hashes.push_back(to_hash_vector(h_copy.hashes()));
-    while (--window_size && h_copy.roll()) {
+    while (--window_size > 0 && h_copy.roll()) {
         hashes.push_back(to_hash_vector(h_copy.hashes()));
     }
     return hashes;

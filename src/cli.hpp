@@ -45,35 +45,35 @@ class CommandLineInterface
      * @param position Position of the pattern in the sequence
      * @param seq_len Sequence length
      */
-    void log_edit(const std::string& seq_id, bool fixed, size_t position, size_t seq_len);
+    void log_edit(const std::string& seq_id, bool fixed, size_t position, size_t seq_len) const;
 
     /**
      * Print AIEdit's logo in ASCII art to stdout.
      */
-    void print_logo();
+    void print_logo() const;
 
     /**
      * Print parsed command-line arguments to stdout.
      * @param args Object containing program arguments.
      */
-    void print_args(const ProgramArguments& args);
+    void print_args(const ProgramArguments& args) const;
 
     /**
      * Print information about a btllib::SeedBloomFilter
      * @param bf The input Bloom filter.
      */
-    void print_bloom_filter_information(const btllib::SeedBloomFilter& bf);
+    void print_bloom_filter_information(const btllib::SeedBloomFilter& bf) const;
 
     /**
      * Print information about a btllib::SeedBloomFilter
      * @param bf The input Bloom filter.
      */
-    void print_model_information(const nlohmann::json& model_json);
+    void print_model_information(const nlohmann::json& model_json) const;
 
     /**
      * Print the number of edits to stdout.
      */
-    void print_num_edits(unsigned num_patterns, unsigned num_mismatches);
+    static void print_num_edits(unsigned num_patterns, unsigned num_mismatches);
 
     /**
      * Start the timer
@@ -97,7 +97,7 @@ class CommandLineInterface
      * @param color Color code
      * @return Colored string
      */
-    std::string add_color(const std::string& text, Color color);
+    static std::string add_color(const std::string& text, Color color);
 };
 
 }  // namespace aiedit

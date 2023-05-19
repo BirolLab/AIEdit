@@ -21,14 +21,14 @@ class EditPattern
      * @param index Position to be updated
      * @param value New value for the index
      */
-    void set(size_t index, Edit::Type value);
+    void set(ptrdiff_t index, Edit::Type value);
 
     /**
      * Get the edit type in an index
      * @param index Position to get
      * @return Value in the index
      */
-    Edit::Type get(size_t index) const;
+    Edit::Type get(ptrdiff_t index) const;
 
     /**
      * Get pattern length

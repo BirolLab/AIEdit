@@ -19,20 +19,25 @@
 inline bool verify_seeds(const std::vector<std::string>& bf_seeds,
                          const std::vector<std::string>& model_seeds)
 {
-    std::set<std::string> bf_set(bf_seeds.begin(), bf_seeds.end());
-    std::set<std::string> model_set(model_seeds.begin(), model_seeds.end());
+    const std::set<std::string> bf_set(bf_seeds.begin(), bf_seeds.end());
+    const std::set<std::string> model_set(model_seeds.begin(), model_seeds.end());
     return bf_set == model_set;
 }
 
 int main(int argc, char** argv)
 {
     aiedit::ProgramArguments args;
-    args.parse(argc, argv);
+    try {
+        args.parse(argc, argv);
+    } catch (const std::runtime_error& err) {
+        std::cerr << err.what() << std::endl;
+        return EXIT_FAILURE;
+    }
 
-    std::string vcf_file_path = args.out_path / std::filesystem::path("variants.vcf");
-    std::string edited_file_path = args.out_path / std::filesystem::path("edited.fa");
+    const std::string vcf_file_path = args.out_path / std::filesystem::path("variants.vcf");
+    const std::string edited_file_path = args.out_path / std::filesystem::path("edited.fa");
 
-    omp_set_num_threads(args.num_threads);
+    omp_set_num_threads(static_cast<int>(args.num_threads));
 
     aiedit::CommandLineInterface cli(args.verbosity);
 
@@ -40,19 +45,19 @@ int main(int argc, char** argv)
     cli.print_args(args);
 
     cli.start_timer("Loading Bloom filter");
-    btllib::SeedBloomFilter bf(args.bf_path);
+    const btllib::SeedBloomFilter bf(args.bf_path);
     cli.stop_timer();
     cli.print_bloom_filter_information(bf);
 
     cli.start_timer("Loading pattern detector model");
-    const auto model = fdeep::load_model(args.model_path, false, 0);
+    const auto model = fdeep::load_model(args.model_path, false, nullptr);
     const auto model_json = nlohmann::json::parse(std::ifstream(args.model_path));
     const unsigned pattern_length = model_json["pattern_length"];
     cli.stop_timer();
     cli.print_model_information(model_json);
 
-    btllib::check_error(!verify_seeds(bf.get_seeds(), model_json["seeds"]),
-                        "Bloom filter and model spaced seed set are not the same");
+    const bool same_seeds = verify_seeds(bf.get_seeds(), model_json["seeds"]);
+    btllib::check_error(!same_seeds, "Bloom filter and model spaced seed set are not the same");
 
     cli.start_timer("Initializing");
     aiedit::MismatchCorrector mismatch_corrector(pattern_length, bf, model);
@@ -62,31 +67,26 @@ int main(int argc, char** argv)
     cli.stop_timer();
 
     cli.start_timer("Detecting and correcting errors");
-    unsigned num_patterns = 0, num_mismatches = 0;
-    unsigned num_hashes = bf.get_hash_num_per_seed();
+    unsigned num_patterns = 0;
+    unsigned num_mismatches = 0;
+    const unsigned num_hashes = bf.get_hash_num_per_seed();
     for (auto record : reader) {
-        const size_t chunk_size = record.seq.size() / args.num_threads;
+        const unsigned chunk_size = record.seq.size() / args.num_threads;
         std::string& seq = record.seq;
 #pragma omp parallel for
         for (unsigned i = 0; i < args.num_threads; i++) {
-            size_t begin = i * chunk_size;
-            size_t end = i < args.num_threads - 1 ? (i + 1) * chunk_size : seq.size();
+            const unsigned begin = i * chunk_size;
+            const unsigned end = i < args.num_threads - 1 ? (i + 1) * chunk_size : seq.size();
             aiedit::SequenceIterator seq_iter(seq, bf.get_seeds(), num_hashes, begin, end);
             aiedit::ErrorDetector err_detector(seq_iter, bf);
             while (err_detector.find_next()) {
-                bool fixed = mismatch_corrector.fix(seq_iter);
-                if (fixed) {
-                    ++num_patterns;
-                } else {
-                    seq_iter.next(bf.get_k() + pattern_length);
-                }
+                const bool fixed = mismatch_corrector.fix(seq_iter);
+                num_patterns += fixed ? 1 : 0;
+                seq_iter.next(fixed ? 0 : bf.get_k() + pattern_length);
+                const unsigned pos = seq_iter.get_position();
+                const unsigned seq_len = seq_iter.get_sequence().size();
 #pragma omp critical
-                {
-                    cli.log_edit(record.id,
-                                 fixed,
-                                 seq_iter.get_position(),
-                                 seq_iter.get_sequence().size());
-                }
+                cli.log_edit(record.id, fixed, pos, seq_len);
             }
         }
         vcf_file.write(record.id, record.comment, mismatch_corrector.get_edits());
@@ -95,7 +95,7 @@ int main(int argc, char** argv)
         writer.write(record.id, record.comment, seq);
     }
     cli.stop_timer();
-    cli.print_num_edits(num_patterns, num_mismatches);
+    aiedit::CommandLineInterface::print_num_edits(num_patterns, num_mismatches);
 
     return 0;
 }

@@ -1,5 +1,7 @@
 #include "error_detector.hpp"
 
+#include <algorithm>
+
 namespace aiedit {
 
 bool ErrorDetector::find_next()
@@ -14,12 +16,9 @@ bool ErrorDetector::find_next()
 
 bool ErrorDetector::is_miss()
 {
-    for (const auto& seed_hashes : seq_iter.get_hashes()) {
-        if (!bf.contains(seed_hashes)) {
-            return true;
-        }
-    }
-    return false;
+    const auto& hashes = seq_iter.get_hashes();
+    auto bf_contains = [&](const std::vector<std::uint64_t>& h) { return bf.contains(h); };
+    return !std::all_of(hashes.begin(), hashes.end(), bf_contains);
 }
 
 }  // namespace aiedit

@@ -5,9 +5,11 @@ namespace aiedit {
 
 void VCFWriter::write_headers(const std::string& assembly_path)
 {
-    char s[64];
-    time_t t = time(0);
-    strftime(s, 64, "%Y%m%d", localtime(&t));
+    const unsigned buffer_size = 64;
+    char s[buffer_size];
+    const time_t t = time(nullptr);
+    // NOLINTNEXTLINE (cert-err33-c, concurrency-mt-unsafe)
+    strftime(s, buffer_size, "%Y%m%d", localtime(&t));
     file << "##fileformat=VCFv4.3" << std::endl;
     file << "##fileDate=" << s << std::endl;
     file << "##source=AIEdit" << aiedit::VERSION << std::endl;

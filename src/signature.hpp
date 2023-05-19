@@ -14,7 +14,9 @@ class Signature
 {
   public:
 
-    Signature(int length, unsigned num_seeds) : values(fdeep::tensor_shape(length, num_seeds), 0) {}
+    Signature(unsigned length, unsigned num_seeds)
+      : values(fdeep::tensor_shape(length, num_seeds), 0)
+    {}
 
     /**
      * Set a value for an element in the signature

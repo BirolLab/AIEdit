@@ -5,7 +5,7 @@
 
 namespace {
 
-static const char ALPHABET[4] = {'A', 'C', 'G', 'T'};
+const char ALPHABET[4] = {'A', 'C', 'G', 'T'};
 
 /**
  * Generate all possible ACGT strings of length k recursively, except the
@@ -17,7 +17,8 @@ static const char ALPHABET[4] = {'A', 'C', 'G', 'T'};
  * concatenated as a single string.
  * @param combinations Container for the generated combinations.
  */
-void get_combinations(std::string prefix,
+// NOLINTNEXTLINE (misc-no-recursion)
+void get_combinations(const std::string& prefix,
                       unsigned k,
                       const std::string& original,
                       std::vector<std::string>& combinations)
@@ -26,20 +27,20 @@ void get_combinations(std::string prefix,
         combinations.emplace_back(prefix);
         return;
     }
-    for (size_t i = 0; i < 4; i++) {
-        if (original[original.size() - k] != ALPHABET[i]) {
-            get_combinations(prefix + ALPHABET[i], k - 1, original, combinations);
+    for (const char c : ALPHABET) {
+        if (original[original.size() - k] != c) {
+            get_combinations(prefix + c, k - 1, original, combinations);
         }
     }
 }
 
-};  // namespace
+}  // namespace
 
 namespace aiedit {
 
 fdeep::tensor MismatchCorrector::get_model_input(SequenceIterator& seq_iter)
 {
-    unsigned signature_length = pattern_length + bf.get_seeds()[0].size() - 1;
+    const unsigned signature_length = pattern_length + bf.get_seeds()[0].size() - 1;
     Signature signature(signature_length, bf.get_seeds().size());
     auto hashes = seq_iter.peek_hashes(signature.get_length());
     for (size_t i = 0; i < signature.get_length(); i++) {
@@ -50,12 +51,13 @@ fdeep::tensor MismatchCorrector::get_model_input(SequenceIterator& seq_iter)
     return signature.get_tensor();
 }
 
-EditPattern MismatchCorrector::get_pattern(const fdeep::tensor& model_input)
+EditPattern MismatchCorrector::get_pattern(const fdeep::tensor& signature)
 {
-    auto model_output = model.predict({model_input});
+    const double threshold = 0.5;
+    auto model_output = model.predict({signature});
     EditPattern pattern(pattern_length);
-    for (size_t i = 0; i < pattern.get_length(); i++) {
-        if (model_output[0].get(fdeep::tensor_pos(i)) >= 0.5) {
+    for (unsigned i = 0; i < pattern.get_length(); i++) {
+        if (model_output.front().get(fdeep::tensor_pos(i)) >= threshold) {
             pattern.set(i, Edit::MISMATCH);
         } else {
             pattern.set(i, Edit::NONE);
@@ -64,11 +66,11 @@ EditPattern MismatchCorrector::get_pattern(const fdeep::tensor& model_input)
     return pattern;
 }
 
-std::vector<size_t> MismatchCorrector::get_mismatch_positions(const size_t base_position,
+std::vector<size_t> MismatchCorrector::get_mismatch_positions(size_t base_position,
                                                               const EditPattern& pattern)
 {
     std::vector<size_t> positions;
-    for (size_t i = 0; i < pattern.get_length(); i++) {
+    for (unsigned i = 0; i < pattern.get_length(); i++) {
         if (pattern.get(i) == Edit::Type::MISMATCH) {
             positions.push_back(base_position + i);
         }
@@ -106,13 +108,13 @@ bool MismatchCorrector::fix(SequenceIterator& seq_iter)
     auto model_input = get_model_input(seq_iter);
     auto pattern = get_pattern(model_input);
     auto mismatch_positions = get_mismatch_positions(seq_iter.get_position(), pattern);
-    std::string original = seq_iter.get_bases(mismatch_positions);
+    const std::string original = seq_iter.get_bases(mismatch_positions);
     std::string fixing_combination;
     std::vector<std::string> candidates;
     get_combinations("", original.size(), original, candidates);
     for (const auto& new_bases : candidates) {
         update_seq(seq_iter, mismatch_positions, new_bases);
-        bool fixed = check_fixes(seq_iter);
+        const bool fixed = check_fixes(seq_iter);
         if (fixed && fixing_combination.empty()) {
             fixing_combination = new_bases;
         } else if (fixed && !fixing_combination.empty()) {
@@ -134,10 +136,10 @@ void MismatchCorrector::add_edits(const std::vector<size_t>& positions,
                                   const std::string& updated)
 {
     for (unsigned i = 0; i < positions.size(); i++) {
-        size_t pos = positions[i];
-        std::string ref(1, reference[i]);
-        std::string alt(1, updated[i]);
-        edits.push_back(Edit(pos, Edit::Type::MISMATCH, ref, alt));
+        const size_t pos = positions[i];
+        const std::string ref(1, reference[i]);
+        const std::string alt(1, updated[i]);
+        edits.emplace_back(pos, Edit::Type::MISMATCH, ref, alt);
     }
 }
 

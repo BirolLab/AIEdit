@@ -10,7 +10,7 @@ void Timer::stop() { this->t_end = std::chrono::system_clock::now(); }
 
 long double Timer::elapsed_seconds() const
 {
-    std::chrono::duration<double> elapsed = (t_end - t_start);
+    const std::chrono::duration<double> elapsed = (t_end - t_start);
     return elapsed.count();
 }
 

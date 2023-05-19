@@ -1,7 +1,8 @@
 #ifndef AIEDIT_EDIT_HPP
 #define AIEDIT_EDIT_HPP
 
-#include <stddef.h>
+#include <cstddef>
+#include <string>
 
 namespace aiedit {
 
@@ -25,8 +26,8 @@ class Edit
     Edit(size_t position, Type type, std::string before, std::string after)
       : position(position)
       , type(type)
-      , before(before)
-      , after(after)
+      , before(std::move(before))
+      , after(std::move(after))
     {}
 };
 
