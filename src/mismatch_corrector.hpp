@@ -2,10 +2,9 @@
 #define AIEDIT_MISMATCH_CORRECTOR_HPP
 
 #include <btllib/bloom_filter.hpp>
-#include <fdeep/fdeep.hpp>
 
 #include "edit_pattern.hpp"
-#include "signature.hpp"
+#include "sequence_iterator.hpp"
 
 namespace aiedit {
 
@@ -13,12 +12,9 @@ class MismatchCorrector
 {
   public:
 
-    MismatchCorrector(unsigned pattern_length,
-                      const btllib::SeedBloomFilter& bf,
-                      const fdeep::model& model)
+    MismatchCorrector(unsigned pattern_length, const btllib::SeedBloomFilter& bf)
       : pattern_length(pattern_length)
       , bf(bf)
-      , model(model)
     {}
 
     /**
@@ -26,7 +22,7 @@ class MismatchCorrector
      * @param seq_iter Sequence iterator pointing to the mismatch region
      * @return `true` if any edits were applied
      */
-    bool fix(SequenceIterator& seq_iter);
+    bool fix(SequenceIterator& seq_iter, const EditPattern& pattern);
 
     /**
      * Clear the list of edits
@@ -44,22 +40,7 @@ class MismatchCorrector
 
     const unsigned pattern_length;
     const btllib::SeedBloomFilter& bf;
-    const fdeep::model& model;
     std::vector<Edit> edits;
-
-    /**
-     * Prepare model input by updating the signature values
-     * @param
-     * @return Signature object containing model's input tensor
-     */
-    fdeep::tensor get_model_input(SequenceIterator& seq_iter);
-
-    /**
-     * Get the edit pattern detected by the model
-     * @param signature Input signature
-     * @return Model's output as pattern object
-     */
-    EditPattern get_pattern(const fdeep::tensor& signature);
 
     /**
      * Get the positions in the sequence that need to be updated

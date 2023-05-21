@@ -38,34 +38,6 @@ void get_combinations(const std::string& prefix,
 
 namespace aiedit {
 
-fdeep::tensor MismatchCorrector::get_model_input(SequenceIterator& seq_iter)
-{
-    const unsigned signature_length = pattern_length + bf.get_seeds()[0].size() - 1;
-    Signature signature(signature_length, bf.get_seeds().size());
-    auto hashes = seq_iter.peek_hashes(signature.get_length());
-    for (size_t i = 0; i < signature.get_length(); i++) {
-        for (size_t j = 0; j < signature.get_num_seeds(); j++) {
-            signature.set(i, j, !bf.contains(hashes[i][j]));
-        }
-    }
-    return signature.get_tensor();
-}
-
-EditPattern MismatchCorrector::get_pattern(const fdeep::tensor& signature)
-{
-    const double threshold = 0.5;
-    auto model_output = model.predict({signature});
-    EditPattern pattern(pattern_length);
-    for (unsigned i = 0; i < pattern.get_length(); i++) {
-        if (model_output.front().get(fdeep::tensor_pos(i)) >= threshold) {
-            pattern.set(i, Edit::MISMATCH);
-        } else {
-            pattern.set(i, Edit::NONE);
-        }
-    }
-    return pattern;
-}
-
 std::vector<size_t> MismatchCorrector::get_mismatch_positions(size_t base_position,
                                                               const EditPattern& pattern)
 {
@@ -103,10 +75,8 @@ bool MismatchCorrector::check_fixes(SequenceIterator& seq_iter)
     return true;
 }
 
-bool MismatchCorrector::fix(SequenceIterator& seq_iter)
+bool MismatchCorrector::fix(SequenceIterator& seq_iter, const EditPattern& pattern)
 {
-    auto model_input = get_model_input(seq_iter);
-    auto pattern = get_pattern(model_input);
     auto mismatch_positions = get_mismatch_positions(seq_iter.get_position(), pattern);
     const std::string original = seq_iter.get_bases(mismatch_positions);
     std::string fixing_combination;

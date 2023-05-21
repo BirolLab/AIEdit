@@ -14,6 +14,7 @@
 #include "vcf_writer.hpp"
 
 #include "error_detector.hpp"
+#include "pattern_detector.hpp"
 #include "mismatch_corrector.hpp"
 
 inline bool verify_seeds(const std::vector<std::string>& bf_seeds,
@@ -59,12 +60,11 @@ int main(int argc, char** argv)
     const bool same_seeds = verify_seeds(bf.get_seeds(), model_json["seeds"]);
     btllib::check_error(!same_seeds, "Bloom filter and model spaced seed set are not the same");
 
-    cli.start_timer("Initializing");
-    aiedit::MismatchCorrector mismatch_corrector(pattern_length, bf, model);
+    aiedit::MismatchCorrector mismatch_corrector(pattern_length, bf);
+    aiedit::PatternDetector pattern_detector(pattern_length, bf, model);
     btllib::SeqReader reader(args.assembly_path, btllib::SeqReader::Flag::LONG_MODE);
     aiedit::VCFWriter vcf_file(vcf_file_path, args.assembly_path);
     btllib::SeqWriter writer(edited_file_path, btllib::SeqWriter::FASTA);
-    cli.stop_timer();
 
     cli.start_timer("Detecting and correcting errors");
     unsigned num_patterns = 0;
@@ -80,7 +80,8 @@ int main(int argc, char** argv)
             aiedit::SequenceIterator seq_iter(seq, bf.get_seeds(), num_hashes, begin, end);
             aiedit::ErrorDetector err_detector(seq_iter, bf);
             while (err_detector.find_next()) {
-                const bool fixed = mismatch_corrector.fix(seq_iter);
+                const auto pattern = pattern_detector.get_pattern(seq_iter);
+                const bool fixed = mismatch_corrector.fix(seq_iter, pattern);
                 num_patterns += fixed ? 1 : 0;
                 seq_iter.next(fixed ? 0 : bf.get_k() + pattern_length);
                 const unsigned pos = seq_iter.get_position();
