@@ -14,11 +14,6 @@ bool ErrorDetector::find_next()
     return has_miss;
 }
 
-bool ErrorDetector::is_miss()
-{
-    const auto& hashes = seq_iter.get_hashes();
-    auto bf_contains = [&](const std::vector<std::uint64_t>& h) { return bf.contains(h); };
-    return !std::all_of(hashes.begin(), hashes.end(), bf_contains);
-}
+bool ErrorDetector::is_miss() { return !bf.contains(seq_iter.get_hashes()[0]); }
 
 }  // namespace aiedit
