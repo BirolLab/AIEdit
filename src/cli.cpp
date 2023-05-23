@@ -1,37 +1,21 @@
 #include "cli.hpp"
 #include "version.hpp"
 
-namespace aiedit {
-
-void CommandLineInterface::log_edit(const std::string& seq_id,
-                                    bool fixed,
-                                    size_t position,
-                                    size_t seq_len) const
-{
-    if (verbosity < 2) {
-        return;
+#define VERBOSITY_CHECK \
+    if (!verbose) {     \
+        return;         \
     }
-    const Color c = (fixed ? Color::FG_GREEN : Color::FG_RED);
-    const std::string fixed_text = (fixed ? "FIXED  " : "IGNORED");
-    std::cout << "[" << seq_id << "] ";
-    std::cout << add_color(fixed_text, c) << "  ";
-    std::cout << "@" << position << "/" << seq_len << "bp";
-    std::cout << std::endl;
-}
+
+namespace aiedit {
 
 void CommandLineInterface::print_logo() const
 {
-    if (verbosity < 1) {
-        return;
-    }
     std::cout << LOGO << "\tv" << aiedit::VERSION << std::endl << std::endl;
 }
 
 void CommandLineInterface::print_args(const ProgramArguments& args) const
 {
-    if (verbosity < 1) {
-        return;
-    }
+    VERBOSITY_CHECK
     std::cout << "- Assembly file     (-a)  = " << args.assembly_path << std::endl;
     std::cout << "- Bloom filter file (-b)  = " << args.bf_path << std::endl;
     std::cout << "- Number of threads (-t)  = " << args.num_threads << std::endl;
@@ -40,9 +24,7 @@ void CommandLineInterface::print_args(const ProgramArguments& args) const
 
 void CommandLineInterface::print_bloom_filter_information(const btllib::SeedBloomFilter& bf) const
 {
-    if (verbosity < 1) {
-        return;
-    }
+    VERBOSITY_CHECK
     std::cout << "- Size (bytes)       = " << bf.get_bytes() << std::endl;
     std::cout << "- FPR                = " << bf.get_fpr() << std::endl;
     std::cout << "- Occupancy          = " << bf.get_occupancy() << std::endl;
@@ -56,9 +38,7 @@ void CommandLineInterface::print_bloom_filter_information(const btllib::SeedBloo
 
 void CommandLineInterface::print_model_information(const nlohmann::json& model_json) const
 {
-    if (verbosity < 1) {
-        return;
-    }
+    VERBOSITY_CHECK
     const auto keras_version = model_json["architecture"]["keras_version"];
     const auto backend = model_json["architecture"]["backend"];
     std::cout << "- Pattern length = " << model_json["pattern_length"] << std::endl;
@@ -68,22 +48,39 @@ void CommandLineInterface::print_model_information(const nlohmann::json& model_j
     std::cout << std::endl;
 }
 
-void CommandLineInterface::print_num_edits(unsigned num_patterns, unsigned num_mismatches)
+void CommandLineInterface::print_polisher_results(const std::string& seq_id,
+                                                  const PolishingResults& stats)
 {
-    std::cout << "Number of error patterns = " << num_patterns << std::endl;
-    std::cout << "Number of mismatches     = " << num_mismatches << std::endl;
+    VERBOSITY_CHECK
+    const unsigned num_patterns = stats.get_num_ignored_patterns() + stats.get_num_fixed_patterns();
+    std::cout << std::endl;
+    std::cout << "[" << seq_id << "] ";
+    std::cout << "fixed " << stats.get_num_fixed_patterns();
+    std::cout << "/" << num_patterns << " patterns: ";
+    std::cout << "M=" << stats.get_num_mismatches() << " ";
+    std::cout << "I=" << stats.get_num_insertions() << " ";
+    std::cout << "D=" << stats.get_num_deletions() << std::flush;
+}
+
+void CommandLineInterface::print_final_stats(const unsigned num_mismatches,
+                                               const unsigned num_insertions,
+                                               const unsigned num_deletions)
+{
+    std::cout << "Number of mismatches = " << num_mismatches << std::endl;
+    std::cout << "Number of insertions = " << num_insertions << std::endl;
+    std::cout << "Number of deletions  = " << num_deletions << std::endl;
 }
 
 void CommandLineInterface::start_timer(const std::string& message)
 {
-    std::cout << message << "... " << std::flush;
+    std::cout << message << "..." << std::flush;
     timer.start();
 }
 
 void CommandLineInterface::stop_timer()
 {
     timer.stop();
-    std::cout << add_color("DONE", Color::FG_GREEN);
+    std::cout << " " << add_color("DONE", Color::FG_GREEN);
     std::cout << " (" << timer.to_string() << ")" << std::endl;
 }
 

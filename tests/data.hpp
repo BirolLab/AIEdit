@@ -31,8 +31,8 @@ struct MismatchTestData {
         std::vector<aiedit::Edit> edits;
         edits.emplace_back(miss_position,
                            aiedit::Edit::MISMATCH,
-                           std::string(1, seq[miss_position]),
-                           std::string(1, reference[miss_position]));
+                           seq[miss_position],
+                           reference[miss_position]);
         return edits;
     }
 };

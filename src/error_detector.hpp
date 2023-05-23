@@ -20,7 +20,7 @@ class ErrorDetector
      * Advance the sequence iterator to the next miss position
      * @return `false` if iteration has ended
      */
-    bool find_next();
+    bool next();
 
   private:
 

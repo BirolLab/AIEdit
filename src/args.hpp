@@ -14,7 +14,7 @@ class ProgramArguments
     std::filesystem::path bf_path;
     std::filesystem::path model_path;
     std::filesystem::path out_path;
-    unsigned verbosity = 0;
+    bool verbose;
     unsigned num_threads;
 
     void parse(int argc, char** argv);

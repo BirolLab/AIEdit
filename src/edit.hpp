@@ -20,14 +20,14 @@ class Edit
 
     const size_t position;
     const Type type;
-    const std::string before;
-    const std::string after;
+    const char before;
+    const char after;
 
-    Edit(size_t position, Type type, std::string before, std::string after)
+    Edit(size_t position, Type type, char before, char after)
       : position(position)
       , type(type)
-      , before(std::move(before))
-      , after(std::move(after))
+      , before(before)
+      , after(after)
     {}
 };
 

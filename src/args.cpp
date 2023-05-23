@@ -28,13 +28,10 @@ void ProgramArguments::parse(int argc, char** argv)
       .default_value((unsigned)1)
       .scan<'u', unsigned>();
 
-    parser.add_argument("-V")
-      .action([&](const auto&) { ++verbosity; })
-      .append()
-      .help("level of details printed to stdout (V: basic info, VV: detailed logs)")
+    parser.add_argument("--verbose")
+      .help("print more details to stdout")
       .default_value(false)
-      .implicit_value(true)
-      .nargs(0);
+      .implicit_value(true);
 
     parser.parse_args(argc, argv);
 
@@ -43,6 +40,7 @@ void ProgramArguments::parse(int argc, char** argv)
     model_path = std::filesystem::path(parser.get("-m"));
     out_path = std::filesystem::path(parser.get("-o"));
     num_threads = parser.get<unsigned>("-t");
+    verbose = parser.get<bool>("--verbose");
 }
 
 }  // namespace aiedit

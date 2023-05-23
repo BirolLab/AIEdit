@@ -4,7 +4,7 @@
 
 namespace aiedit {
 
-bool ErrorDetector::find_next()
+bool ErrorDetector::next()
 {
     bool has_miss = false;
     while (seq_iter.has_next() && !has_miss) {

@@ -13,6 +13,7 @@
 #include <nlohmann/json.hpp>
 
 #include "args.hpp"
+#include "polisher.hpp"
 #include "timer.hpp"
 
 namespace aiedit {
@@ -35,17 +36,7 @@ class CommandLineInterface
 
   public:
 
-    CommandLineInterface(unsigned verbosity) : verbosity(verbosity) {}
-
-    /**
-     * Log an edit to stdout
-     * @param seq_id Sequence ID
-     * @param fixed Indicates if a fix was detected
-     * @param pattern_string String representation of the edit pattern
-     * @param position Position of the pattern in the sequence
-     * @param seq_len Sequence length
-     */
-    void log_edit(const std::string& seq_id, bool fixed, size_t position, size_t seq_len) const;
+    CommandLineInterface(bool verbose) : verbose(verbose) {}
 
     /**
      * Print AIEdit's logo in ASCII art to stdout.
@@ -71,9 +62,16 @@ class CommandLineInterface
     void print_model_information(const nlohmann::json& model_json) const;
 
     /**
-     * Print the number of edits to stdout.
+     * Print verbose polishing statistics to stdout.
      */
-    static void print_num_edits(unsigned num_patterns, unsigned num_mismatches);
+    void print_polisher_results(const std::string& seq_id, const PolishingResults& stats);
+
+    /**
+     * Print final polishing statistics to stdout.
+     */
+    static void print_final_stats(const unsigned num_mismatches,
+                                    const unsigned num_insertions,
+                                    const unsigned num_deletions);
 
     /**
      * Start the timer
@@ -88,7 +86,7 @@ class CommandLineInterface
 
   private:
 
-    const unsigned verbosity;
+    const bool verbose;
     Timer timer;
 
     /**
