@@ -1,6 +1,6 @@
 #include <btllib/bloom_filter.hpp>
 
-#include "edit_pattern.hpp"
+#include "pattern.hpp"
 
 struct MismatchTestData {
 
@@ -19,9 +19,9 @@ struct MismatchTestData {
         bf.insert(reference.data(), reference.size());
     }
 
-    aiedit::EditPattern get_pattern() const
+    aiedit::Pattern get_pattern() const
     {
-        aiedit::EditPattern pattern(pattern_length);
+        aiedit::Pattern pattern(pattern_length);
         pattern.set(0, aiedit::Edit::MISMATCH);
         return pattern;
     }

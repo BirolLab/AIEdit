@@ -63,8 +63,8 @@ void CommandLineInterface::print_polisher_results(const std::string& seq_id,
 }
 
 void CommandLineInterface::print_final_stats(const unsigned num_mismatches,
-                                               const unsigned num_insertions,
-                                               const unsigned num_deletions)
+                                             const unsigned num_insertions,
+                                             const unsigned num_deletions)
 {
     std::cout << "Number of mismatches = " << num_mismatches << std::endl;
     std::cout << "Number of insertions = " << num_insertions << std::endl;

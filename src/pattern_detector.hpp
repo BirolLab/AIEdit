@@ -4,7 +4,7 @@
 #include <btllib/bloom_filter.hpp>
 #include <fdeep/fdeep.hpp>
 
-#include "edit_pattern.hpp"
+#include "pattern.hpp"
 #include "sequence_iterator.hpp"
 
 namespace aiedit {
@@ -27,7 +27,7 @@ class PatternDetector
      * @param signature Input signature
      * @return Model's output as pattern object
      */
-    EditPattern get_pattern(SequenceIterator& seq_iter);
+    Pattern get_pattern(SequenceIterator& seq_iter);
 
   private:
 

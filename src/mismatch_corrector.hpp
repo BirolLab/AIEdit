@@ -3,7 +3,7 @@
 
 #include <btllib/bloom_filter.hpp>
 
-#include "edit_pattern.hpp"
+#include "pattern.hpp"
 #include "sequence_iterator.hpp"
 
 namespace aiedit {
@@ -19,7 +19,7 @@ class MismatchCorrector
      * @param seq_iter Sequence iterator pointing to the mismatch region
      * @return `true` if any edits were applied
      */
-    std::vector<Edit> get_fixes(SequenceIterator& seq_iter, const EditPattern& pattern);
+    std::vector<Edit> get_fixes(SequenceIterator& seq_iter, const Pattern& pattern);
 
   private:
 

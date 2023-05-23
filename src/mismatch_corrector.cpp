@@ -58,7 +58,7 @@ inline void update_seq(SequenceIterator& seq_iter,
  * @param pattern Edit pattern containing mismatches
  * @return Vector of positions containing mismatches
  */
-inline std::vector<size_t> get_mismatch_positions(size_t base_position, const EditPattern& pattern)
+inline std::vector<size_t> get_mismatch_positions(size_t base_position, const Pattern& pattern)
 {
     std::vector<size_t> positions;
     for (unsigned i = 0; i < pattern.get_length(); i++) {
@@ -87,8 +87,7 @@ bool MismatchCorrector::check_fixes(SequenceIterator& seq_iter)
     return true;
 }
 
-std::vector<Edit> MismatchCorrector::get_fixes(SequenceIterator& seq_iter,
-                                               const EditPattern& pattern)
+std::vector<Edit> MismatchCorrector::get_fixes(SequenceIterator& seq_iter, const Pattern& pattern)
 {
     auto mismatch_positions = get_mismatch_positions(seq_iter.get_position(), pattern);
     const std::string original = seq_iter.get_bases(mismatch_positions);

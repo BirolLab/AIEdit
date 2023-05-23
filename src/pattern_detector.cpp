@@ -17,12 +17,12 @@ fdeep::tensor PatternDetector::get_model_input(SequenceIterator& seq_iter)
     return model_input;
 }
 
-EditPattern PatternDetector::get_pattern(SequenceIterator& seq_iter)
+Pattern PatternDetector::get_pattern(SequenceIterator& seq_iter)
 {
     const auto& signature = get_model_input(seq_iter);
     const double threshold = 0.5;
     auto model_output = model.predict({signature});
-    EditPattern pattern(pattern_length);
+    Pattern pattern(pattern_length);
     for (unsigned i = 0; i < pattern.get_length(); i++) {
         if (model_output.front().get(fdeep::tensor_pos(i)) >= threshold) {
             pattern.set(i, Edit::MISMATCH);

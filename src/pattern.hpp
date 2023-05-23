@@ -10,11 +10,11 @@
 
 namespace aiedit {
 
-class EditPattern
+class Pattern
 {
   public:
 
-    EditPattern(size_t length) : values(new Edit::Type[length]), length(length) {}
+    Pattern(size_t length) : values(new Edit::Type[length]), length(length) {}
 
     /**
      * Update the edit pattern array
