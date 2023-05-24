@@ -57,6 +57,8 @@ std::vector<SequenceIterator::HashVector> SequenceIterator::peek_hashes(unsigned
 
 unsigned SequenceIterator::get_seed_length() { return seeds[0].size(); }
 
+unsigned SequenceIterator::get_num_seeds() { return seeds.size(); }
+
 void SequenceIterator::update(size_t position, char value) { seq[position] = value; }
 
 }  // namespace aiedit

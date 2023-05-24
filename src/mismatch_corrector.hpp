@@ -1,7 +1,7 @@
 #ifndef AIEDIT_MISMATCH_CORRECTOR_HPP
 #define AIEDIT_MISMATCH_CORRECTOR_HPP
 
-#include <btllib/bloom_filter.hpp>
+#include <btllib/counting_bloom_filter.hpp>
 
 #include "pattern.hpp"
 #include "sequence_iterator.hpp"
@@ -12,7 +12,7 @@ class MismatchCorrector
 {
   public:
 
-    MismatchCorrector(const btllib::SeedBloomFilter& bf) : bf(bf) {}
+    MismatchCorrector(const btllib::CountingBloomFilter8& bf) : bf(bf) {}
 
     /**
      * Find fixes for the mismatches in the current position of the sequence iterator
@@ -23,7 +23,7 @@ class MismatchCorrector
 
   private:
 
-    const btllib::SeedBloomFilter& bf;
+    const btllib::CountingBloomFilter8& bf;
 };
 
 }  // namespace aiedit

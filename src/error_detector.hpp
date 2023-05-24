@@ -1,7 +1,7 @@
 #ifndef AIEDIT_ERROR_DETECTOR_HPP
 #define AIEDIT_ERROR_DETECTOR_HPP
 
-#include <btllib/bloom_filter.hpp>
+#include <btllib/counting_bloom_filter.hpp>
 
 #include "sequence_iterator.hpp"
 
@@ -11,7 +11,7 @@ class ErrorDetector
 {
   public:
 
-    ErrorDetector(SequenceIterator& seq_iter, const btllib::SeedBloomFilter& bf)
+    ErrorDetector(SequenceIterator& seq_iter, const btllib::CountingBloomFilter8& bf)
       : seq_iter(seq_iter)
       , bf(bf)
     {}
@@ -25,7 +25,7 @@ class ErrorDetector
   private:
 
     SequenceIterator& seq_iter;
-    const btllib::SeedBloomFilter& bf;
+    const btllib::CountingBloomFilter8& bf;
 
     /**
      * Check if the current position of the sequence iterator is a miss

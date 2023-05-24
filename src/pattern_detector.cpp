@@ -4,8 +4,8 @@ namespace aiedit {
 
 fdeep::tensor PatternDetector::get_model_input(SequenceIterator& seq_iter)
 {
-    unsigned signature_length = pattern_length + bf.get_seeds()[0].size() - 1;
-    const unsigned num_seeds = bf.get_seeds().size();
+    unsigned signature_length = pattern_length + seq_iter.get_seed_length() - 1;
+    const unsigned num_seeds = seq_iter.get_num_seeds();
     fdeep::tensor model_input(fdeep::tensor_shape(signature_length, num_seeds), 1);
     SequenceIterator seq_iter_copy(seq_iter);
     seq_iter_copy.previous();

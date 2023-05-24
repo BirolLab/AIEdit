@@ -82,6 +82,12 @@ class SequenceIterator
     unsigned get_seed_length();
 
     /**
+     * Get the length of the spaced seeds
+     * @return Length of each spaced seed
+     */
+    unsigned get_num_seeds();
+
+    /**
      * Get the sequence contents
      * @return `const` reference to the sequence string
      */

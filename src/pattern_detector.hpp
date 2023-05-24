@@ -1,7 +1,7 @@
 #ifndef PATTERN_DETECTOR_HPP
 #define PATTERN_DETECTOR_HPP
 
-#include <btllib/bloom_filter.hpp>
+#include <btllib/counting_bloom_filter.hpp>
 #include <fdeep/fdeep.hpp>
 
 #include "pattern.hpp"
@@ -15,7 +15,7 @@ class PatternDetector
   public:
 
     PatternDetector(unsigned pattern_length,
-                    const btllib::SeedBloomFilter& bf,
+                    const btllib::CountingBloomFilter8& bf,
                     const fdeep::model& model)
       : pattern_length(pattern_length)
       , bf(bf)
@@ -32,7 +32,7 @@ class PatternDetector
   private:
 
     const unsigned pattern_length;
-    const btllib::SeedBloomFilter& bf;
+    const btllib::CountingBloomFilter8& bf;
     const fdeep::model& model;
 
     /**

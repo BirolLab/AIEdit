@@ -27,7 +27,7 @@ PolishingResults Polisher::polish(SequenceIterator& seq_iter)
         }
         seq_iter.previous();
         apply_edits(seq_iter, edits, results);
-        seq_iter.next(fixed ? pattern_length : bf.get_k() + pattern_length);
+        seq_iter.next(fixed ? pattern_length : seq_iter.get_seed_length() + pattern_length);
     }
     return results;
 }

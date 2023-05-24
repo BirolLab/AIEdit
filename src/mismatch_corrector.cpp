@@ -79,15 +79,15 @@ inline void update_seq(SequenceIterator& seq_iter,
 }
 
 inline bool check_fixes(SequenceIterator& seq_iter,
-                        const btllib::SeedBloomFilter& bf,
+                        const btllib::CountingBloomFilter8& bf,
                         unsigned pattern_length,
                         const std::vector<size_t>& positions,
                         const std::string& fixes)
 {
-    auto bf_check = [&](const std::vector<uint64_t>& h) { return !bf.contains(h); };
+    auto bf_check = [&](const std::vector<uint64_t>& h) { return bf.contains(h) == 0; };
     SequenceIterator seq_iter_copy(seq_iter);
     update_seq(seq_iter_copy, positions, fixes);
-    unsigned signature_length = pattern_length + bf.get_k() - 1;
+    unsigned signature_length = pattern_length + seq_iter.get_seed_length() - 1;
     while (signature_length-- > 0 && seq_iter_copy.has_next()) {
         seq_iter_copy.next();
         const auto& hashes = seq_iter_copy.get_hashes();

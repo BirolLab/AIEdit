@@ -9,7 +9,7 @@
     "  / ____ \\ _| |_| |___| (_| | | |_         \n" \
     " /_/    \\_\\_____|______\\__,_|_|\\__|"
 
-#include <btllib/bloom_filter.hpp>
+#include <btllib/counting_bloom_filter.hpp>
 #include <nlohmann/json.hpp>
 
 #include "args.hpp"
@@ -53,7 +53,7 @@ class CommandLineInterface
      * Print information about a btllib::SeedBloomFilter
      * @param bf The input Bloom filter.
      */
-    void print_bloom_filter_information(const btllib::SeedBloomFilter& bf) const;
+    void print_bloom_filter_information(const btllib::CountingBloomFilter8& bf) const;
 
     /**
      * Print information about a btllib::SeedBloomFilter

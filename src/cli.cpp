@@ -24,17 +24,14 @@ void CommandLineInterface::print_args(const ProgramArguments& args) const
     std::cout << std::endl;
 }
 
-void CommandLineInterface::print_bloom_filter_information(const btllib::SeedBloomFilter& bf) const
+void CommandLineInterface::print_bloom_filter_information(
+  const btllib::CountingBloomFilter8& bf) const
 {
     VERBOSITY_CHECK
     std::cout << "- Size (bytes)       = " << bf.get_bytes() << std::endl;
     std::cout << "- FPR                = " << bf.get_fpr() << std::endl;
     std::cout << "- Occupancy          = " << bf.get_occupancy() << std::endl;
-    std::cout << "- Hashes per seed    = " << bf.get_hash_num_per_seed() << std::endl;
-    std::cout << "- Spaced seed length = " << bf.get_k() << std::endl;
-    for (size_t i = 0; i < bf.get_seeds().size(); i++) {
-        std::cout << "- Seed " << i + 1 << ": " << bf.get_seeds()[i] << std::endl;
-    }
+    std::cout << "- Hashes per seed    = " << bf.get_hash_num() << std::endl;
     std::cout << std::endl;
 }
 
@@ -47,6 +44,11 @@ void CommandLineInterface::print_model_information(const nlohmann::json& model_j
     std::cout << "- Model hash     = " << model_json["hash"] << std::endl;
     std::cout << "- Keras version  = " << keras_version << std::endl;
     std::cout << "- Keras backend  = " << backend << std::endl;
+    const std::vector<std::string> seeds = model_json["seeds"];
+    std::cout << "- Spaced seed length = " << seeds[0].size() << std::endl;
+    for (size_t i = 0; i < seeds.size(); i++) {
+        std::cout << "- Seed " << i + 1 << ": " << seeds[i] << std::endl;
+    }
     std::cout << std::endl;
 }
 
@@ -68,7 +70,7 @@ void CommandLineInterface::print_polisher_results(const std::string& seq_id,
     }
     std::cout << std::endl;
 }
- 
+
 void CommandLineInterface::print_final_stats(const unsigned num_mismatches,
                                              const unsigned num_insertions,
                                              const unsigned num_deletions)

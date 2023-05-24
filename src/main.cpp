@@ -1,4 +1,4 @@
-#include <btllib/bloom_filter.hpp>
+#include <btllib/counting_bloom_filter.hpp>
 #include <btllib/seq_reader.hpp>
 #include <btllib/seq_writer.hpp>
 #include <fdeep/fdeep.hpp>
@@ -36,21 +36,18 @@ int main(int argc, char** argv)
     cli.print_args(args);
 
     cli.start_timer("Loading Bloom filter");
-    const btllib::SeedBloomFilter bf(args.bf_path);
-    const unsigned num_hashes = bf.get_hash_num_per_seed();
+    const btllib::CountingBloomFilter8 bf(args.bf_path);
+    const unsigned num_hashes = bf.get_hash_num();
     cli.stop_timer();
     cli.print_bloom_filter_information(bf);
 
     cli.start_timer("Loading pattern detector model");
     const auto model = fdeep::load_model(args.model_path, false, fdeep::dev_null_logger);
     const auto model_json = nlohmann::json::parse(std::ifstream(args.model_path));
-    const std::vector<std::string> model_seeds = model_json["seeds"];
+    const std::vector<std::string> seeds = model_json["seeds"];
     const unsigned pattern_length = model_json["pattern_length"];
     cli.stop_timer();
     cli.print_model_information(model_json);
-
-    btllib::check_error(bf.get_seeds() != model_seeds,
-                        "Bloom filter and model spaced seeds are incompatible");
 
     btllib::SeqReader reader(args.assembly_path, btllib::SeqReader::Flag::LONG_MODE);
     aiedit::VCFWriter vcf_file(vcf_file_path, args.assembly_path);
@@ -66,7 +63,7 @@ int main(int argc, char** argv)
         for (unsigned i = 0; i < args.num_threads; i++) {
             const unsigned begin = i * chunk_size;
             const unsigned end = i < args.num_threads - 1 ? (i + 1) * chunk_size : seq.size();
-            aiedit::SequenceIterator seq_iter(seq, bf.get_seeds(), num_hashes, begin, end);
+            aiedit::SequenceIterator seq_iter(seq, seeds, num_hashes, begin, end);
             const auto results = polisher.polish(seq_iter);
             num_mismatches += results.get_num_mismatches();
             num_insertions += results.get_num_insertions();

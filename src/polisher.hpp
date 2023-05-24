@@ -1,7 +1,7 @@
 #ifndef POLISHER_HPP
 #define POLISHER_HPP
 
-#include <btllib/bloom_filter.hpp>
+#include <btllib/counting_bloom_filter.hpp>
 #include <fdeep/fdeep.hpp>
 #include <vector>
 
@@ -41,7 +41,9 @@ class Polisher
 
   public:
 
-    Polisher(unsigned pattern_length, const btllib::SeedBloomFilter& bf, const fdeep::model& model)
+    Polisher(unsigned pattern_length,
+             const btllib::CountingBloomFilter8& bf,
+             const fdeep::model& model)
       : pattern_length(pattern_length)
       , bf(bf)
       , model(model)
@@ -52,7 +54,7 @@ class Polisher
   private:
 
     const unsigned pattern_length;
-    const btllib::SeedBloomFilter& bf;
+    const btllib::CountingBloomFilter8& bf;
     const fdeep::model& model;
 
     static void apply_edits(SequenceIterator& seq_iter,

@@ -14,6 +14,6 @@ bool ErrorDetector::next()
     return has_miss;
 }
 
-bool ErrorDetector::is_miss() { return !bf.contains(seq_iter.get_hashes()[0]); }
+bool ErrorDetector::is_miss() { return bf.contains(seq_iter.get_hashes()[0]) == 0; }
 
 }  // namespace aiedit
