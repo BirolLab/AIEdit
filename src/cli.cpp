@@ -16,9 +16,11 @@ void CommandLineInterface::print_logo() const
 void CommandLineInterface::print_args(const ProgramArguments& args) const
 {
     VERBOSITY_CHECK
-    std::cout << "- Assembly file     (-a)  = " << args.assembly_path << std::endl;
-    std::cout << "- Bloom filter file (-b)  = " << args.bf_path << std::endl;
-    std::cout << "- Number of threads (-t)  = " << args.num_threads << std::endl;
+    std::cout << "- Assembly file         (-a)  = " << args.assembly_path << std::endl;
+    std::cout << "- Bloom filter file     (-b)  = " << args.bf_path << std::endl;
+    std::cout << "- Pattern detector file (-m)  = " << args.model_path << std::endl;
+    std::cout << "- Output path           (-o)  = " << args.out_path << std::endl;
+    std::cout << "- Number of threads     (-t)  = " << args.num_threads << std::endl;
     std::cout << std::endl;
 }
 
