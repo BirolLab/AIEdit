@@ -24,12 +24,6 @@ class MismatchCorrector
   private:
 
     const btllib::SeedBloomFilter& bf;
-
-    /**
-     * Peek the next signature and check for misses
-     * @return `true` if the signature contains no misses
-     */
-    bool check_fixes(SequenceIterator& seq_iter);
 };
 
 }  // namespace aiedit
