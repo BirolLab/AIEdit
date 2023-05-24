@@ -24,9 +24,17 @@ class SequenceIterator
                      size_t end)
       : seq(seq)
       , seeds(seeds)
-      , nthash(new nthash::SeedNtHash(seq, seeds, num_hashes, seeds[0].size(), begin))
+      , hash_fn(seq, seeds, num_hashes, seeds[0].size(), begin)
       , begin(begin)
       , end(end)
+    {}
+
+    SequenceIterator(const SequenceIterator& seq_iter)
+      : seq(seq_iter.seq)
+      , seeds(seq_iter.seeds)
+      , hash_fn(seq_iter.hash_fn)
+      , begin(seq_iter.begin)
+      , end(seq_iter.end)
     {}
 
     /**
@@ -54,13 +62,6 @@ class SequenceIterator
      * @return Value in the position
      */
     char get_base(size_t position);
-
-    /**
-     * Build a subsequence of the original sequence
-     * @param positions Positions of the bases
-     * @return String build from the positions
-     */
-    std::string get_bases(const std::vector<size_t>& positions);
 
     /**
      * Get the position of the current base
@@ -100,13 +101,11 @@ class SequenceIterator
      */
     void update(size_t position, char value);
 
-    ~SequenceIterator() { delete nthash; }
-
   private:
 
     std::string& seq;
     const std::vector<std::string>& seeds;
-    nthash::SeedNtHash* nthash;
+    nthash::SeedNtHash hash_fn;
     const size_t begin, end;
 
     /**

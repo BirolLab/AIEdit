@@ -7,9 +7,9 @@ SequenceIterator::HashVector SequenceIterator::to_hash_vector(const uint64_t* nt
     HashVector hashes;
     for (unsigned i = 0; i < seeds.size(); i++) {
         std::vector<uint64_t> seed_hashes;
-        seed_hashes.reserve(nthash->get_hash_num_per_seed());
-        const unsigned i_begin = i * nthash->get_hash_num_per_seed();
-        const unsigned i_end = i_begin + nthash->get_hash_num_per_seed();
+        seed_hashes.reserve(hash_fn.get_hash_num_per_seed());
+        const unsigned i_begin = i * hash_fn.get_hash_num_per_seed();
+        const unsigned i_end = i_begin + hash_fn.get_hash_num_per_seed();
         seed_hashes.insert(seed_hashes.end(), nthash_hashes + i_begin, nthash_hashes + i_end);
         hashes.push_back(seed_hashes);
     }
@@ -19,43 +19,33 @@ SequenceIterator::HashVector SequenceIterator::to_hash_vector(const uint64_t* nt
 void SequenceIterator::next(unsigned n)
 {
     for (unsigned i = 0; i < n; i++) {
-        nthash->roll();
+        hash_fn.roll();
     }
 }
 
 void SequenceIterator::previous(unsigned n)
 {
     for (unsigned i = 0; i < n; i++) {
-        nthash->roll_back();
+        hash_fn.roll_back();
     }
 }
 
-bool SequenceIterator::has_next() { return get_position() < end - nthash->get_k(); }
+bool SequenceIterator::has_next() { return get_position() < end - hash_fn.get_k(); }
 
 char SequenceIterator::get_base(size_t position) { return seq[position]; }
 
-std::string SequenceIterator::get_bases(const std::vector<size_t>& positions)
-{
-    std::string sub_seq;
-    sub_seq.reserve(positions.size());
-    for (const auto& pos : positions) {
-        sub_seq += seq[pos];
-    }
-    return sub_seq;
-}
-
-size_t SequenceIterator::get_position() { return nthash->get_pos() + nthash->get_k() - 1; }
+size_t SequenceIterator::get_position() { return hash_fn.get_pos() + hash_fn.get_k() - 1; }
 
 SequenceIterator::HashVector SequenceIterator::get_hashes()
 {
-    return to_hash_vector(nthash->hashes());
+    return to_hash_vector(hash_fn.hashes());
 }
 
 const std::string& SequenceIterator::get_sequence() { return seq; }
 
 std::vector<SequenceIterator::HashVector> SequenceIterator::peek_hashes(unsigned window_size)
 {
-    nthash::SeedNtHash h_copy(*nthash);
+    nthash::SeedNtHash h_copy(hash_fn);
     std::vector<HashVector> hashes;
     hashes.reserve(window_size);
     hashes.push_back(to_hash_vector(h_copy.hashes()));
