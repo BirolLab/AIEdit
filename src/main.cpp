@@ -15,14 +15,6 @@
 #include "timer.hpp"
 #include "vcf_writer.hpp"
 
-inline bool verify_seeds(const std::vector<std::string>& bf_seeds,
-                         const std::vector<std::string>& model_seeds)
-{
-    const std::set<std::string> bf_set(bf_seeds.begin(), bf_seeds.end());
-    const std::set<std::string> model_set(model_seeds.begin(), model_seeds.end());
-    return bf_set == model_set;
-}
-
 int main(int argc, char** argv)
 {
     aiedit::ProgramArguments args;
@@ -52,12 +44,13 @@ int main(int argc, char** argv)
     cli.start_timer("Loading pattern detector model");
     const auto model = fdeep::load_model(args.model_path, false, fdeep::dev_null_logger);
     const auto model_json = nlohmann::json::parse(std::ifstream(args.model_path));
+    const std::vector<std::string> model_seeds = model_json["seeds"];
     const unsigned pattern_length = model_json["pattern_length"];
     cli.stop_timer();
     cli.print_model_information(model_json);
 
-    const bool same_seeds = verify_seeds(bf.get_seeds(), model_json["seeds"]);
-    btllib::check_error(!same_seeds, "Bloom filter and model spaced seed set are not the same");
+    btllib::check_error(bf.get_seeds() != model_seeds,
+                        "Bloom filter and model spaced seeds are incompatible");
 
     btllib::SeqReader reader(args.assembly_path, btllib::SeqReader::Flag::LONG_MODE);
     aiedit::VCFWriter vcf_file(vcf_file_path, args.assembly_path);
