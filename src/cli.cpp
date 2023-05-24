@@ -61,9 +61,14 @@ void CommandLineInterface::print_polisher_results(const std::string& seq_id,
     std::cout << "/" << num_patterns << " patterns: ";
     std::cout << "M=" << stats.get_num_mismatches() << " ";
     std::cout << "I=" << stats.get_num_insertions() << " ";
-    std::cout << "D=" << stats.get_num_deletions() << std::flush;
+    std::cout << "D=" << stats.get_num_deletions() << std::endl;
+    std::cout << add_color("IGNORED:", Color::FG_RED);
+    for (const auto& pos : stats.get_ignored_positions()) {
+        std::cout << " " << pos;
+    }
+    std::cout << std::endl;
 }
-
+ 
 void CommandLineInterface::print_final_stats(const unsigned num_mismatches,
                                              const unsigned num_insertions,
                                              const unsigned num_deletions)
@@ -75,14 +80,14 @@ void CommandLineInterface::print_final_stats(const unsigned num_mismatches,
 
 void CommandLineInterface::start_timer(const std::string& message)
 {
-    std::cout << message << "..." << std::flush;
+    std::cout << message << "... " << std::flush;
     timer.start();
 }
 
 void CommandLineInterface::stop_timer()
 {
     timer.stop();
-    std::cout << " " << add_color("DONE", Color::FG_GREEN);
+    std::cout << add_color("DONE", Color::FG_GREEN);
     std::cout << " (" << timer.to_string() << ")" << std::endl;
 }
 
