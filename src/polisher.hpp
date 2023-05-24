@@ -17,19 +17,20 @@ class PolishingResults
   public:
 
     unsigned get_num_fixed_patterns() const { return num_fixed_patterns; }
-    unsigned get_num_ignored_patterns() const { return num_ignored_patterns; }
+    unsigned get_num_ignored_patterns() const { return ignored_positions.size(); }
     unsigned get_num_mismatches() const { return num_mismatches; }
     unsigned get_num_insertions() const { return num_insertions; }
     unsigned get_num_deletions() const { return num_deletions; }
     const std::vector<Edit>& get_edits() const { return edits; }
+    const std::vector<unsigned>& get_ignored_positions() const { return ignored_positions; }
 
   private:
 
     PolishingResults() = default;
 
     std::vector<Edit> edits;
+    std::vector<unsigned> ignored_positions;
     unsigned num_fixed_patterns = 0;
-    unsigned num_ignored_patterns = 0;
     unsigned num_mismatches = 0;
     unsigned num_insertions = 0;
     unsigned num_deletions = 0;
