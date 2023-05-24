@@ -4,13 +4,16 @@ namespace aiedit {
 
 fdeep::tensor PatternDetector::get_model_input(SequenceIterator& seq_iter)
 {
-    const unsigned signature_length = pattern_length + bf.get_seeds()[0].size() - 1;
+    unsigned signature_length = pattern_length + bf.get_seeds()[0].size() - 1;
     const unsigned num_seeds = bf.get_seeds().size();
-    fdeep::tensor model_input(fdeep::tensor_shape(signature_length, num_seeds), 0);
-    auto hashes = seq_iter.peek_hashes(signature_length);
-    for (unsigned i = 0; i < signature_length; i++) {
+    fdeep::tensor model_input(fdeep::tensor_shape(signature_length, num_seeds), 1);
+    SequenceIterator seq_iter_copy(seq_iter);
+    seq_iter_copy.previous();
+    for (unsigned i = 0; i < signature_length && seq_iter_copy.has_next(); i++) {
+        seq_iter_copy.next();
+        const auto hashes = seq_iter_copy.get_hashes();
         for (unsigned j = 0; j < num_seeds; j++) {
-            const auto is_miss = !bf.contains(hashes[i][j]);
+            const auto is_miss = !bf.contains(hashes[j]);
             model_input.set(fdeep::tensor_pos(i, j), is_miss ? 0.0 : 1.0);
         }
     }
