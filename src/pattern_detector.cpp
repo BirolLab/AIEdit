@@ -27,11 +27,15 @@ Pattern PatternDetector::get_pattern(SequenceIterator& seq_iter)
     auto model_output = model.predict({signature});
     Pattern pattern(pattern_length);
     for (unsigned i = 0; i < pattern.get_length(); i++) {
-        if (model_output.front().get(fdeep::tensor_pos(i)) >= threshold) {
-            pattern.set(i, Edit::MISMATCH);
-        } else {
-            pattern.set(i, Edit::NONE);
+        auto edit_type = Edit::NONE;
+        if (model_output.front().get(fdeep::tensor_pos(3 * i)) >= threshold) {
+            edit_type = Edit::MISMATCH;
+        } else if (model_output.front().get(fdeep::tensor_pos(3 * i + 1)) >= threshold) {
+            edit_type = Edit::INSERTION;
+        } else if (model_output.front().get(fdeep::tensor_pos(3 * i + 2)) >= threshold) {
+            edit_type = Edit::DELETION;
         }
+        pattern.set(i, edit_type);
     }
     return pattern;
 }
