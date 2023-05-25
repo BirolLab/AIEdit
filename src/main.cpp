@@ -35,7 +35,7 @@ int main(int argc, char** argv)
     cli.print_logo();
     cli.print_args(args);
 
-    cli.start_timer("Loading Bloom filter");
+    cli.start_timer("Loading counting Bloom filter");
     const btllib::CountingBloomFilter8 bf(args.bf_path);
     const unsigned num_hashes = bf.get_hash_num();
     cli.stop_timer();
