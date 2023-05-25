@@ -18,15 +18,14 @@ import keras.optimizers
 import matplotlib.pyplot as plt
 import numpy as np
 
+from signature import get_signature
+
 DEFAULT_SEEDS = [
     "1111111111110111111111111",
     "1111111111100011111111111",
     "1111111111000001111111111",
     "1111111111001001111111111",
     "1111111100001000011111111",
-    "1111111110001000111111111",
-    "1111111000001000001111111",
-    "1111111111101011111111111",
 ]
 
 
@@ -45,7 +44,7 @@ def get_model(seeds: list[str], pattern_length: int) -> keras.Sequential:
                             pattern_length,
                             input_shape=(signature_length, len(seeds))),
         keras.layers.Flatten(),
-        keras.layers.Dense(pattern_length, activation='sigmoid')
+        keras.layers.Dense(pattern_length * 3, activation='sigmoid')
     ])
 
 
@@ -88,30 +87,24 @@ def parse_args() -> argparse.Namespace:
 
 def get_pattern_strings(pattern_length: int) -> list[str]:
     pattern_strings = []
-    for i in range(2**(pattern_length - 1)):
-        pattern_strings.append("1" + bin(i)[2:].zfill(pattern_length - 1))
+    for i in range(2**(pattern_length - 1), 2**pattern_length):
+        pattern_strings.append(np.base_repr(i, 2).replace("1", "M"))
+    for i in range(1, pattern_length):
+        pattern_strings.append("I" * i + "0" * (pattern_length - i))
+        pattern_strings.append("D" * i + "0" * (pattern_length - i))
     return pattern_strings
 
 
-def get_signature(seeds: list[str], pattern_string: str) -> np.array:
-    seed_length = len(seeds[0])
-    padding = "0" * (seed_length - 1)
-    pattern = padding + pattern_string + padding
-    signature_length = len(pattern_string) + len(padding)
-    signature = np.ones((signature_length, len(seeds)))
-    for i, j in itertools.product(range(signature_length), range(len(seeds))):
-        has_miss = False
-        for pos in range(seed_length):
-            if seeds[j][pos] == "1" and pattern[i + pos] == "1":
-                has_miss = True
-        if has_miss:
-            signature[i][j] = 0
-    return signature
-
-
 def get_pattern_tensor(pattern_string: str) -> np.array:
-    pattern = list(map(float, pattern_string))
-    return np.expand_dims(np.array(pattern), axis=1)
+    pattern = np.zeros((len(pattern_string) * 3, 1))
+    for i in range(len(pattern_string)):
+        if pattern_string[i] == 'M':
+            pattern[3 * i] = 1.0
+        elif pattern_string[i] == "I":
+            pattern[3 * i + 1] = 1.0
+        elif pattern_string[i] == "D":
+            pattern[3 * i + 2] = 1.0
+    return pattern
 
 
 def augment_data(data: Dataset, ratio: float) -> None:
@@ -193,9 +186,9 @@ def save_model(model: keras.Model, pattern_length: int, seeds: list[str],
     model_temp_h5 = out_path + '.h5'
     model.save(model_temp_h5, include_optimizer=False)
     current_dir = os.path.dirname(__file__)
-    script_path = os.path.join(os.path.dirname(current_dir), 'vendor',
-                               'frugally-deep', 'keras_export',
-                               'convert_model.py')
+    project_dir = os.path.dirname(os.path.dirname(current_dir))
+    script_path = os.path.join(project_dir, 'vendor', 'frugally-deep',
+                               'keras_export', 'convert_model.py')
     args = ['python', script_path, model_temp_h5, out_path, '--no-tests']
     call_result = subprocess.call(args, stderr=subprocess.PIPE)
     if call_result != 0:
@@ -207,7 +200,7 @@ def save_model(model: keras.Model, pattern_length: int, seeds: list[str],
     json_data['pattern_length'] = pattern_length
     json_data['seeds'] = seeds
     with open(out_path, 'w') as json_file:
-        json.dump(json_data, json_file)
+        json.dump(json_data, json_file, indent=4)
 
 
 def main():
