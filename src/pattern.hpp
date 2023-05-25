@@ -14,7 +14,7 @@ class Pattern
 {
   public:
 
-    Pattern(size_t length) : values(new Edit::Type[length]), length(length) {}
+    Pattern(size_t length) : values(std::make_unique<Edit::Type[]>(length)), length(length) {}
 
     /**
      * Update the edit pattern array
@@ -44,7 +44,7 @@ class Pattern
 
   private:
 
-    std::shared_ptr<Edit::Type[]> values;
+    std::unique_ptr<Edit::Type[]> values;
     const size_t length;
 };
 
