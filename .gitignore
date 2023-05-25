@@ -1,4 +1,9 @@
-# IDE/Editor related files
-build
+# IDE/Editors
 .idea
 .vscode
+
+# Build system
+build
+
+# Python
+__pycache__
