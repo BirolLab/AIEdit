@@ -102,7 +102,7 @@ inline bool check_fixes(SequenceIterator& seq_iter,
 
 namespace aiedit {
 
-std::vector<Edit> MismatchCorrector::get_fixes(SequenceIterator& seq_iter, const Pattern& pattern)
+std::vector<Edit> MismatchCorrector::fix(SequenceIterator& seq_iter, const Pattern& pattern)
 {
     auto positions = get_mismatch_positions(seq_iter.get_position(), pattern);
     const std::string original = get_bases(seq_iter, positions);
@@ -119,12 +119,17 @@ std::vector<Edit> MismatchCorrector::get_fixes(SequenceIterator& seq_iter, const
             break;
         }
     }
-    update_seq(seq_iter, positions, original);
-    seq_iter.next();
+    if (fixes.empty()) {
+        update_seq(seq_iter, positions, original);
+        seq_iter.next(seq_iter.get_seed_length() + pattern.get_length() + 1);
+        return std::vector<Edit>();
+    }
     std::vector<Edit> edits;
     for (unsigned i = 0; i < fixes.size(); i++) {
         edits.emplace_back(positions[i], Edit::Type::MISMATCH, original[i], fixes[i]);
     }
+    update_seq(seq_iter, positions, fixes);
+    seq_iter.next(pattern.get_length());
     return edits;
 }
 

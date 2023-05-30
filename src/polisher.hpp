@@ -57,9 +57,10 @@ class Polisher
     const btllib::CountingBloomFilter8& bf;
     const fdeep::model& model;
 
-    static void apply_edits(SequenceIterator& seq_iter,
-                            const std::vector<Edit>& edits,
-                            PolishingResults& results);
+    static void update_results(const std::vector<Edit>& mismatches,
+                               const std::vector<Edit>& indels,
+                               unsigned seq_iter_position,
+                               PolishingResults& results);
 };
 
 }  // namespace aiedit

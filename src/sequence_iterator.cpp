@@ -18,19 +18,22 @@ SequenceIterator::HashVector SequenceIterator::to_hash_vector(const uint64_t* nt
 
 void SequenceIterator::next(unsigned n)
 {
-    for (unsigned i = 0; i < n; i++) {
+    for (unsigned i = 0; i < n && has_next(); i++) {
         hash_fn.roll();
     }
 }
 
 void SequenceIterator::previous(unsigned n)
 {
-    for (unsigned i = 0; i < n; i++) {
+    for (unsigned i = 0; i < n && has_next(); i++) {
         hash_fn.roll_back();
     }
 }
 
-bool SequenceIterator::has_next() { return get_position() < end - hash_fn.get_k(); }
+bool SequenceIterator::has_next()
+{
+    return get_position() < std::min(end, seq.size()) - hash_fn.get_k();
+}
 
 char SequenceIterator::get_base(size_t position) { return seq[position]; }
 
@@ -60,5 +63,12 @@ unsigned SequenceIterator::get_seed_length() { return seeds[0].size(); }
 unsigned SequenceIterator::get_num_seeds() { return seeds.size(); }
 
 void SequenceIterator::update(size_t position, char value) { seq[position] = value; }
+
+void SequenceIterator::insert(size_t position, char value)
+{
+    seq.insert(position, std::string(1, value));
+}
+
+void SequenceIterator::remove(size_t position) { seq.erase(position, 1); }
 
 }  // namespace aiedit

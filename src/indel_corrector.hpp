@@ -1,18 +1,21 @@
-#ifndef AIEDIT_MISMATCH_CORRECTOR_HPP
-#define AIEDIT_MISMATCH_CORRECTOR_HPP
+#ifndef INDEL_CORRECTOR
+#define INDEL_CORRECTOR
 
 #include <btllib/counting_bloom_filter.hpp>
+#include <vector>
 
+#include "edit.hpp"
 #include "pattern.hpp"
 #include "sequence_iterator.hpp"
 
 namespace aiedit {
 
-class MismatchCorrector
+class IndelCorrector
 {
+
   public:
 
-    MismatchCorrector(const btllib::CountingBloomFilter8& bf) : bf(bf) {}
+    IndelCorrector(const btllib::CountingBloomFilter8& bf) : bf(bf) {}
 
     /**
      * Find fixes for the mismatches in the current position of the sequence iterator
@@ -28,4 +31,4 @@ class MismatchCorrector
 
 }  // namespace aiedit
 
-#endif  // AIEDIT_MISMATCH_CORRECTOR_HPP
+#endif
