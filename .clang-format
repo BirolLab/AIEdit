@@ -22,7 +22,6 @@ ContinuationIndentWidth: 2
 EmptyLineAfterAccessModifier: Always
 IndentPPDirectives: BeforeHash
 IndentWidth: 4
-PackConstructorInitializers: CurrentLine
 PointerAlignment: Left
 SpacesBeforeTrailingComments: 2
 TabWidth: 4
