@@ -1,8 +1,5 @@
 #include "mismatch_corrector.hpp"
 
-#include <bitset>
-#include <fdeep/fdeep.hpp>
-
 namespace {
 
 using namespace aiedit;
@@ -119,9 +116,9 @@ std::vector<Edit> MismatchCorrector::fix(SequenceIterator& seq_iter, const Patte
             break;
         }
     }
+    seq_iter.next();
     if (fixes.empty()) {
         update_seq(seq_iter, positions, original);
-        seq_iter.next(seq_iter.get_seed_length() + pattern.get_length() + 1);
         return std::vector<Edit>();
     }
     std::vector<Edit> edits;
@@ -129,7 +126,6 @@ std::vector<Edit> MismatchCorrector::fix(SequenceIterator& seq_iter, const Patte
         edits.emplace_back(positions[i], Edit::Type::MISMATCH, original[i], fixes[i]);
     }
     update_seq(seq_iter, positions, fixes);
-    seq_iter.next(pattern.get_length());
     return edits;
 }
 

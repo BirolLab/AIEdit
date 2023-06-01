@@ -5,6 +5,12 @@
 #include "mismatch_corrector.hpp"
 #include "pattern_detector.hpp"
 
+namespace {
+
+using namespace aiedit;
+
+}  // namespace
+
 namespace aiedit {
 
 PolishingResults Polisher::polish(SequenceIterator& seq_iter)
@@ -15,10 +21,26 @@ PolishingResults Polisher::polish(SequenceIterator& seq_iter)
     MismatchCorrector mismatch_corrector(bf);
     IndelCorrector indel_corrector(bf);
     while (err_detector.next()) {
-        const auto pattern = pattern_detector.get_pattern(seq_iter);
-        const auto mismatches = mismatch_corrector.fix(seq_iter, pattern);
-        const auto indels = indel_corrector.fix(seq_iter, pattern);
-        update_results(mismatches, indels, seq_iter.get_position(), results);
+        auto pattern = pattern_detector.get_pattern(seq_iter);
+        auto num_detected_mismatches = pattern.get_count(Edit::Type::MISMATCH);
+        auto num_detected_insertions = pattern.get_count(Edit::Type::INSERTION);
+        auto num_detected_deletions = pattern.get_count(Edit::Type::DELETION);
+        std::vector<Edit> fixed_mismatches;
+        std::vector<Edit> fixed_indels;
+        if (num_detected_mismatches > 0) {
+            fixed_mismatches = mismatch_corrector.fix(seq_iter, pattern);
+        }
+        if (fixed_mismatches.size() == 0 && num_detected_insertions + num_detected_deletions > 0) {
+            fixed_indels = indel_corrector.fix(seq_iter, pattern);
+        }
+        std::cout << seq_iter.get_position() << " " << pattern.to_string() << " "
+                  << fixed_mismatches.size() << " " << fixed_indels.size() << std::endl;
+        update_results(fixed_mismatches, fixed_indels, seq_iter.get_position(), results);
+        if (fixed_mismatches.empty() && fixed_indels.empty()) {
+            seq_iter.next(pattern.get_length() + seq_iter.get_seed_length());
+        } else {
+            seq_iter.next(pattern.get_length());
+        }
     }
     return results;
 }

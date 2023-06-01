@@ -115,6 +115,13 @@ class SequenceIterator
     void insert(size_t position, char value);
 
     /**
+     * Insert new bases
+     * @param position Position of the new bases
+     * @param value Values
+     */
+    void insert(size_t position, std::string bases);
+
+    /**
      * Delete a base
      * @param position Position of the base
      */

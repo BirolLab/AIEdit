@@ -30,10 +30,7 @@ void SequenceIterator::previous(unsigned n)
     }
 }
 
-bool SequenceIterator::has_next()
-{
-    return get_position() < std::min(end, seq.size()) - hash_fn.get_k();
-}
+bool SequenceIterator::has_next() { return get_position() < end - hash_fn.get_k(); }
 
 char SequenceIterator::get_base(size_t position) { return seq[position]; }
 
@@ -62,13 +59,28 @@ unsigned SequenceIterator::get_seed_length() { return seeds[0].size(); }
 
 unsigned SequenceIterator::get_num_seeds() { return seeds.size(); }
 
-void SequenceIterator::update(size_t position, char value) { seq[position] = value; }
+void SequenceIterator::update(size_t position, char value)
+{
+    seq[position] = value;
+    hash_fn.change_seq(seq, hash_fn.get_pos());
+}
 
 void SequenceIterator::insert(size_t position, char value)
 {
-    seq.insert(position, std::string(1, value));
+    seq.insert(position, 1, value);
+    hash_fn.change_seq(seq, hash_fn.get_pos());
 }
 
-void SequenceIterator::remove(size_t position) { seq.erase(position, 1); }
+void SequenceIterator::insert(size_t position, std::string bases)
+{
+    seq.insert(position, bases);
+    hash_fn.change_seq(seq, hash_fn.get_pos());
+}
+
+void SequenceIterator::remove(size_t position)
+{
+    seq.erase(position, 1);
+    hash_fn.change_seq(seq, hash_fn.get_pos());
+}
 
 }  // namespace aiedit
