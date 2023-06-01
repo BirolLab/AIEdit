@@ -87,8 +87,9 @@ def parse_args() -> argparse.Namespace:
 
 def get_pattern_strings(pattern_length: int) -> list[str]:
     pattern_strings = []
-    for i in range(2**(pattern_length - 1), 2**pattern_length):
-        pattern_strings.append(np.base_repr(i, 2).replace("1", "M"))
+    for i in range(2**pattern_length):
+        p_str = np.base_repr(i, 2).zfill(pattern_length).replace("1", "M")
+        pattern_strings.append(p_str)
     for i in range(1, pattern_length):
         pattern_strings.append("I" * i + "0" * (pattern_length - i))
         pattern_strings.append("D" * i + "0" * (pattern_length - i))
