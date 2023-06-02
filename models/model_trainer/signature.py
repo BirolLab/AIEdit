@@ -21,9 +21,11 @@ def get_signature(seeds: list[str], pattern: str, verbose=False) -> np.array:
             alt = alt[:j] + b + alt[j + 1:]
             j += 1
         elif p == 'D':
-            b = random.choice('ACGT')
+            b = random.choice('ACGT'.replace(alt[j], ''))
             alt = alt[:j] + b + alt[j:]
             j += 1
+        elif p == 'R':
+            alt = alt[:j] + alt[j] + alt[j:]
         elif p == 'I':
             alt = alt[:j] + alt[j + 1:]
         else:
@@ -65,4 +67,4 @@ if __name__ == "__main__":
             '111111101111111',
             '111110010011111',
             '111111000111111',
-        ], '-M-', verbose=True))
+        ], 'I--', verbose=True))

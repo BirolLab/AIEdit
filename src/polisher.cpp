@@ -5,12 +5,6 @@
 #include "mismatch_corrector.hpp"
 #include "pattern_detector.hpp"
 
-namespace {
-
-using namespace aiedit;
-
-}  // namespace
-
 namespace aiedit {
 
 PolishingResults Polisher::polish(SequenceIterator& seq_iter)
@@ -30,13 +24,13 @@ PolishingResults Polisher::polish(SequenceIterator& seq_iter)
         if (num_detected_mismatches > 0) {
             fixed_mismatches = mismatch_corrector.fix(seq_iter, pattern);
         }
-        if (fixed_mismatches.size() == 0 && num_detected_insertions + num_detected_deletions > 0) {
+        if (fixed_mismatches.empty() && num_detected_insertions + num_detected_deletions > 0) {
             fixed_indels = indel_corrector.fix(seq_iter, pattern);
         }
         std::cout << seq_iter.get_position() << " " << pattern.to_string() << " "
                   << fixed_mismatches.size() << " " << fixed_indels.size() << std::endl;
         update_results(fixed_mismatches, fixed_indels, seq_iter.get_position(), results);
-        if (fixed_mismatches.empty() && fixed_indels.empty()) {
+        if (fixed_mismatches.empty()) {
             seq_iter.next(pattern.get_length() + seq_iter.get_seed_length());
         } else {
             seq_iter.next(pattern.get_length());

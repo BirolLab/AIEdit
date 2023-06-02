@@ -125,7 +125,7 @@ class SequenceIterator
      * Delete a base
      * @param position Position of the base
      */
-    void remove(size_t position);
+    void remove(size_t position, unsigned num_bases = 1);
 
   private:
 
