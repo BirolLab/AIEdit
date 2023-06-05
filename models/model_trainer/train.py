@@ -37,17 +37,6 @@ class Dataset:
     y_test: list[np.array]
 
 
-def get_model(seeds: list[str], pattern_length: int) -> keras.Sequential:
-    signature_length = pattern_length + len(seeds[0]) - 1
-    return keras.Sequential([
-        keras.layers.Conv1D(1,
-                            pattern_length,
-                            input_shape=(signature_length, len(seeds))),
-        keras.layers.Flatten(),
-        keras.layers.Dense(pattern_length * 3, activation='sigmoid')
-    ])
-
-
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser("AIEdit pattern detector training script")
     parser.add_argument("-o", help="output model file path", required=True)
@@ -83,6 +72,31 @@ def parse_args() -> argparse.Namespace:
     print(f"Training for w={args.w} and {len(args.seeds)} spaced seeds:")
     print(*args.seeds, sep=os.linesep)
     return args
+
+
+def build_model(seeds: list[str], pattern_length: int) -> keras.Sequential:
+    signature_length = pattern_length + len(seeds[0]) - 1
+    return keras.Sequential([
+        keras.layers.Conv1D(1,
+                            pattern_length,
+                            input_shape=(signature_length, len(seeds))),
+        keras.layers.Flatten(),
+        keras.layers.Dense(pattern_length * 3, activation='sigmoid')
+    ])
+
+
+def train(model: keras.Model, data: Dataset, num_epochs: int):
+    model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001),
+                  loss=keras.losses.BinaryCrossentropy(),
+                  metrics=[keras.metrics.BinaryAccuracy()])
+    x_train, y_train = np.array(data.x_train), np.array(data.y_train)
+    val = (np.array(data.x_test), np.array(data.y_test))
+    training = model.fit(x_train,
+                         y_train,
+                         batch_size=1,
+                         epochs=num_epochs,
+                         validation_data=val)
+    return training.history
 
 
 def get_pattern_strings(pattern_length: int) -> list[str]:
@@ -144,44 +158,6 @@ def prepare_data(seeds: list[str], pattern_length: int,
     return data
 
 
-def get_validation_error(model: keras.Model, data: Dataset) -> float:
-    num_accurate = 0
-    for x, y_true in zip(data.x_test, data.y_test):
-        y_pred = np.round(model.predict(x))
-        if np.array_equal(y_pred, y_true):
-            num_accurate += 1
-    return 1 - num_accurate / len(data.x_test)
-
-
-def train(model: keras.Model, data: Dataset, num_epochs: int):
-    model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001),
-                  loss=keras.losses.BinaryCrossentropy(),
-                  metrics=[keras.metrics.BinaryAccuracy()])
-    x_train, y_train = np.array(data.x_train), np.array(data.y_train)
-    val = (np.array(data.x_test), np.array(data.y_test))
-    training = model.fit(x_train,
-                         y_train,
-                         batch_size=1,
-                         epochs=num_epochs,
-                         validation_data=val)
-    return training.history
-
-
-def plot_training_stats(stats: dict, out_path: str) -> None:
-    fig, ax = plt.subplots(1, 2, figsize=(8, 4), dpi=300)
-    x = np.arange(len(stats['loss']))
-    ax[0].plot(stats['loss'])
-    ax[0].set_xticks(x, x + 1)
-    ax[0].set_xlabel("Epoch")
-    ax[0].set_ylabel("Training loss")
-    ax[1].plot(stats['val_binary_accuracy'])
-    ax[1].set_xticks(x, x + 1)
-    ax[1].set_xlabel("Epoch")
-    ax[1].set_ylabel("Validation accuracy")
-    fig.tight_layout()
-    plt.savefig(os.path.join(os.path.dirname(out_path), "training.png"))
-
-
 def save_model(model: keras.Model, pattern_length: int, seeds: list[str],
                out_path: str):
     model_temp_h5 = out_path + '.h5'
@@ -204,9 +180,24 @@ def save_model(model: keras.Model, pattern_length: int, seeds: list[str],
         json.dump(json_data, json_file, indent=4)
 
 
+def plot_training_stats(stats: dict, out_path: str) -> None:
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4), dpi=300)
+    x = np.arange(len(stats['loss']))
+    ax[0].plot(stats['loss'])
+    ax[0].set_xticks(x, x + 1)
+    ax[0].set_xlabel("Epoch")
+    ax[0].set_ylabel("Training loss")
+    ax[1].plot(stats['val_binary_accuracy'])
+    ax[1].set_xticks(x, x + 1)
+    ax[1].set_xlabel("Epoch")
+    ax[1].set_ylabel("Validation accuracy")
+    fig.tight_layout()
+    plt.savefig(os.path.join(os.path.dirname(out_path), "training.png"))
+
+
 def main():
     args = parse_args()
-    model = get_model(args.seeds, args.w)
+    model = build_model(args.seeds, args.w)
     model.summary()
     data = prepare_data(args.seeds, args.w, args.a)
     print(f"Training samples: {len(data.x_train)}")
