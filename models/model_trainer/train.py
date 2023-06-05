@@ -74,28 +74,36 @@ def parse_args() -> argparse.Namespace:
     return args
 
 
-def build_model(seeds: list[str], pattern_length: int) -> keras.Sequential:
+def build_model(seeds: list[str], pattern_length: int) -> keras.Model:
     signature_length = pattern_length + len(seeds[0]) - 1
-    return keras.Sequential([
-        keras.layers.Conv1D(1,
-                            pattern_length,
-                            input_shape=(signature_length, len(seeds))),
-        keras.layers.Flatten(),
-        keras.layers.Dense(pattern_length * 3, activation='sigmoid')
-    ])
+    x_in = keras.layers.Input((signature_length, len(seeds)))
+    z_conv = keras.layers.Conv1D(1, pattern_length)(x_in)
+    z_flat = keras.layers.Flatten()(z_conv)
+    y_out = [
+        keras.layers.Dense(4, activation='softmax')(z_flat)
+        for _ in range(pattern_length)
+    ]
+    return keras.Model(x_in, y_out)
+
+
+def reshape_y(y: list[np.array]):
+    y = np.array(y)
+    return [y[:, i, :] for i in range(y.shape[1])]
 
 
 def train(model: keras.Model, data: Dataset, num_epochs: int):
     model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001),
                   loss=keras.losses.BinaryCrossentropy(),
                   metrics=[keras.metrics.BinaryAccuracy()])
-    x_train, y_train = np.array(data.x_train), np.array(data.y_train)
-    val = (np.array(data.x_test), np.array(data.y_test))
+    x_train = np.array(data.x_train)
+    y_train = reshape_y(data.y_train)
+    x_val = np.array(data.x_test)
+    y_val = reshape_y(data.y_test)
     training = model.fit(x_train,
                          y_train,
                          batch_size=1,
                          epochs=num_epochs,
-                         validation_data=val)
+                         validation_data=(x_val, y_val))
     return training.history
 
 
@@ -111,14 +119,16 @@ def get_pattern_strings(pattern_length: int) -> list[str]:
 
 
 def get_pattern_tensor(pattern_string: str) -> np.array:
-    pattern = np.zeros((len(pattern_string) * 3, 1))
+    pattern = np.zeros((len(pattern_string), 4))
     for i in range(len(pattern_string)):
         if pattern_string[i] == 'M':
-            pattern[3 * i] = 1.0
+            pattern[i][1] = 1.0
         elif pattern_string[i] == "I":
-            pattern[3 * i + 1] = 1.0
+            pattern[i][2] = 1.0
         elif pattern_string[i] == "D":
-            pattern[3 * i + 2] = 1.0
+            pattern[i][3] = 1.0
+        else:
+            pattern[i][0] = 1.0
     return pattern
 
 

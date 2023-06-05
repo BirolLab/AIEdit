@@ -1,5 +1,25 @@
 #include "pattern_detector.hpp"
 
+namespace {
+
+using namespace fdeep;
+
+inline unsigned argmax(const fdeep::tensor& x)
+{
+    double max_val = 0;
+    unsigned idx_max = 0;
+    for (unsigned i = 0; i < x.depth(); i++) {
+        const auto x_i = x.get(fdeep::tensor_pos(i));
+        if (x_i > max_val) {
+            max_val = x_i;
+            idx_max = i;
+        }
+    }
+    return idx_max;
+}
+
+}  // namespace
+
 namespace aiedit {
 
 fdeep::tensor PatternDetector::get_model_input(SequenceIterator& seq_iter)
@@ -23,19 +43,19 @@ fdeep::tensor PatternDetector::get_model_input(SequenceIterator& seq_iter)
 Pattern PatternDetector::get_pattern(SequenceIterator& seq_iter)
 {
     const auto& signature = get_model_input(seq_iter);
-    const double threshold = 0.5;
     auto model_output = model.predict({signature});
     Pattern pattern(pattern_length);
     for (unsigned i = 0; i < pattern.get_length(); i++) {
-        auto edit_type = Edit::NONE;
-        if (model_output.front().get(fdeep::tensor_pos(3 * i)) >= threshold) {
-            edit_type = Edit::MISMATCH;
-        } else if (model_output.front().get(fdeep::tensor_pos(3 * i + 1)) >= threshold) {
-            edit_type = Edit::INSERTION;
-        } else if (model_output.front().get(fdeep::tensor_pos(3 * i + 2)) >= threshold) {
-            edit_type = Edit::DELETION;
+        const auto argmax_y = argmax(model_output[i]);
+        if (argmax_y == 0) {
+            pattern.set(i, Edit::NONE);
+        } else if (argmax_y == 1) {
+            pattern.set(i, Edit::MISMATCH);
+        } else if (argmax_y == 2) {
+            pattern.set(i, Edit::INSERTION);
+        } else if (argmax_y == 3) {
+            pattern.set(i, Edit::DELETION);
         }
-        pattern.set(i, edit_type);
     }
     return pattern;
 }
