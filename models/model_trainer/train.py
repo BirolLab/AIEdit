@@ -1,14 +1,14 @@
 import argparse
 import dataclasses
-import itertools
 import json
 import os
-import random
 import re
 import subprocess
 import sys
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+from collections import Counter
 
 import keras
 import keras.layers
@@ -17,15 +17,13 @@ import keras.metrics
 import keras.optimizers
 import matplotlib.pyplot as plt
 import numpy as np
-
-from signature import get_signature
+import tensorflow as tf
+from signature import get_signature, to_string
 
 DEFAULT_SEEDS = [
-    "1111111111110111111111111",
-    "1111111111100011111111111",
-    "1111111111000001111111111",
-    "1111111111001001111111111",
-    "1111111100001000011111111",
+    '1111111111110111111111111', '1001111111111111111111001',
+    '1111111111100011111111111', '1000011111111111111100001',
+    '1111111111000001111111111'
 ]
 
 
@@ -35,6 +33,7 @@ class Dataset:
     y_train: list[np.array]
     x_test: list[np.array]
     y_test: list[np.array]
+    patterns: list[str]
 
 
 def parse_args() -> argparse.Namespace:
@@ -46,11 +45,15 @@ def parse_args() -> argparse.Namespace:
                         type=int)
     parser.add_argument("-e",
                         help="number of training epochs",
-                        default=10,
+                        default=20,
                         type=int)
-    parser.add_argument("-a",
-                        help="data augmentation ratio",
-                        default=0.1,
+    parser.add_argument("-n",
+                        help="number of samples per class",
+                        default=20,
+                        type=int)
+    parser.add_argument("-fpr",
+                        help="false positive rate for simulation",
+                        default=0.0001,
                         type=float)
     parser.add_argument("seeds",
                         help="spaced seed patterns"
@@ -77,11 +80,11 @@ def parse_args() -> argparse.Namespace:
 def build_model(seeds: list[str], pattern_length: int) -> keras.Model:
     signature_length = pattern_length + len(seeds[0]) - 1
     x_in = keras.layers.Input((signature_length, len(seeds)))
-    z_conv = keras.layers.Conv1D(1, pattern_length)(x_in)
+    z_conv = keras.layers.Conv1D(1, pattern_length, activation='relu')(x_in)
     z_flat = keras.layers.Flatten()(z_conv)
     y_out = [
-        keras.layers.Dense(4, activation='softmax')(z_flat)
-        for _ in range(pattern_length)
+        keras.layers.Dense(4, activation='softmax', name=f'y{i}')(z_flat)
+        for i in range(pattern_length)
     ]
     return keras.Model(x_in, y_out)
 
@@ -93,8 +96,8 @@ def reshape_y(y: list[np.array]):
 
 def train(model: keras.Model, data: Dataset, num_epochs: int):
     model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001),
-                  loss=keras.losses.BinaryCrossentropy(),
-                  metrics=[keras.metrics.BinaryAccuracy()])
+                  loss=keras.losses.CategoricalCrossentropy(),
+                  metrics=[keras.metrics.CategoricalAccuracy()])
     x_train = np.array(data.x_train)
     y_train = reshape_y(data.y_train)
     x_val = np.array(data.x_test)
@@ -109,10 +112,10 @@ def train(model: keras.Model, data: Dataset, num_epochs: int):
 
 def get_pattern_strings(pattern_length: int) -> list[str]:
     pattern_strings = []
-    for i in range(2**pattern_length):
+    for i in range(2**(pattern_length - 1), 2**pattern_length):
         p_str = np.base_repr(i, 2).zfill(pattern_length).replace("1", "M")
         pattern_strings.append(p_str)
-    for i in range(1, pattern_length):
+    for i in range(1, pattern_length + 1):
         pattern_strings.append("I" * i + "0" * (pattern_length - i))
         pattern_strings.append("D" * i + "0" * (pattern_length - i))
     return pattern_strings
@@ -132,40 +135,25 @@ def get_pattern_tensor(pattern_string: str) -> np.array:
     return pattern
 
 
-def augment_data(data: Dataset, ratio: float) -> None:
+def prepare_data(seeds: list[str], pattern_length: int, samples_per_class: int,
+                 fpr: float) -> Dataset:
+    generated = set()
     x_train, y_train, x_test, y_test = [], [], [], []
-    for x, y in zip(data.x_train, data.y_train):
-        miss_positions = []
-        for i, j in itertools.product(range(x.shape[0]), range(x.shape[1])):
-            if x[i][j] == 0.0:
-                miss_positions.append((i, j))
-        random.shuffle(miss_positions)
-        miss_positions = miss_positions[:int(len(miss_positions) * ratio * 2)]
-        for_train = True
-        for i, j in miss_positions:
-            x_c, y_c = x.copy(), y.copy()
-            x_c[i][j] = 1.0
-            if for_train:
-                x_train.append(x_c)
-                y_train.append(y_c)
-            else:
-                x_test.append(x_c)
-                y_test.append(y_c)
-            for_train = not for_train
-    data.x_train.extend(x_train)
-    data.y_train.extend(y_train)
-    data.x_test.extend(x_test)
-    data.y_test.extend(y_test)
-
-
-def prepare_data(seeds: list[str], pattern_length: int,
-                 augmentation_ratio: float) -> Dataset:
-    pattern_strings = get_pattern_strings(pattern_length)
-    x_train = [get_signature(seeds, p) for p in pattern_strings]
-    y_train = [get_pattern_tensor(p) for p in pattern_strings]
-    data = Dataset(x_train, y_train, [], [])
-    augment_data(data, augmentation_ratio)
-    return data
+    patterns = []
+    for p in get_pattern_strings(pattern_length):
+        for i in range(int(samples_per_class * 1.2)):
+            signature = get_signature(seeds, p, fpr if i > 0 else 0)
+            signature_string = to_string(signature, sep=',')
+            if signature_string not in generated:
+                generated.add(signature_string)
+                if i < samples_per_class:
+                    x_train.append(signature)
+                    y_train.append(get_pattern_tensor(p))
+                else:
+                    x_test.append(signature)
+                    y_test.append(get_pattern_tensor(p))
+                patterns.append(p)
+    return Dataset(x_train, y_train, x_test, y_test, patterns)
 
 
 def save_model(model: keras.Model, pattern_length: int, seeds: list[str],
@@ -190,17 +178,26 @@ def save_model(model: keras.Model, pattern_length: int, seeds: list[str],
         json.dump(json_data, json_file, indent=4)
 
 
-def plot_training_stats(stats: dict, out_path: str) -> None:
-    fig, ax = plt.subplots(1, 2, figsize=(8, 4), dpi=300)
-    x = np.arange(len(stats['loss']))
-    ax[0].plot(stats['loss'])
-    ax[0].set_xticks(x, x + 1)
-    ax[0].set_xlabel("Epoch")
-    ax[0].set_ylabel("Training loss")
-    ax[1].plot(stats['val_binary_accuracy'])
-    ax[1].set_xticks(x, x + 1)
-    ax[1].set_xlabel("Epoch")
-    ax[1].set_ylabel("Validation accuracy")
+def plot_training_stats(stats: dict, pattern_length: int,
+                        out_path: str) -> None:
+    fig, ax = plt.subplots(2, 2, figsize=(8, 8), dpi=300)
+    for i in range(pattern_length):
+        ax[0][0].plot(stats[f'y{i}_loss'], label=f'y{i}')
+        ax[0][1].plot(stats[f'y{i}_categorical_accuracy'], label=f'y{i}')
+        ax[1][0].plot(stats[f'val_y{i}_loss'], label=f'y{i}')
+        ax[1][1].plot(stats[f'val_y{i}_categorical_accuracy'], label=f'y{i}')
+    ax[0][0].set_xlabel("Epoch")
+    ax[0][0].set_ylabel("Training loss")
+    ax[0][0].legend()
+    ax[0][1].set_xlabel("Epoch")
+    ax[0][1].set_ylabel("Training accuracy")
+    ax[0][1].legend()
+    ax[1][0].set_xlabel("Epoch")
+    ax[1][0].set_ylabel("Validation loss")
+    ax[1][0].legend()
+    ax[1][1].set_xlabel("Epoch")
+    ax[1][1].set_ylabel("Validation accuracy")
+    ax[1][1].legend()
     fig.tight_layout()
     plt.savefig(os.path.join(os.path.dirname(out_path), "training.png"))
 
@@ -209,13 +206,15 @@ def main():
     args = parse_args()
     model = build_model(args.seeds, args.w)
     model.summary()
-    data = prepare_data(args.seeds, args.w, args.a)
+    data = prepare_data(args.seeds, args.w, args.n, args.fpr)
     print(f"Training samples: {len(data.x_train)}")
+    for c, n in Counter(data.patterns).items():
+        print(c.replace("0", "-"), n)
     print(f"Testing samples: {len(data.x_test)}")
     training_stats = train(model, data, args.e)
     save_model(model, args.w, args.seeds, args.o)
     if args.plot_stats:
-        plot_training_stats(training_stats, args.o)
+        plot_training_stats(training_stats, args.w, args.o)
 
 
 if __name__ == "__main__":

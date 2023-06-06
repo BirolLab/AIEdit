@@ -4,13 +4,16 @@ import btllib
 import numpy as np
 
 
-def get_signature(seeds: list[str], pattern: str, verbose=False) -> np.array:
+def get_signature(seeds: list[str],
+                  pattern: str,
+                  fpr: float = 0,
+                  verbose=False) -> np.array:
     seed_length = len(seeds[0])
     pattern_length = len(pattern)
     seq_length = 2 * seed_length + pattern_length - 2
     # generate reference sequence
     ref = ''.join(random.choice('ACGT') for _ in range(seq_length))
-    bf = btllib.SeedBloomFilter(1024, seed_length, seeds, 3)
+    bf = btllib.SeedBloomFilter(1024, seed_length, seeds, 1)
     bf.insert(ref)
     # generate alt sequence
     alt = ref[seed_length - 1:seed_length + pattern_length - 1]
@@ -51,20 +54,24 @@ def get_signature(seeds: list[str], pattern: str, verbose=False) -> np.array:
             end = (j + 1) * bf.get_hash_num_per_seed()
             hashes = h.hashes()[begin:end]
             signature[i][j] = 1.0 if bf.contains(hashes) else 0.0
+            if random.uniform(0, 1) <= fpr:
+                signature[i][j] = 1.0
     return signature
 
 
-def print_signature(signature: np.array):
+def to_string(signature: np.array, sep='\n'):
+    s = ''
     for i in range(signature.shape[1]):
         for j in range(signature.shape[0]):
-            print(int(signature[j][i]), end='')
-        print()
+            s += str(int((signature[j][i])))
+        s += sep
+    return s
 
 
 if __name__ == "__main__":
-    print_signature(
-        get_signature([
-            '111111101111111',
-            '111110010011111',
-            '111111000111111',
-        ], 'I--', verbose=True))
+    seeds = [
+        '111111101111111', '100111111111001', '111111000111111',
+        '100001111100001', '111110000011111'
+    ]
+    print(to_string(get_signature(seeds, 'I----', verbose=True)))
+    print(to_string(get_signature(seeds, 'D----', verbose=True)))

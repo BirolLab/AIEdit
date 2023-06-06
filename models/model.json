@@ -39,7 +39,7 @@
                             1
                         ],
                         "groups": 1,
-                        "activation": "linear",
+                        "activation": "relu",
                         "use_bias": true,
                         "kernel_initializer": {
                             "class_name": "GlorotUniform",
@@ -92,7 +92,7 @@
                 {
                     "class_name": "Dense",
                     "config": {
-                        "name": "dense",
+                        "name": "y0",
                         "trainable": true,
                         "dtype": "float32",
                         "units": 4,
@@ -114,7 +114,7 @@
                         "kernel_constraint": null,
                         "bias_constraint": null
                     },
-                    "name": "dense",
+                    "name": "y0",
                     "inbound_nodes": [
                         [
                             [
@@ -129,7 +129,7 @@
                 {
                     "class_name": "Dense",
                     "config": {
-                        "name": "dense_1",
+                        "name": "y1",
                         "trainable": true,
                         "dtype": "float32",
                         "units": 4,
@@ -151,7 +151,7 @@
                         "kernel_constraint": null,
                         "bias_constraint": null
                     },
-                    "name": "dense_1",
+                    "name": "y1",
                     "inbound_nodes": [
                         [
                             [
@@ -166,7 +166,7 @@
                 {
                     "class_name": "Dense",
                     "config": {
-                        "name": "dense_2",
+                        "name": "y2",
                         "trainable": true,
                         "dtype": "float32",
                         "units": 4,
@@ -188,7 +188,7 @@
                         "kernel_constraint": null,
                         "bias_constraint": null
                     },
-                    "name": "dense_2",
+                    "name": "y2",
                     "inbound_nodes": [
                         [
                             [
@@ -203,7 +203,7 @@
                 {
                     "class_name": "Dense",
                     "config": {
-                        "name": "dense_3",
+                        "name": "y3",
                         "trainable": true,
                         "dtype": "float32",
                         "units": 4,
@@ -225,7 +225,7 @@
                         "kernel_constraint": null,
                         "bias_constraint": null
                     },
-                    "name": "dense_3",
+                    "name": "y3",
                     "inbound_nodes": [
                         [
                             [
@@ -240,7 +240,7 @@
                 {
                     "class_name": "Dense",
                     "config": {
-                        "name": "dense_4",
+                        "name": "y4",
                         "trainable": true,
                         "dtype": "float32",
                         "units": 4,
@@ -262,7 +262,7 @@
                         "kernel_constraint": null,
                         "bias_constraint": null
                     },
-                    "name": "dense_4",
+                    "name": "y4",
                     "inbound_nodes": [
                         [
                             [
@@ -284,27 +284,27 @@
             ],
             "output_layers": [
                 [
-                    "dense",
+                    "y0",
                     0,
                     0
                 ],
                 [
-                    "dense_1",
+                    "y1",
                     0,
                     0
                 ],
                 [
-                    "dense_2",
+                    "y2",
                     0,
                     0
                 ],
                 [
-                    "dense_3",
+                    "y3",
                     0,
                     0
                 ],
                 [
-                    "dense_4",
+                    "y4",
                     0,
                     0
                 ]
@@ -340,60 +340,60 @@
     "trainable_params": {
         "conv1d": {
             "weights": [
-                "CV3mvhw53b7NUu0+QzoUvRauD7/xToW9XlRePp4DlD7IzwU9Fi/pvoyOqb6/knm+CCFqPujxTr/YXIy/x3jpPeXIib1WOd++WpjCPk0APz8c3zI+wsGEvk53Ur8x9PS+IZ4DPg=="
+                "zGF5Plkqhz8cCzY+jz7WPzkgxj9Ulqy+iwX4Pggd7z3SElm+uPWLPyWTFj7D/4A+rnscPvjFyL646Hy9607DPqsE+D4uhNE+C/kMPz6r7T94wRU/ST/ePnw5hT42ica+Z1ivPg=="
             ],
             "bias": [
-                "JklXPw=="
+                "dk9aPg=="
             ]
         },
-        "dense": {
+        "y0": {
             "weights": [
-                "SfQ+v1nDgz9bzBu+AOGfPrK/EL82y02+J1NGPcABir61KY0+AJkaPqD2hL4XoA++BHSlvja0iD6AIHw9tJPsvoqy4DzYB2y+QGMQv10jsL5J+CS+89N9vtCmYr90uK2+opb8vakXe7wGSs2+TFvmvifn6j3wdsa+/e75PRScir4360y+pvmDPWg8Qb5RP7m+Z36/PrFF6L5+jJI+iUrvPtJnjr9n0o0+DdvePsM8WD8Nwja/dM4BP0uW4j1gdO0+VtAUv8wa3T56Hxi+VY01PTQbB77uL7k9/oH8vYJBUr1RXUA/pfh2v1SEJb95tZ++hJjGvm5Xqb4krtk+RXCQPZthl796BMI+RRhGPY0l3DyY97e/CQLfPj/kbD6L74I+dd2bvviiIL6mOMI977EzvgVV7751fPM9Glljvz7zoj4ME3I+AqgbPPZZB78YTau9sR12PsCUFj5vZUe+A+i1vmDewj4XWoY+ZeGXv/z6CD/sSfc91P22PqnoHr8jvK++aT+jvYsdgj/4ZZq+L7jhvA=="
+                "Tu/svtggUr8VECk/iUgYv658Rr/pWwY/2QcevO37ij4k25G/pIB6vrTeoL7muSO+XBeOv+NNAD7t6H++QtNZvjcwh78KdkK9r7EHvhq0lT1pVl6/aGHCvijDSz5hrbg+i8SzvhhiED5wgM++OGNuvfkT+b7wfQQ/s5Qpvj3f1D7teg6/xOybPfc9uT6E+Eo+HqEav1cdJb70RAY+vuO9PisXbL6GUs4+SdQHvxUeXD1t4cS+l5JCPyW4pb4dEx2/mY0nv6IrQj4PFtu9VMZgveexBL8bx0o/VPMqv1ga977AvCW/dL1zP/ubJ7+i7fS+rTopv/ys4r7ixwe+6lERP15bTL8KivK+iENSvuHirj44+Ve/j3gIv2l63b7kccs+ebNRv0cykzwFw46+cwkVP0vsKr7WqN6+vX2FPsrKx777Enu/u74QvkcLyz3gpRe+a5Uqvs6T8L7NzwM/O/8Rv0rwNL8ZH8I8AShmPiaouzvLhQK/FFeMPalgFb4W1jg+RPasvrEOSL/l5O09VUerPg=="
             ],
             "bias": [
-                "MXaevYN3Wb2hewK/Dlf1vg=="
+                "kR4gv3eLFb+KLgG+RLMpPw=="
             ]
         },
-        "dense_1": {
+        "y1": {
             "weights": [
-                "52IQvlQk3L3Bjtg9nwTmPqZvPr8WDyI/63C3PidZk77Q6Kq69nm8PuZ6vr5rosK8hgnEPuC1mL6rqD6/gsb8vshh2j7kNnU+tfifvt6gQ7+69Bw+TLX3vnnHZb5mA4C9CINNvQnkcbxbCeO953M3viRON74oafm+K86Dvi99xL7lobQ+toZbPbk3qL0RmqK+4i/Vvr46nD6U8pQ9nu+qPvi7lT9UVKm/mPtiP2sq5D6lEHW/l/4RP0wNKD1u6BE/lie6vhV91z4wEik97Tk3Pn31Br/oFww/N+nZPRKSmT23aYK+P6OsvpoLv741/3o9e7bIvZjWM79ZUBY+Q0uwPmCpnz6A/Fm+CX3APu+fgz3tnna+wBr6t1VdqLzLtko+F8L/vUOILz5sshq/4V6hvuAPvb44tdu+NhRYvyeWb75Jdjg+Y/3jvqwBsb6YEiC/Yn68PrSmrT5wHEG/QN41Pu75jj7yOIa96Kw7v6Ys3j3YN36+aYC5PrplVr6GJiy+Qz71PbFeLj/0kFG+U5I3Pg=="
+                "K5LjPSajz74WDPk+gynDvqWrED9kNuy/jnwBvotn9D1es0u+wE9OPXg+TL7+rSS8oqlWvceKZT6ZUWe+Cs0jvQqouzyivdA+lrODvJwpIj7TqeA9RoaIvs2xDD8XvmM8RGuxPcrIUD4bG5u+VGjPPpz2/T5Ae4g+rYvXvmDHPT6w99q+oh52vrtBnj62eQE+JdmCPHqjxz5QF5k+nHcuP/Q6qb0iKbo+1m8WvqHT9r1bAyg94nYjP/VUkr7xXnS/2Afavn9WfL6cBC++q3EMvvMzYD4idk0/RjiJv4yAl775k1y+WhW5PhdM+L7t2YK/uzr4vQEm1b6zJB++RcNXP3NC6L7Hb6e+JgeUvDyK9T6JpwW+4fXKvkuUHL98i7o++riNvrAIQz71sIi+powLP/FpPL5lyQ88tR4XPx6Znr6DQTU+yhH/u+rvmD2lwMu9zRKgvsKlsb6w+q4+Nckmv/cc6D4FIke/610mvjl4qb5DDEa+WEN0PonSI75/fTC9sWw1vcBZNL8rrMg8CwiMPg=="
             ],
             "bias": [
-                "dOtyPeQfb75OzAy/5uv+vg=="
+                "A34Wv91y7r0CECK9B+43Pw=="
             ]
         },
-        "dense_2": {
+        "y2": {
             "weights": [
-                "7SWkvrvAvz4VV5A+9SwdP5IUiD5I3xQ+eZnGvWfWYD7MOOu+R4qSvr64Br8UaQO/DbphPnesUz6g9ja/8n8/vckWrDzaVO+++vfqvl7WAL8GbCY/jiEdvy3fT79hdxu/nNgJvgiQcL3DGee+tD8bvk7W9b5/Rr8+dCiEvvuAOb71TKw+oIHIviap+r5ByhW+OlGJvqq7DTvGCeo+WcKXvBhDtb0NhW2+JPICP0DtBz/HUHM/k8mLvy47Qj5sIak+7a+9v0Jwkz+nyjM+b2L7vVRu+b5deGo+5BhevvrJZT7tc7W+e5/7Pk7V5r7Zlqa+f3yvvo2l1b6z8L49OI0UPzLuwD76+Qi/klgUPkKy9D7EpZY7F4ytvjuntr4z62W9l4jOPh74/z1iJZi9gtIqvit1jT7Ris08tNWIvgWeIr9N9969b8QlvvwtRzz1ky+/wryBvmd8jT6FdgI9+6iqvv2mzDzzCmc9sL0tvxYzsL0A3YS9ZEHdPRiIbL4CuL8+8O2EvglEYj+kz/S+PB7mPg=="
+                "Tx66PG54mL4qhXA+uonVvuSfMD4nK+o+G0NcvpPD1z47Kjo/GAgFwNzrhT7pfKI+vHxPPUhYRT7jU4a+BLsVPSjgyzzEEZM93PtNvv9Qer4Zwi+/RmMRviaRFr6l4qO+/lCbu5aUhj4trY29HsWuPp4SAr3LB6i+yBLpvp693r2njOM8cVzHvr0d9z4GuOU+W68AvraBur4f2Ce+jd6rPjg1RT3yk9G81y5QvfcOCr4m4ci+jiElP2FI+b2myUi/00vVvtVx6Dzmzda+TawWPqledL4pCyA/qRx6v4aEqb5ucjY+nbgbP/ixCL8BFJ2/AK8AvhOIQr8TCY++bWjjPi0goDxjWw6+Ist4Ph2xQj78VhG+e2sFPvIhgL7tULw+AFa+vp8khz7f46S+IJ4XPyE21b1/LAe+mntPPkDZq76leYk9cviMvi2fybs7MAC+HDEzvgo8WL+z7JA+0oYQvxABB7yxc1C+vvC8vWuvBr8wPnc+1dzJvtwjAT2Kx62+iUIAPtlrsL07L3g9IwoRPw=="
             ],
             "bias": [
-                "tScsPhdVbb47cwq/XagJvw=="
+                "5fwCv+A5CL6KSzM9ZVsxPw=="
             ]
         },
-        "dense_3": {
+        "y3": {
             "weights": [
-                "qQpLvsbiDT1SPwQ92fMPP2rdK75TOm6+PdKRPnTbFT35mmw+aO+DPFQg8r0shb+9oSs0PmC0f73k2kC/pAz5vTbaID/iAfu+xJNzvYJ8Wr+Htm0+gPe9viqCd7/gOVS9zcHaPtvrHL8aqIG9nnsgv7egi76YfEq+9NMevyDpSr3imyW/HY5NP+cQCL9ofpQ9IdMIPnP5kL68JfU+fzFgPOXRNzxNCYC+hOVSPsAPdD8b+M09hOykvqb6TDy7Svk+SDNQP4CCU7/2B6a92atFPScgrr9AIaA/gl4ivp12Nj7yYAq/ZNyAPi0l/b6bjw+/DdfXvstEhT4t1Fe94YO6vafWwbpTns8+jKvfvd6UJT54y4Y9Ew5MPu91hr3tldO+meQMPiTVbr71+bK+IvEEv+29OT5B+No8/XravrxeKb9jr8g+QUU7vt/tD7/gnrm+biuPvWw+pr5qoUc9R8jJvt7haTw76Z+9WikPv3BwnL6TBFq/zN0uP3uumr5X6x8/G5M7PnNyET8tJ4C+krTLPg=="
+                "mMDNPa0GPL/7qbM+9tzIvhFjkz4a8Sc/4wD/vdGTyz7SqO+9YoovvswNkb5O4OG87XAZPyUaxb9k9OW88lpqPqC6r75nKnk+LsLwvVOcJb4LkCa+fSyNvsgERL2g2Xq+SiYmPB3zIT9SSAO/0AnUPtOXLT7P8w4+Ac0ovbqcUj6UNNq+tEW2vv6MBD2/Ke0+oQsEvrK8Fr9YOiK++cQaPwIidj22TZs+2YhXPsmBgDxTEuQ+pkM3PyH+JT4MP9q+zBO6viyGdr7dK56+BRI3PqIYZ773GGs/1u2Kv583Eb9kdU696iMuP2fXe76ZHma/B7NfvkcWuL5nZTe9at2GPlaUTr4LThO/cQXuvYv7sD2eC5u8bxG4PcR7kb7WVvQ+p1KQvo77Yb7WaLy+K7kpPuvMHr6pXtm9Ba23Pl//3z2fK3i+QEzBvVBLTL7NG3W8XfzPvNDbYL17N8M+BmOnvoGq+T61CGC+CRzHPq7GvL6sSE++79LKPsASX75WqVq+4yjFPhkpx7+tfo89xI8PPg=="
             ],
             "bias": [
-                "OSIUPk8TNL4QAgm/SpLzvg=="
+                "R/PDvsAuE70wkBC6l7XqPg=="
             ]
         },
-        "dense_4": {
+        "y4": {
             "weights": [
-                "EBlwvQDgJD4KXem92+k5vkdnAz7WLfK+ivZtPStAMz7qnra+rGZlvKlNLr8eH9C+174cPpDZDL4f/lu/NTFVvtnRAj4aY1c85CvCvmq6aL/C5vA9dzKGvkEqr77HtEO/S91qvuY+EL/iNzq/+WUCvzGGKz9P6Ie+iw41vXAMH79XT/A9+G70PXSMNb89m8S+fyCav8XxoD+JlII+om6oPjn/mr6MmXo9JlsYP/z4Db1Zpa89NqCbPmN+Ez6+6fA98Fu0Pv/umr5hpj08AaPLPeCCLz8hlgm/E1SCPgFlmr6RH1K/pg1tPqznKr/6ug+/FTC5PrPl/b38HfE8oiCLvvke0z3Wjjk+Nt4AvtYk+r0r7si+lN4+vg9Dnb68lkq8onmRvbgejT1+cBC/5DvHvr5CgD4kcjO+QFU9vwcd/r746Q8/ovY3Pr2TX7/9ZOe+9ya3PSCOkT6BYJ27VhNBv3ooF7/EIMM+eyZEPa2ISb7n5BO/mkxBP8Djg76RYIK++xVfvwvUhT/Ge10+hZLtPg=="
+                "6EwaPSVj+74NWMU+QMcavv1uz72kMoE+hlbdvg+4yj2CEJm+4ekwPguToL4C4om+q5pAvi40Iz//3Ii+Pgr8PbpUXz+6Vku/EAUyvsgFzz3iMa6+dxn4vqfGLz61kRi+SIaSvkO7Hz3/HNO+lt6avpC3Ob+t+zG95MLMPSyACT3Rh5i8LCnAvm2lvj69kdM+VCnBPbiSkD3zsAa+imSevH68TD+DhJa/XG+GvpbnKz1ClkC/oG17P4tC+L58vwK/inedvqVApr+/6GE+BTtvux8vMb4AsVc+SuGKvxq8o75WlA2/ToFGP71BHr+ssem/4XABPsU9mL5wWRA9HXZBvnozNjqFAYK+9ubQvLT0Lr/vWJu+UL61vXm2Qb6SLKg+XAirPocPv75gC7C8NZKWPuFMML9FaBc+0q+HvJ/VIr78m6y98yHbvLzV4j6BM189dyuhvqZVB7//OaM+1nh+vqrFnr2PB8u+B1daPq6Vs74Vmfs+ijlLv5LeaT75PT4+4AHjPlKZCb9Q8jK/+Y7Fuw=="
             ],
             "bias": [
-                "kkgoPvMPIL6Dhiu/Vuwkvw=="
+                "mSTHvsEEHL46AxY8q0XFPg=="
             ]
         }
     },
-    "hash": "d136fb95d1a2234f7288f0e89e43fb650afd5bc404e4415e0be21e313806d5c2",
+    "hash": "eaca046addcc733c88a8d689148ddac0daa41239f1a317cb5ad4ea051f11e366",
     "pattern_length": 5,
     "seeds": [
         "1111111111110111111111111",
+        "1001111111111111111111001",
         "1111111111100011111111111",
-        "1111111111000001111111111",
-        "1111111111001001111111111",
-        "1111111100001000011111111"
+        "1000011111111111111100001",
+        "1111111111000001111111111"
     ]
 }
