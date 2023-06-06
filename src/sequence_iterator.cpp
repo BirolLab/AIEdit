@@ -69,6 +69,7 @@ void SequenceIterator::insert(size_t position, char value)
 {
     seq.insert(position, 1, value);
     hash_fn.change_seq(seq, hash_fn.get_pos());
+    ++end;
 }
 
 void SequenceIterator::insert(size_t position, std::string bases)
@@ -76,6 +77,7 @@ void SequenceIterator::insert(size_t position, std::string bases)
     seq.insert(position, bases);
     hash_fn.change_seq(seq, hash_fn.get_pos());
     hash_fn.roll();
+    end += bases.size();
 }
 
 void SequenceIterator::remove(size_t position, unsigned num_bases)
@@ -83,6 +85,7 @@ void SequenceIterator::remove(size_t position, unsigned num_bases)
     seq.erase(position, num_bases);
     hash_fn.change_seq(seq, hash_fn.get_pos());
     hash_fn.roll();
+    end -= num_bases;
 }
 
 }  // namespace aiedit

@@ -14,10 +14,11 @@ class PatternDetector
 
   public:
 
-    PatternDetector(unsigned pattern_length,
+    PatternDetector(const std::vector<std::string>& patterns,
                     const btllib::CountingBloomFilter8& bf,
                     const fdeep::model& model)
-      : pattern_length(pattern_length)
+      : pattern_length(patterns.front().size())
+      , patterns(patterns)
       , bf(bf)
       , model(model)
     {}
@@ -32,6 +33,7 @@ class PatternDetector
   private:
 
     const unsigned pattern_length;
+    const std::vector<std::string>& patterns;
     const btllib::CountingBloomFilter8& bf;
     const fdeep::model& model;
 

@@ -45,7 +45,7 @@ int main(int argc, char** argv)
     const auto model = fdeep::load_model(args.model_path, false, fdeep::dev_null_logger);
     const auto model_json = nlohmann::json::parse(std::ifstream(args.model_path));
     const std::vector<std::string> seeds = model_json["seeds"];
-    const unsigned pattern_length = model_json["pattern_length"];
+    const std::vector<std::string> patterns = model_json["patterns"];
     cli.stop_timer();
     cli.print_model_information(model_json);
 
@@ -54,7 +54,7 @@ int main(int argc, char** argv)
     btllib::SeqWriter writer(edited_file_path, btllib::SeqWriter::FASTA);
 
     cli.start_timer("Detecting and correcting errors");
-    aiedit::Polisher polisher(pattern_length, bf, model);
+    aiedit::Polisher polisher(patterns, bf, model);
     unsigned num_mismatches = 0, num_insertions = 0, num_deletions = 0;
     for (auto record : reader) {
         std::string& seq = record.seq;

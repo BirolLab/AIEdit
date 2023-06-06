@@ -26,12 +26,6 @@ class ErrorDetector
 
     SequenceIterator& seq_iter;
     const btllib::CountingBloomFilter8& bf;
-
-    /**
-     * Check if the current position of the sequence iterator is a miss
-     * @return `true` if the position is a miss
-     */
-    bool is_miss();
 };
 
 }  // namespace aiedit

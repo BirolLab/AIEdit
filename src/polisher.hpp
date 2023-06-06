@@ -41,10 +41,10 @@ class Polisher
 
   public:
 
-    Polisher(unsigned pattern_length,
+    Polisher(const std::vector<std::string>& patterns,
              const btllib::CountingBloomFilter8& bf,
              const fdeep::model& model)
-      : pattern_length(pattern_length)
+      : patterns(patterns)
       , bf(bf)
       , model(model)
     {}
@@ -53,7 +53,7 @@ class Polisher
 
   private:
 
-    const unsigned pattern_length;
+    const std::vector<std::string>& patterns;
     const btllib::CountingBloomFilter8& bf;
     const fdeep::model& model;
 

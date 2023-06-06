@@ -132,7 +132,7 @@ class SequenceIterator
     std::string& seq;
     const std::vector<std::string>& seeds;
     nthash::SeedNtHash hash_fn;
-    const size_t begin, end;
+    size_t begin, end;
 
     /**
      * Convert an ntHash hash array to a vector of hashes

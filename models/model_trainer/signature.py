@@ -13,7 +13,7 @@ def get_signature(seeds: list[str],
     seq_length = 2 * seed_length + pattern_length - 2
     # generate reference sequence
     ref = ''.join(random.choice('ACGT') for _ in range(seq_length))
-    bf = btllib.SeedBloomFilter(1024, seed_length, seeds, 1)
+    bf = btllib.SeedBloomFilter(1024 * 1024, seed_length, seeds, 3)
     bf.insert(ref)
     # generate alt sequence
     alt = ref[seed_length - 1:seed_length + pattern_length - 1]
@@ -24,11 +24,8 @@ def get_signature(seeds: list[str],
             alt = alt[:j] + b + alt[j + 1:]
             j += 1
         elif p == 'D':
-            b = random.choice('ACGT'.replace(alt[j], ''))
-            alt = alt[:j] + b + alt[j:]
+            alt = alt[:j] + random.choice('ACGT') + alt[j:]
             j += 1
-        elif p == 'R':
-            alt = alt[:j] + alt[j] + alt[j:]
         elif p == 'I':
             alt = alt[:j] + alt[j + 1:]
         else:
@@ -70,8 +67,12 @@ def to_string(signature: np.array, sep='\n'):
 
 if __name__ == "__main__":
     seeds = [
-        '111111101111111', '100111111111001', '111111000111111',
-        '100001111100001', '111110000011111'
+        '10111111111111100100111111111111101',
+        '10011111111111100000111111111111001',
+        '10001111111111110101111111111110001',
+        '10000111111111110001111111111100001',
+        '10000011111111111011111111111000001'
     ]
-    print(to_string(get_signature(seeds, 'I----', verbose=True)))
-    print(to_string(get_signature(seeds, 'D----', verbose=True)))
+    p = set(to_string(get_signature(seeds, 'I----'), ',') for _ in range(100))
+    print(*list(p), sep='\n')
+    print(len(p))

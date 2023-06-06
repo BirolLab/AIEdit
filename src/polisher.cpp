@@ -11,7 +11,7 @@ PolishingResults Polisher::polish(SequenceIterator& seq_iter)
 {
     PolishingResults results;
     ErrorDetector err_detector(seq_iter, bf);
-    PatternDetector pattern_detector(pattern_length, bf, model);
+    PatternDetector pattern_detector(patterns, bf, model);
     MismatchCorrector mismatch_corrector(bf);
     IndelCorrector indel_corrector(bf);
     while (err_detector.next()) {
@@ -27,8 +27,9 @@ PolishingResults Polisher::polish(SequenceIterator& seq_iter)
         if (fixed_mismatches.empty() && num_detected_insertions + num_detected_deletions > 0) {
             fixed_indels = indel_corrector.fix(seq_iter, pattern);
         }
-        std::cout << seq_iter.get_position() << " " << pattern.to_string() << " "
-                  << fixed_mismatches.size() << " " << fixed_indels.size() << std::endl;
+        std::cout << seq_iter.get_position() << " "
+                  << seq_iter.get_base(seq_iter.get_position() - 1) << " " << pattern.to_string()
+                  << " " << fixed_mismatches.size() << " " << fixed_indels.size() << std::endl;
         update_results(fixed_mismatches, fixed_indels, seq_iter.get_position(), results);
         if (fixed_mismatches.empty()) {
             seq_iter.next(pattern.get_length() + seq_iter.get_seed_length());
