@@ -43,17 +43,17 @@ fdeep::tensor PatternDetector::get_model_input(SequenceIterator& seq_iter)
 Pattern PatternDetector::get_pattern(SequenceIterator& seq_iter)
 {
     const auto& signature = get_model_input(seq_iter);
-    const auto model_output = model.predict({signature}).front();
-    const auto pattern_string = patterns[argmax(model_output)];
+    auto model_output = model.predict({signature});
     Pattern pattern(pattern_length);
     for (unsigned i = 0; i < pattern.get_length(); i++) {
-        if (pattern_string[i] == '0') {
+        const auto argmax_y = argmax(model_output[i]);
+        if (argmax_y == 0) {
             pattern.set(i, Edit::NONE);
-        } else if (pattern_string[i] == 'M') {
+        } else if (argmax_y == 1) {
             pattern.set(i, Edit::MISMATCH);
-        } else if (pattern_string[i] == 'I') {
+        } else if (argmax_y == 2) {
             pattern.set(i, Edit::INSERTION);
-        } else if (pattern_string[i] == 'D') {
+        } else if (argmax_y == 3) {
             pattern.set(i, Edit::DELETION);
         }
     }

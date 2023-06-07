@@ -27,7 +27,7 @@ fix_deletions(SequenceIterator& seq_iter, Pattern& pattern, const btllib::Counti
 {
     std::vector<Edit> edits;
     unsigned num_deletions = 0;
-    const unsigned n_del = pattern.get_count(Edit::Type::DELETION);
+    const unsigned n_del = pattern.get_length();  // pattern.get_count(Edit::Type::DELETION);
     bool fixed = false;
     std::string before = seq_iter.get_sequence().substr(seq_iter.get_position(), n_del);
     for (unsigned i = 1; i <= n_del && !fixed; i++) {
@@ -51,7 +51,7 @@ fix_insertions(SequenceIterator& seq_iter, Pattern& pattern, const btllib::Count
     std::vector<Edit> edits;
     unsigned num_insertions = 0;
     bool fixed = false;
-    for (unsigned i = 1; i <= pattern.get_count(Edit::Type::INSERTION) && !fixed; i++) {
+    for (unsigned i = 1; i <= pattern.get_length() && !fixed; i++) {
         seq_iter.insert(seq_iter.get_position(), 'A');
         ++num_insertions;
         MismatchCorrector corrector(bf);
@@ -59,7 +59,6 @@ fix_insertions(SequenceIterator& seq_iter, Pattern& pattern, const btllib::Count
         for (unsigned j = 0; j < i; j++) {
             mismatches.set(j, Edit::Type::MISMATCH);
         }
-        std::cout << mismatches.to_string() << std::endl;
         corrector.fix(seq_iter, mismatches);
         fixed = check_fixes(seq_iter, bf, pattern.get_length());
     }
@@ -80,10 +79,12 @@ namespace aiedit {
 
 std::vector<Edit> IndelCorrector::fix(SequenceIterator& seq_iter, Pattern& pattern)
 {
-    if (pattern.get_count(Edit::Type::DELETION) > 0) {
-        return fix_deletions(seq_iter, pattern, bf);
+    std::vector<Edit> edits;
+    edits = fix_deletions(seq_iter, pattern, bf);
+    if (edits.size() == 0) {
+        edits = fix_insertions(seq_iter, pattern, bf);
     }
-    return fix_insertions(seq_iter, pattern, bf);
+    return edits;
 }
 
 }  // namespace aiedit

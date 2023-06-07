@@ -63,12 +63,14 @@ void SequenceIterator::update(size_t position, char value)
 {
     seq[position] = value;
     hash_fn.change_seq(seq, hash_fn.get_pos());
+    hash_fn.roll();
 }
 
 void SequenceIterator::insert(size_t position, char value)
 {
     seq.insert(position, 1, value);
     hash_fn.change_seq(seq, hash_fn.get_pos());
+    hash_fn.roll();
     ++end;
 }
 

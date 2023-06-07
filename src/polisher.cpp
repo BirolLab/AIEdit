@@ -11,7 +11,7 @@ PolishingResults Polisher::polish(SequenceIterator& seq_iter)
 {
     PolishingResults results;
     ErrorDetector err_detector(seq_iter, bf);
-    PatternDetector pattern_detector(patterns, bf, model);
+    PatternDetector pattern_detector(pattern_length, bf, model);
     MismatchCorrector mismatch_corrector(bf);
     IndelCorrector indel_corrector(bf);
     while (err_detector.next()) {
