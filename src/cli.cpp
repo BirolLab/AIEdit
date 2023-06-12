@@ -64,10 +64,6 @@ void CommandLineInterface::print_polisher_results(const std::string& seq_id,
     std::cout << "M=" << stats.get_num_mismatches() << " ";
     std::cout << "I=" << stats.get_num_insertions() << " ";
     std::cout << "D=" << stats.get_num_deletions() << std::endl;
-    std::cout << add_color("IGNORED:", Color::FG_RED);
-    for (const auto& pos : stats.get_ignored_positions()) {
-        std::cout << " " << pos;
-    }
     std::cout << std::endl;
 }
 

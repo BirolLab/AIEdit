@@ -27,10 +27,7 @@ PolishingResults Polisher::polish(SequenceIterator& seq_iter)
         if (fixed_mismatches.empty() && num_detected_insertions + num_detected_deletions > 0) {
             fixed_indels = indel_corrector.fix(seq_iter, pattern);
         }
-        std::cout << seq_iter.get_position() << " "
-                  << seq_iter.get_base(seq_iter.get_position() - 1) << " " << pattern.to_string()
-                  << " " << fixed_mismatches.size() << " " << fixed_indels.size() << std::endl;
-        update_results(fixed_mismatches, fixed_indels, seq_iter.get_position(), results);
+        update_results(fixed_mismatches, fixed_indels, seq_iter.get_position(), pattern.to_string(), results);
         if (fixed_mismatches.empty()) {
             seq_iter.next(pattern.get_length() + seq_iter.get_seed_length());
         } else {
@@ -43,10 +40,11 @@ PolishingResults Polisher::polish(SequenceIterator& seq_iter)
 void Polisher::update_results(const std::vector<Edit>& mismatches,
                               const std::vector<Edit>& indels,
                               unsigned seq_iter_position,
+                              const std::string& pattern_string,
                               PolishingResults& results)
 {
     if (mismatches.empty() && indels.empty()) {
-        results.ignored_positions.emplace_back(seq_iter_position);
+        results.ignored_patterns.emplace_back(seq_iter_position, pattern_string);
         return;
     } else {
         ++results.num_fixed_patterns;

@@ -10,6 +10,7 @@
 
 #include "args.hpp"
 #include "cli.hpp"
+#include "patterns_log_writer.hpp"
 #include "polisher.hpp"
 #include "sequence_iterator.hpp"
 #include "timer.hpp"
@@ -27,6 +28,7 @@ int main(int argc, char** argv)
 
     const std::string vcf_file_path = args.out_path / std::filesystem::path("variants.vcf");
     const std::string edited_file_path = args.out_path / std::filesystem::path("edited.fa");
+    const std::string ignored_file_path = args.out_path / std::filesystem::path("ignored.tsv");
 
     omp_set_num_threads(static_cast<int>(args.num_threads));
 
@@ -51,6 +53,7 @@ int main(int argc, char** argv)
 
     btllib::SeqReader reader(args.assembly_path, btllib::SeqReader::Flag::LONG_MODE);
     aiedit::VCFWriter vcf_file(vcf_file_path, args.assembly_path);
+    aiedit::PatternsLogWriter ignored_pattern_logger(ignored_file_path);
     btllib::SeqWriter writer(edited_file_path, btllib::SeqWriter::FASTA);
 
     cli.start_timer("Detecting and correcting errors");
@@ -72,8 +75,15 @@ int main(int argc, char** argv)
             vcf_file.write(record.id, record.comment, results.get_edits());
 #pragma omp critical
             cli.print_polisher_results(record.id, results);
+            if (args.verbose) {
+#pragma omp critical
+                ignored_pattern_logger.write(record.id, results.get_ignored_patterns());
+            }
         }
         writer.write(record.id, record.comment, seq);
+    }
+    if (!args.verbose) {
+        ignored_pattern_logger.delete_file();
     }
     cli.stop_timer();
     aiedit::CommandLineInterface::print_final_stats(num_mismatches, num_insertions, num_deletions);

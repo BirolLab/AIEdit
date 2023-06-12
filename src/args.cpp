@@ -29,7 +29,7 @@ void ProgramArguments::parse(int argc, char** argv)
       .scan<'u', unsigned>();
 
     parser.add_argument("--verbose")
-      .help("print more details to stdout")
+      .help("print more details to stdout and log ignored patterns to ignored.tsv")
       .default_value(false)
       .implicit_value(true);
 
