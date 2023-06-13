@@ -17,16 +17,8 @@ import keras.metrics
 import keras.optimizers
 import matplotlib.pyplot as plt
 import numpy as np
-import tensorflow as tf
-from signature import get_signature, to_string
-
-DEFAULT_SEEDS = [
-    '10111111111111100000111111111111101',
-    '10011111111111100000111111111111001',
-    '10001111111111110001111111111110001',
-    '10000111111111110001111111111100001',
-    '10000011111111111011111111111000001'
-]
+from signature import get_signature
+from seed_generation import generate_seeds
 
 
 @dataclasses.dataclass
@@ -40,7 +32,11 @@ class Dataset:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser("AIEdit pattern detector training script")
-    parser.add_argument("-o", help="output model file path", required=True)
+    parser.add_argument("-s",
+                        help="spaced seed patterns separated by commas "
+                        "(e.g., 1110111,1101011), or k-mer length (e.g., 64)",
+                        nargs="+",
+                        required=True)
     parser.add_argument("-w",
                         help="maximum pattern length",
                         default=5,
@@ -57,25 +53,20 @@ def parse_args() -> argparse.Namespace:
                         help="false positive rate for simulation",
                         default=0.001,
                         type=float)
-    parser.add_argument("seeds",
-                        help="spaced seed patterns"
-                        " (or path to text file with seeds in separate lines)",
-                        nargs="*",
-                        default=DEFAULT_SEEDS)
+    parser.add_argument("-o",
+                        help="output model file path",
+                        default="model.json")
     parser.add_argument('--plot-stats',
                         action='store_true',
                         help="plot training stats"
                         " (stored in training.png next to the model)")
     args = parser.parse_args()
-    if not re.match(r"^[01]+$", args.seeds[0]):
-        with open(args.seeds[0]) as f:
-            args.seeds = list(map(str.strip, f.readlines()))
-    if len(set(map(len, args.seeds))) != 1:
+    if not re.match(r"^[01]+$", args.s[0]):
+        args.s = generate_seeds(int(args.s[0]), args.w)
+    if len(set(map(len, args.s))) != 1:
         msg = "Seed patterns should be the same length"
         print(msg, file=sys.stderr)
         exit(1)
-    print(f"Training for w={args.w} and {len(args.seeds)} spaced seeds:")
-    print(*args.seeds, sep=os.linesep)
     return args
 
 
@@ -144,7 +135,6 @@ def prepare_data(seeds: list[str], pattern_length: int, samples_per_class: int,
     for p in get_pattern_strings(pattern_length):
         for i in range(max(2, int(samples_per_class * 1.2))):
             signature = get_signature(seeds, p, fpr if i > 0 else 0)
-            signature_string = to_string(signature, sep=',')
             if i < samples_per_class:
                 x_train.append(signature)
                 y_train.append(get_pattern_tensor(p))
@@ -203,15 +193,17 @@ def plot_training_stats(stats: dict, pattern_length: int,
 
 def main():
     args = parse_args()
-    model = build_model(args.seeds, args.w)
+    print(f"Training for w={args.w} and {len(args.s)} spaced seeds:")
+    print(*args.s, sep=os.linesep)
+    model = build_model(args.s, args.w)
     model.summary()
-    data = prepare_data(args.seeds, args.w, args.n, args.fpr)
+    data = prepare_data(args.s, args.w, args.n, args.fpr)
     print(f"Training samples: {len(data.x_train)}")
     for c, n in Counter(data.patterns).items():
         print(c.replace("0", "-"), n)
     print(f"Testing samples: {len(data.x_test)}")
     training_stats = train(model, data, args.e)
-    save_model(model, args.w, args.seeds, args.o)
+    save_model(model, args.w, args.s, args.o)
     if args.plot_stats:
         plot_training_stats(training_stats, args.w, args.o)
 
