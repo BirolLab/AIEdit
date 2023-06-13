@@ -57,14 +57,12 @@ void CommandLineInterface::print_polisher_results(const std::string& seq_id,
 {
     VERBOSITY_CHECK
     const unsigned num_patterns = stats.get_num_ignored_patterns() + stats.get_num_fixed_patterns();
-    std::cout << std::endl;
     std::cout << "[" << seq_id << "] ";
     std::cout << "fixed " << stats.get_num_fixed_patterns();
     std::cout << "/" << num_patterns << " patterns: ";
     std::cout << "M=" << stats.get_num_mismatches() << " ";
     std::cout << "I=" << stats.get_num_insertions() << " ";
     std::cout << "D=" << stats.get_num_deletions() << std::endl;
-    std::cout << std::endl;
 }
 
 void CommandLineInterface::print_final_stats(const unsigned num_mismatches,
