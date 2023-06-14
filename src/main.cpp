@@ -59,26 +59,21 @@ int main(int argc, char** argv)
     cli.start_timer("Detecting and correcting errors");
     aiedit::Polisher polisher(pattern_length, bf, model);
     unsigned num_mismatches = 0, num_insertions = 0, num_deletions = 0;
+#pragma omp parallel
     for (auto record : reader) {
         std::string& seq = record.seq;
-        const unsigned chunk_size = seq.size() / args.num_threads;
-#pragma omp parallel for
-        for (unsigned i = 0; i < args.num_threads; i++) {
-            const unsigned begin = i * chunk_size;
-            const unsigned end = i < args.num_threads - 1 ? (i + 1) * chunk_size : seq.size();
-            aiedit::SequenceIterator seq_iter(seq, seeds, num_hashes, begin, end);
-            const auto results = polisher.polish(seq_iter);
-            num_mismatches += results.get_num_mismatches();
-            num_insertions += results.get_num_insertions();
-            num_deletions += results.get_num_deletions();
+        aiedit::SequenceIterator seq_iter(seq, seeds, num_hashes);
+        const auto results = polisher.polish(seq_iter);
+        num_mismatches += results.get_num_mismatches();
+        num_insertions += results.get_num_insertions();
+        num_deletions += results.get_num_deletions();
 #pragma omp critical
-            vcf_file.write(record.id, record.comment, results.get_edits());
+        vcf_file.write(record.id, record.comment, results.get_edits());
 #pragma omp critical
-            cli.print_polisher_results(record.id, results);
-            if (args.verbose) {
+        cli.print_polisher_results(record.id, results);
+        if (args.verbose) {
 #pragma omp critical
-                ignored_pattern_logger.write(record.id, results.get_ignored_patterns());
-            }
+            ignored_pattern_logger.write(record.id, results.get_ignored_patterns());
         }
         writer.write(record.id, record.comment, seq);
     }
