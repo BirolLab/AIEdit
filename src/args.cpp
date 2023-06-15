@@ -21,7 +21,7 @@ void ProgramArguments::parse(int argc, char** argv)
 
     parser.add_argument("--out-path", "-o")
       .help("path to output directory for storing results")
-      .required();
+      .default_value(std::string(1, '.'));
 
     parser.add_argument("--num-threads", "-t")
       .help("number of threads to run in parallel")

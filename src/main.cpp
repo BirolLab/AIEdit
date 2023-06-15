@@ -36,9 +36,10 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    const std::string vcf_file_path = args.out_path / std::filesystem::path("variants.vcf");
-    const std::string edited_file_path = args.out_path / std::filesystem::path("edited.fa");
-    const std::string ignored_file_path = args.out_path / std::filesystem::path("ignored.tsv");
+    const std::string prefix = args.out_path / std::filesystem::path(args.assembly_path).stem();
+    const std::string vcf_file_path = prefix + "-aiedit-variants.vcf";
+    const std::string edited_file_path = prefix + "-aiedit-polished.fa";
+    const std::string ignored_file_path = prefix + "-aiedit-ignored.tsv";
 
     aiedit::CommandLineInterface cli(args.verbose);
 
