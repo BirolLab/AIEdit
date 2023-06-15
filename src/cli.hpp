@@ -36,7 +36,9 @@ class CommandLineInterface
 
   public:
 
-    CommandLineInterface(bool verbose) : verbose(verbose) {}
+    CommandLineInterface(bool verbose)
+      : verbose(verbose)
+    {}
 
     /**
      * Print AIEdit's logo in ASCII art to stdout.
@@ -64,7 +66,10 @@ class CommandLineInterface
     /**
      * Print verbose polishing statistics to stdout.
      */
-    void print_polisher_results(const std::string& seq_id, const PolishingResults& stats);
+    void print_polisher_results(const std::string& seq_id,
+                                size_t seq_length,
+                                unsigned thread_id,
+                                const PolishingResults& stats);
 
     /**
      * Print final polishing statistics to stdout.

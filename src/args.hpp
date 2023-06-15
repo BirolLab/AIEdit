@@ -15,6 +15,7 @@ class ProgramArguments
     std::filesystem::path model_path;
     std::filesystem::path out_path;
     bool verbose;
+    bool contig_mode;
     unsigned num_threads;
 
     void parse(int argc, char** argv);
