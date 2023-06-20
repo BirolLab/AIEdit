@@ -8,6 +8,7 @@ project(
         'werror=true',
         'warning_level=3',
         'optimization=3',
+        'b_lto=true',
     ],
 )
 
