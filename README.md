@@ -54,19 +54,22 @@ If [catch2](https://github.com/catchorg/Catch2) is installed, AIEdit's unit test
 # Usage
 
 ```
-Usage: AIEdit [options] 
+Usage: AIEdit [options] input_file
 
 Artificially-intelligent long read genome polisher
+
+Positional arguments:
+input_file        	path to input file
 
 Optional arguments:
 -h --help         	shows help message and exits [default: false]
 -v --version      	prints version information and exits [default: false]
--a --assembly     	Path to assembly file [required]
--b --bloom-filter 	Path to btllib SeedBloomFilter file [required]
--m --model        	Path to pattern detector model [required]
--o --out-path     	Path to output directory for storing results [default: "."]
--t --num-threads  	Number of threads to run in parallel [default: 8]
--V                	Level of details printed to stdout (V: basic info, VV: detailed logs) [default: false]
+-b --bloom-filter 	path to ntHits counting Bloom filter file [required]
+-m --model        	path to pattern detector model [required]
+-o --out-path     	output directory for storing results [default: "."]
+-t --num-threads  	number of threads to run in parallel [default: 1]
+--contig-mode     	optimize multithreading for polishing contigs/reads [default: false]
+--verbose         	print more details to stdout and log ignored patterns to ignored.tsv [default: false]
 ```
 
 Use [ntHits](https://github.com/bcgsc/ntHits) to generate the Bloom filter (for AIEdit's `-b` argument).
@@ -80,12 +83,10 @@ ntHits -h 1 -c 1 --outbloom -s 111001101100111,101010101010101,111100101001111,1
 ai-edit -a draft.fa -b repeats_k15.bf
 ```
 
-# Output
+# Output files
 
-Information about the Bloom filter and the time elapsed for each step of the algorithm are printed to stdout.
+The following files are created in the output folder (specified by `-o`, `<input_file>` is replaced by the file name given as input to the program):
 
-In the output folder (specified by `-o`), the following files are created:
-
-- `db.json`, a dump of the pattern database in JSON format
-- `edited.fa`, the edited sequences in FASTA format
-- `variants.vcf`, list of edits in VCF format
+- `<input_file>-aiedit-polished.fa`, polished data in FASTA format
+- `<input_file>-aiedit-variants.vcf`, list of edits in VCF format
+- `<input_file>-aiedit-ignored.tsv`, list of detected error patterns which AIEdit failed to fix
