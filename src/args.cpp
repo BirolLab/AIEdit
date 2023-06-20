@@ -1,5 +1,4 @@
 #include "args.hpp"
-#include "version.hpp"
 
 #include <argparse/argparse.hpp>
 #include <iostream>
@@ -8,19 +7,18 @@ namespace aiedit {
 
 void ProgramArguments::parse(int argc, char** argv)
 {
-    auto parser = argparse::ArgumentParser("AIEdit", aiedit::VERSION);
     parser.add_description("Artificially-intelligent long read genome polisher");
 
-    parser.add_argument("--assembly", "-a").help("path to assembly file").required();
+    parser.add_argument("input_file").help("path to input file");
 
     parser.add_argument("--bloom-filter", "-b")
-      .help("path to btllib SeedBloomFilter file")
+      .help("path to ntHits counting Bloom filter file")
       .required();
 
     parser.add_argument("--model", "-m").help("path to pattern detector model").required();
 
     parser.add_argument("--out-path", "-o")
-      .help("path to output directory for storing results")
+      .help("output directory for storing results")
       .default_value(std::string(1, '.'));
 
     parser.add_argument("--num-threads", "-t")
@@ -29,7 +27,7 @@ void ProgramArguments::parse(int argc, char** argv)
       .scan<'u', unsigned>();
 
     parser.add_argument("--contig-mode")
-      .help("optimize multithreading for polishing contigs/raw reads")
+      .help("optimize multithreading for polishing contigs/reads")
       .default_value(false)
       .implicit_value(true);
 
@@ -40,7 +38,7 @@ void ProgramArguments::parse(int argc, char** argv)
 
     parser.parse_args(argc, argv);
 
-    assembly_path = std::filesystem::path(parser.get("-a"));
+    in_path = std::filesystem::path(parser.get("input_file"));
     bf_path = std::filesystem::path(parser.get("-b"));
     model_path = std::filesystem::path(parser.get("-m"));
     out_path = std::filesystem::path(parser.get("-o"));
@@ -48,5 +46,7 @@ void ProgramArguments::parse(int argc, char** argv)
     contig_mode = parser.get<bool>("--contig-mode");
     verbose = parser.get<bool>("--verbose");
 }
+
+const std::string ProgramArguments::get_help_message() const { return parser.help().str(); }
 
 }  // namespace aiedit

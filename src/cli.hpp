@@ -20,19 +20,6 @@ namespace aiedit {
 
 class CommandLineInterface
 {
-    enum Color
-    {
-        FG_RED = 31,
-        FG_GREEN = 32,
-        FG_BLUE = 34,
-        FG_YELLOW = 33,
-        FG_DEFAULT = 39,
-        BG_RED = 41,
-        BG_GREEN = 42,
-        BG_BLUE = 44,
-        BG_YELLOW = 43,
-        BG_DEFAULT = 49
-    };
 
   public:
 
@@ -55,13 +42,13 @@ class CommandLineInterface
      * Print information about a btllib::SeedBloomFilter
      * @param bf The input Bloom filter.
      */
-    void print_bloom_filter_information(const btllib::CountingBloomFilter8& bf) const;
+    void print_bloom_filter_info(const btllib::CountingBloomFilter8& bf) const;
 
     /**
      * Print information about a btllib::SeedBloomFilter
      * @param bf The input Bloom filter.
      */
-    void print_model_information(const nlohmann::json& model_json) const;
+    void print_model_info(const nlohmann::json& model_json) const;
 
     /**
      * Print verbose polishing statistics to stdout.
@@ -93,14 +80,6 @@ class CommandLineInterface
 
     const bool verbose;
     Timer timer;
-
-    /**
-     * Add unicode color to a string
-     * @param text Text to be printed
-     * @param color Color code
-     * @return Colored string
-     */
-    static std::string add_color(const std::string& text, Color color);
 };
 
 }  // namespace aiedit
