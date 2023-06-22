@@ -1,11 +1,8 @@
 #ifndef ARGS_HPP
 #define ARGS_HPP
 
-#include <argparse/argparse.hpp>
 #include <filesystem>
 #include <string>
-
-#include "version.hpp"
 
 namespace aiedit {
 
@@ -20,10 +17,6 @@ class ProgramArguments
     unsigned num_threads;
     bool contig_mode;
     bool verbose;
-
-    ProgramArguments()
-      : parser("AIEdit", aiedit::VERSION)
-    {}
 
     /**
      * Parse command-line arguments
@@ -40,7 +33,7 @@ class ProgramArguments
 
   private:
 
-    argparse::ArgumentParser parser;
+    std::string help_message;
 };
 
 }  // namespace aiedit

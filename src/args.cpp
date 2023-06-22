@@ -1,4 +1,5 @@
 #include "args.hpp"
+#include "version.hpp"
 
 #include <argparse/argparse.hpp>
 #include <iostream>
@@ -7,6 +8,7 @@ namespace aiedit {
 
 void ProgramArguments::parse(int argc, char** argv)
 {
+    argparse::ArgumentParser parser("AIEdit", aiedit::VERSION);
     parser.add_description("Artificially-intelligent long read genome polisher");
 
     parser.add_argument("input_file").help("path to input file");
@@ -36,6 +38,8 @@ void ProgramArguments::parse(int argc, char** argv)
       .default_value(false)
       .implicit_value(true);
 
+    help_message = parser.help().str();
+    
     parser.parse_args(argc, argv);
 
     in_path = std::filesystem::path(parser.get("input_file"));
@@ -47,6 +51,6 @@ void ProgramArguments::parse(int argc, char** argv)
     verbose = parser.get<bool>("--verbose");
 }
 
-const std::string ProgramArguments::get_help_message() const { return parser.help().str(); }
+const std::string ProgramArguments::get_help_message() const { return help_message; }
 
 }  // namespace aiedit
