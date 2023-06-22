@@ -34,13 +34,6 @@ class PatternDetector
     const unsigned pattern_length;
     const btllib::CountingBloomFilter8& bf;
     const fdeep::model& model;
-
-    /**
-     * Prepare model input by updating the signature values
-     * @param
-     * @return Signature object containing model's input tensor
-     */
-    fdeep::tensor get_model_input(SequenceIterator& seq_iter);
 };
 
 }  // namespace aiedit
