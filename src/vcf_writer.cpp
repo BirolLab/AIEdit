@@ -15,26 +15,27 @@ void VCFWriter::write_headers(const std::string& assembly_path)
     file << "##source=AIEdit" << aiedit::VERSION << std::endl;
     file << "##reference=file:" << assembly_path << std::endl;
     file << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tINTEGRATION" << std::endl;
-    file.flush();
 }
 
 void VCFWriter::write(const std::string& seq_id,
                       const std::string& seq_comment,
                       const std::vector<aiedit::Edit>& edits)
 {
-    for (const auto& edit : edits) {
-        file << seq_id << " " << seq_comment << "\t";  // CHROM
-        file << edit.position + 1 << "\t";             // POS
-        file << ".\t";                                 // ID
-        file << edit.before << "\t";                   // REF
-        file << edit.after << "\t";                    // ALT
-        file << ".\t";                                 // QUAL
-        file << "PASS\t";                              // FILTER
-        file << ".\t";                                 // INFO
-        file << "GT\t";                                // FORMAT
-        file << "1/1" << std::endl;                    // INTEGRATION
+#pragma omp critical
+    {
+        for (const auto& edit : edits) {
+            file << seq_id << " " << seq_comment << "\t";  // CHROM
+            file << edit.position + 1 << "\t";             // POS
+            file << ".\t";                                 // ID
+            file << edit.before << "\t";                   // REF
+            file << edit.after << "\t";                    // ALT
+            file << ".\t";                                 // QUAL
+            file << "PASS\t";                              // FILTER
+            file << ".\t";                                 // INFO
+            file << "GT\t";                                // FORMAT
+            file << "1/1" << std::endl;                    // INTEGRATION
+        }
     }
-    file.flush();
 }
 
 }  // namespace aiedit

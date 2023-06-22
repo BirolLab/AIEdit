@@ -2,7 +2,32 @@
 
 namespace {
 
-using namespace fdeep;
+using namespace aiedit;
+
+const Edit::Type EDIT_TYPES[4] = {
+  Edit::Type::NONE,
+  Edit::Type::MISMATCH,
+  Edit::Type::INSERTION,
+  Edit::Type::DELETION,
+};
+
+inline fdeep::tensor get_model_input(SequenceIterator seq_iter,
+                                     unsigned pattern_length,
+                                     const btllib::CountingBloomFilter8& bf)
+{
+    const unsigned signature_length = pattern_length + seq_iter.get_seed_length() - 1;
+    const auto input_shape = fdeep::tensor_shape(signature_length, seq_iter.get_num_seeds());
+    fdeep::tensor model_input(input_shape, 1);
+    for (unsigned i = 0; i < signature_length && seq_iter.has_next(); i++) {
+        const auto hashes = seq_iter.get_hashes();
+        for (unsigned j = 0; j < seq_iter.get_num_seeds(); j++) {
+            const auto is_miss = bf.contains(hashes[j]) == 0;
+            model_input.set(fdeep::tensor_pos(i, j), is_miss ? 0.0 : 1.0);
+        }
+        seq_iter.next();
+    }
+    return model_input;
+}
 
 inline unsigned argmax(const fdeep::tensor& x)
 {
@@ -22,40 +47,14 @@ inline unsigned argmax(const fdeep::tensor& x)
 
 namespace aiedit {
 
-fdeep::tensor PatternDetector::get_model_input(SequenceIterator& seq_iter)
-{
-    unsigned signature_length = pattern_length + seq_iter.get_seed_length() - 1;
-    const unsigned num_seeds = seq_iter.get_num_seeds();
-    fdeep::tensor model_input(fdeep::tensor_shape(signature_length, num_seeds), 1);
-    SequenceIterator seq_iter_copy(seq_iter);
-    seq_iter_copy.previous();
-    for (unsigned i = 0; i < signature_length && seq_iter_copy.has_next(); i++) {
-        seq_iter_copy.next();
-        const auto hashes = seq_iter_copy.get_hashes();
-        for (unsigned j = 0; j < num_seeds; j++) {
-            const auto is_miss = !bf.contains(hashes[j]);
-            model_input.set(fdeep::tensor_pos(i, j), is_miss ? 0.0 : 1.0);
-        }
-    }
-    return model_input;
-}
-
 Pattern PatternDetector::get_pattern(SequenceIterator& seq_iter)
 {
-    const auto& signature = get_model_input(seq_iter);
+    const auto& signature = get_model_input(seq_iter, pattern_length, bf);
     auto model_output = model.predict({signature});
     Pattern pattern(pattern_length);
     for (unsigned i = 0; i < pattern.get_length(); i++) {
         const auto argmax_y = argmax(model_output[i]);
-        if (argmax_y == 0) {
-            pattern.set(i, Edit::NONE);
-        } else if (argmax_y == 1) {
-            pattern.set(i, Edit::MISMATCH);
-        } else if (argmax_y == 2) {
-            pattern.set(i, Edit::INSERTION);
-        } else if (argmax_y == 3) {
-            pattern.set(i, Edit::DELETION);
-        }
+        pattern.set(i, EDIT_TYPES[argmax_y]);
     }
     return pattern;
 }

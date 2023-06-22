@@ -11,6 +11,7 @@
 namespace aiedit {
 
 using IgnoredPatternsList = std::vector<std::pair<unsigned, std::string>>;
+
 class PolishingResults
 {
     friend class Polisher;
