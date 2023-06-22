@@ -15,7 +15,6 @@ void VCFWriter::write_headers(const std::string& assembly_path)
     file << "##source=AIEdit" << aiedit::VERSION << std::endl;
     file << "##reference=file:" << assembly_path << std::endl;
     file << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tINTEGRATION" << std::endl;
-    file.flush();
 }
 
 void VCFWriter::write(const std::string& seq_id,
@@ -36,7 +35,6 @@ void VCFWriter::write(const std::string& seq_id,
             file << "GT\t";                                // FORMAT
             file << "1/1" << std::endl;                    // INTEGRATION
         }
-        file.flush();
     }
 }
 
