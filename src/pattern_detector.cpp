@@ -18,13 +18,13 @@ inline fdeep::tensor get_model_input(SequenceIterator seq_iter,
     const unsigned signature_length = pattern_length + seq_iter.get_seed_length() - 1;
     const auto input_shape = fdeep::tensor_shape(signature_length, seq_iter.get_num_seeds());
     fdeep::tensor model_input(input_shape, 1);
-    for (unsigned i = 0; i < signature_length && seq_iter.has_next(); i++) {
-        const auto hashes = seq_iter.get_hashes();
+    bool has_next = true;
+    for (unsigned i = 0; i < signature_length && has_next; i++) {
         for (unsigned j = 0; j < seq_iter.get_num_seeds(); j++) {
-            const auto is_miss = bf.contains(hashes[j]) == 0;
+            const auto is_miss = bf.contains(seq_iter.get_hashes(j)) == 0;
             model_input.set(fdeep::tensor_pos(i, j), is_miss ? 0.0 : 1.0);
         }
-        seq_iter.next();
+        has_next = seq_iter.next();
     }
     return model_input;
 }

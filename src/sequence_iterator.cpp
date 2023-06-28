@@ -1,93 +1,79 @@
 #include "sequence_iterator.hpp"
 
+namespace {
+
+using namespace aiedit;
+
+inline void update_seed_hashes(const uint64_t* hash_array,
+                               std::vector<std::vector<uint64_t>>& seed_hashes)
+{
+    const unsigned num_seeds = seed_hashes.size();
+    const unsigned num_hashes_per_seed = seed_hashes[0].size();
+    for (unsigned i = 0; i < num_seeds; i++) {
+        for (unsigned j = 0; j < num_hashes_per_seed; j++) {
+            seed_hashes[i][j] = hash_array[i * num_hashes_per_seed + j];
+        }
+    }
+}
+
+}  // namespace
+
 namespace aiedit {
 
-SequenceIterator::HashVector SequenceIterator::to_hash_vector(const uint64_t* nthash_hashes)
+void SequenceIterator::consume()
 {
-    HashVector hashes;
-    for (unsigned i = 0; i < seeds.size(); i++) {
-        std::vector<uint64_t> seed_hashes;
-        seed_hashes.reserve(hash_fn.get_hash_num_per_seed());
-        const unsigned i_begin = i * hash_fn.get_hash_num_per_seed();
-        const unsigned i_end = i_begin + hash_fn.get_hash_num_per_seed();
-        seed_hashes.insert(seed_hashes.end(), nthash_hashes + i_begin, nthash_hashes + i_end);
-        hashes.push_back(seed_hashes);
-    }
-    return hashes;
-}
-
-void SequenceIterator::next(unsigned n)
-{
-    for (unsigned i = 0; i < n && has_next(); i++) {
-        hash_fn.roll();
+    hash_fn.roll(buffer.front());
+    current = buffer.front();
+    buffer.pop_front();
+    if (buffer.empty() && pos < end - get_seed_length()) {
+        buffer.push_back(seq[++pos]);
     }
 }
 
-void SequenceIterator::previous(unsigned n)
+bool SequenceIterator::next(unsigned n)
 {
-    for (unsigned i = 0; i < n && has_next(); i++) {
-        hash_fn.roll_back();
+    while (n-- && !buffer.empty()) {
+        consume();
     }
+    return !buffer.empty();
 }
 
-bool SequenceIterator::has_next() { return get_position() < end - hash_fn.get_k(); }
-
-char SequenceIterator::get_base(size_t position) { return seq[position]; }
-
-size_t SequenceIterator::get_position() { return hash_fn.get_pos() + hash_fn.get_k() - 1; }
-
-SequenceIterator::HashVector SequenceIterator::get_hashes()
+void SequenceIterator::substitute_last(char new_base)
 {
-    return to_hash_vector(hash_fn.hashes());
+    hash_fn.roll_back('A');
+    hash_fn.roll(new_base);
+    current = new_base;
 }
 
-const std::string& SequenceIterator::get_sequence() { return seq; }
-
-std::vector<SequenceIterator::HashVector> SequenceIterator::peek_hashes(unsigned window_size)
+void SequenceIterator::delete_last()
 {
-    nthash::SeedNtHash h_copy(hash_fn);
-    std::vector<HashVector> hashes;
-    hashes.reserve(window_size);
-    hashes.push_back(to_hash_vector(h_copy.hashes()));
-    while (--window_size > 0 && h_copy.roll()) {
-        hashes.push_back(to_hash_vector(h_copy.hashes()));
-    }
-    return hashes;
+    hash_fn.roll_back('A');
+    consume();
 }
 
-unsigned SequenceIterator::get_seed_length() { return seeds[0].size(); }
-
-unsigned SequenceIterator::get_num_seeds() { return seeds.size(); }
-
-void SequenceIterator::update(size_t position, char value)
+void SequenceIterator::insert_last(char new_base)
 {
-    seq[position] = value;
-    hash_fn.change_seq(seq, hash_fn.get_pos());
-    hash_fn.roll();
+    char backup = current;
+    substitute_last(new_base);
+    buffer.push_front(backup);
 }
 
-void SequenceIterator::insert(size_t position, char value)
+char SequenceIterator::get_current() const { return current; }
+
+size_t SequenceIterator::get_position() const { return hash_fn.get_pos(); }
+
+const std::vector<uint64_t> SequenceIterator::get_hashes(unsigned i) const
 {
-    seq.insert(position, 1, value);
-    hash_fn.change_seq(seq, hash_fn.get_pos());
-    hash_fn.roll();
-    ++end;
+    std::vector<uint64_t> seed_hashes;
+    seed_hashes.reserve(hash_fn.get_hash_num_per_seed());
+    const unsigned i_begin = i * hash_fn.get_hash_num_per_seed();
+    const unsigned i_end = i_begin + hash_fn.get_hash_num_per_seed();
+    seed_hashes.insert(seed_hashes.end(), hash_fn.hashes() + i_begin, hash_fn.hashes() + i_end);
+    return seed_hashes;
 }
 
-void SequenceIterator::insert(size_t position, std::string bases)
-{
-    seq.insert(position, bases);
-    hash_fn.change_seq(seq, hash_fn.get_pos());
-    hash_fn.roll();
-    end += bases.size();
-}
+unsigned SequenceIterator::get_seed_length() const { return hash_fn.get_k(); }
 
-void SequenceIterator::remove(size_t position, unsigned num_bases)
-{
-    seq.erase(position, num_bases);
-    hash_fn.change_seq(seq, hash_fn.get_pos());
-    hash_fn.roll();
-    end -= num_bases;
-}
+unsigned SequenceIterator::get_num_seeds() const { return num_seeds; }
 
 }  // namespace aiedit
