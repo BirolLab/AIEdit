@@ -20,11 +20,29 @@ inline void update_seed_hashes(const uint64_t* hash_array,
 
 namespace aiedit {
 
+SequenceIterator::SequenceIterator(std::string& seq,
+                                   const std::vector<std::string>& seeds,
+                                   unsigned num_hashes,
+                                   size_t begin,
+                                   size_t end)
+  : seq(seq)
+  , begin(begin)
+  , end(end)
+  , pos(begin + seeds[0].size() - 1)
+  , current(seq[seeds[0].size()])
+  , buffer(1, seq[seeds[0].size()])
+  , hash_fn(seq.data(), seeds, num_hashes, seeds[0].size(), begin)
+  , num_seeds(seeds.size())
+{
+    // TODO: move to first non-N kmer
+}
+
 void SequenceIterator::consume()
 {
     hash_fn.roll(buffer.front());
     current = buffer.front();
     buffer.pop_front();
+    // TODO: skip if current == N
     if (buffer.empty() && pos < end - get_seed_length()) {
         buffer.push_back(seq[++pos]);
     }
@@ -37,6 +55,8 @@ bool SequenceIterator::next(unsigned n)
     }
     return !buffer.empty();
 }
+
+void SequenceIterator::skip_kmer() {}
 
 void SequenceIterator::substitute_last(char new_base)
 {

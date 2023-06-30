@@ -12,23 +12,14 @@ class SequenceIterator
 {
   public:
 
-    SequenceIterator(std::string& seq, const std::vector<std::string>& seeds, unsigned num_hashes)
-      : SequenceIterator(seq, seeds, num_hashes, 0, seq.size())
-    {}
-
     SequenceIterator(std::string& seq,
                      const std::vector<std::string>& seeds,
                      unsigned num_hashes,
                      size_t begin,
-                     size_t end)
-      : seq(seq)
-      , begin(begin)
-      , end(end)
-      , pos(begin + seeds[0].size() - 1)
-      , current(seq[seeds[0].size()])
-      , buffer(1, seq[seeds[0].size()])
-      , hash_fn(seq, seeds, num_hashes, seeds[0].size(), begin)
-      , num_seeds(seeds.size())
+                     size_t end);
+
+    SequenceIterator(std::string& seq, const std::vector<std::string>& seeds, unsigned num_hashes)
+      : SequenceIterator(seq, seeds, num_hashes, 0, seq.size())
     {}
 
     SequenceIterator(SequenceIterator& seq_iter)
@@ -43,6 +34,8 @@ class SequenceIterator
     {}
 
     bool next(unsigned n = 1);
+
+    void skip_kmer();
 
     void substitute_last(char new_base);
 
