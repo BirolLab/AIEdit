@@ -8,54 +8,33 @@ using namespace aiedit;
 
 const char ALPHABET[4] = {'A', 'C', 'G', 'T'};
 
-inline std::queue<unsigned> get_mismatch_positions(size_t base_position, const Pattern& pattern)
+inline unsigned count(SequenceIterator& seq_iter, const btllib::CountingBloomFilter8& bf)
 {
-    std::queue<unsigned> positions;
-    for (unsigned i = 0; i < pattern.get_length(); i++) {
-        if (pattern.get(i) == Edit::Type::MISMATCH) {
-            positions.push(base_position + i);
-        }
+    unsigned sum = 0;
+    for (unsigned i = 0; i < seq_iter.get_num_seeds(); i++) {
+        sum += bf.contains(seq_iter.get_hashes(i));
     }
-    return positions;
+    return sum;
 }
 
-inline bool
-check_fix(SequenceIterator seq_iter, const btllib::CountingBloomFilter8& bf, unsigned num_checks)
+inline bool permute(SequenceIterator& seq_iter, const btllib::CountingBloomFilter8& bf)
 {
-    auto bf_check = [&](const std::vector<uint64_t>& h) { return bf.contains(h) == 0; };
-    seq_iter.previous();
-    while (num_checks-- > 0 && seq_iter.has_next()) {
-        seq_iter.next();
-        const auto& hashes = seq_iter.get_hashes();
-        if (std::any_of(hashes.begin(), hashes.end(), bf_check)) {
-            return false;
+    char original = seq_iter.get_current();
+    char fix = 'N';
+    unsigned max_count = 0;
+    for (const auto c : ALPHABET) {
+        if (c == original) {
+            continue;
+        }
+        seq_iter.substitute_last(c);
+        const auto count_c = count(seq_iter, bf);
+        if (count_c > 0 && count_c > max_count) {
+            fix = c;
+            max_count = count_c;
         }
     }
-    return true;
-}
-
-inline char fix_next(SequenceIterator& seq_iter,
-                     unsigned position,
-                     unsigned num_checks,
-                     const btllib::CountingBloomFilter8& bf)
-{
-    const char original = seq_iter.get_base(position);
-    for (const char c : ALPHABET) {
-        if (c != original) {
-            seq_iter.update(position, c);
-            if (check_fix(seq_iter, bf, num_checks)) {
-                return c;
-            }
-        }
-    }
-    return 'N';
-}
-
-inline void revert_edits(SequenceIterator& seq_iter, const std::vector<Edit>& edits)
-{
-    for (const auto& edit : edits) {
-        seq_iter.update(edit.position, edit.before);
-    }
+    seq_iter.substitute_last(fix);
+    return fix;
 }
 
 }  // namespace
@@ -65,19 +44,22 @@ namespace aiedit {
 std::vector<Edit> MismatchCorrector::fix(SequenceIterator& seq_iter, const Pattern& pattern)
 {
     std::vector<Edit> edits;
-    auto positions = get_mismatch_positions(seq_iter.get_position(), pattern);
-    unsigned last_position = seq_iter.get_position() - 1;
-    while (!positions.empty()) {
-        char before = seq_iter.get_base(positions.front());
-        unsigned num_checks = positions.front() - last_position;
-        auto fix = fix_next(seq_iter, positions.front(), num_checks, bf);
-        edits.emplace_back(positions.front(), Edit::Type::MISMATCH, before, fix);
-        last_position = positions.front();
-        positions.pop();
-    }
-    if (!check_fix(seq_iter, bf, seq_iter.get_seed_length() - 1)) {
-        revert_edits(seq_iter, edits);
-        edits.clear();
+    const unsigned num_checks = seq_iter.get_seed_length() + pattern.get_length() - 1;
+    for (unsigned i = 0; i < num_checks; i++) {
+        if (i < pattern.get_length() && pattern.get(i) == Edit::MISMATCH) {
+            const auto before = seq_iter.get_current();
+            const auto fixed = permute(seq_iter, bf);
+            const auto after = seq_iter.get_current();
+            if (fixed) {
+                edits.emplace_back(seq_iter.get_position(), Edit::Type::MISMATCH, before, after);
+            } else {
+                seq_iter.skip_kmer();
+                return edits;
+            }
+        } else if (count(seq_iter, bf) == 0) {
+            seq_iter.skip_kmer();
+            return edits;
+        }
     }
     return edits;
 }
