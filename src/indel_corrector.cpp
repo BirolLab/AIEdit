@@ -5,16 +5,13 @@ namespace {
 
 using namespace aiedit;
 
-inline bool check_fixes(SequenceIterator& seq_iter,
-                        const btllib::CountingBloomFilter8& bf,
-                        unsigned pattern_length)
+inline bool
+check_fixes(SequenceIterator seq_iter, const btllib::CountingBloomFilter8& bf, unsigned num_checks)
 {
     auto bf_check = [&](const std::vector<uint64_t>& h) { return bf.contains(h) == 0; };
-    SequenceIterator seq_iter_copy(seq_iter);
-    unsigned signature_length = pattern_length + seq_iter.get_seed_length() - 1;
-    while (signature_length-- > 0 && seq_iter_copy.has_next()) {
-        seq_iter_copy.next();
-        const auto& hashes = seq_iter_copy.get_hashes();
+    while (num_checks-- > 0 && seq_iter.has_next()) {
+        seq_iter.next();
+        const auto& hashes = seq_iter.get_hashes();
         if (std::any_of(hashes.begin(), hashes.end(), bf_check)) {
             return false;
         }
@@ -60,7 +57,7 @@ fix_insertions(SequenceIterator& seq_iter, Pattern& pattern, const btllib::Count
             mismatches.set(j, Edit::Type::MISMATCH);
         }
         corrector.fix(seq_iter, mismatches);
-        fixed = check_fixes(seq_iter, bf, pattern.get_length());
+        fixed = check_fixes(seq_iter, bf, seq_iter.get_seed_length() + num_insertions);
     }
     if (!fixed) {
         seq_iter.remove(seq_iter.get_position(), num_insertions);

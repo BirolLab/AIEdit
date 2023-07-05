@@ -39,13 +39,10 @@ inline char fix_next(SequenceIterator& seq_iter,
                      unsigned num_checks,
                      const btllib::CountingBloomFilter8& bf)
 {
-    const char original = seq_iter.get_base(position);
     for (const char c : ALPHABET) {
-        if (c != original) {
-            seq_iter.update(position, c);
-            if (check_fix(seq_iter, bf, num_checks)) {
-                return c;
-            }
+        seq_iter.update(position, c);
+        if (check_fix(seq_iter, bf, num_checks)) {
+            return c;
         }
     }
     return 'N';
@@ -66,13 +63,16 @@ std::vector<Edit> MismatchCorrector::fix(SequenceIterator& seq_iter, const Patte
 {
     std::vector<Edit> edits;
     auto positions = get_mismatch_positions(seq_iter.get_position(), pattern);
-    unsigned last_position = seq_iter.get_position() - 1;
     while (!positions.empty()) {
         char before = seq_iter.get_base(positions.front());
-        unsigned num_checks = positions.front() - last_position;
+        unsigned num_checks = positions.front() - seq_iter.get_position() + 1;
         auto fix = fix_next(seq_iter, positions.front(), num_checks, bf);
+        if (fix == 'N') {
+            revert_edits(seq_iter, edits);
+            edits.clear();
+            return edits;
+        }
         edits.emplace_back(positions.front(), Edit::Type::MISMATCH, before, fix);
-        last_position = positions.front();
         positions.pop();
     }
     if (!check_fix(seq_iter, bf, seq_iter.get_seed_length() - 1)) {
