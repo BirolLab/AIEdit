@@ -4,6 +4,26 @@
 
 #include "sequence_iterator.hpp"
 
+TEST_CASE("chunks", "[sequence_iterator]")
+{
+    const std::string seq = "TACGTAGCATGATGCTAGC";
+    const size_t begin = 3;
+    const size_t end = 10;
+    const std::string chunk = seq.substr(begin, end - begin);
+
+    aiedit::SequenceIterator seq_iter1(seq, {"11011"}, 1, begin, end);
+    aiedit::SequenceIterator seq_iter2(chunk, {"11011"}, 1);
+    bool next1 = seq_iter1.next();
+    bool next2 = seq_iter2.next();
+    while (next1 && next2) {
+        REQUIRE(seq_iter1.get_current() == seq_iter2.get_current());
+        REQUIRE(seq_iter1.get_hashes(0)[0] == seq_iter2.get_hashes(0)[0]);
+        next1 = seq_iter1.next();
+        next2 = seq_iter2.next();
+    }
+    REQUIRE(next1 == next2);
+}
+
 TEST_CASE("substitution", "[sequence_iterator]")
 {
     const std::string ref = "ACTGATCGACTGAGCT";
