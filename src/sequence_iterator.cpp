@@ -80,7 +80,7 @@ void SequenceIterator::insert_last(char new_base)
 
 char SequenceIterator::get_current() const { return current; }
 
-size_t SequenceIterator::get_position() const { return hash_fn.get_pos(); }
+size_t SequenceIterator::get_position() const { return hash_fn.get_pos() + hash_fn.get_k() - 1; }
 
 const std::vector<uint64_t> SequenceIterator::get_hashes(unsigned i) const
 {
