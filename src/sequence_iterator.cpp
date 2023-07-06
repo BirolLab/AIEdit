@@ -28,9 +28,9 @@ SequenceIterator::SequenceIterator(const std::string& seq,
   : seq(seq)
   , begin(begin)
   , end(end)
-  , pos(begin + seeds[0].size() - 1)
-  , current(seq[seeds[0].size()])
-  , buffer(1, seq[seeds[0].size()])
+  , pos_next(begin + seeds[0].size())
+  , current(seq[begin + seeds[0].size()])
+  , buffer(1, seq[begin + seeds[0].size()])
   , hash_fn(seq.data(), seeds, num_hashes, seeds[0].size(), begin)
   , num_seeds(seeds.size())
 {
@@ -43,16 +43,17 @@ void SequenceIterator::consume()
     current = buffer.front();
     buffer.pop_front();
     // TODO: skip if current == N
-    if (buffer.empty() && pos < end - get_seed_length()) {
-        buffer.push_back(seq[++pos]);
+    if (buffer.empty() && pos_next < end - get_seed_length()) {
+        buffer.push_back(seq[++pos_next]);
     }
 }
 
 bool SequenceIterator::next(unsigned n)
 {
-    while (n-- && !buffer.empty()) {
+    while (n-- > 0 && !buffer.empty()) {
         consume();
     }
+    std::cout << std::string(1, buffer.front()) << std::endl;
     return !buffer.empty();
 }
 

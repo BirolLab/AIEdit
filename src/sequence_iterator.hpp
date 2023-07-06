@@ -28,7 +28,7 @@ class SequenceIterator
       : seq(seq_iter.seq)
       , begin(seq_iter.begin)
       , end(seq_iter.end)
-      , pos(seq_iter.pos)
+      , pos_next(seq_iter.pos_next)
       , current(seq_iter.current)
       , buffer(seq_iter.buffer)
       , hash_fn(seq_iter.hash_fn)
@@ -58,7 +58,7 @@ class SequenceIterator
   private:
 
     std::string_view seq;
-    size_t begin, end, pos;
+    size_t begin, end, pos_next;
     char current;
     std::deque<char> buffer;
     nthash::BlindSeedNtHash hash_fn;
