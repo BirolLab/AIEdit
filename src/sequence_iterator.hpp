@@ -12,13 +12,15 @@ class SequenceIterator
 {
   public:
 
-    SequenceIterator(std::string& seq,
+    SequenceIterator(const std::string& seq,
                      const std::vector<std::string>& seeds,
                      unsigned num_hashes,
                      size_t begin,
                      size_t end);
 
-    SequenceIterator(std::string& seq, const std::vector<std::string>& seeds, unsigned num_hashes)
+    SequenceIterator(const std::string& seq,
+                     const std::vector<std::string>& seeds,
+                     unsigned num_hashes)
       : SequenceIterator(seq, seeds, num_hashes, 0, seq.size())
     {}
 

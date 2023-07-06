@@ -20,7 +20,7 @@ inline void update_seed_hashes(const uint64_t* hash_array,
 
 namespace aiedit {
 
-SequenceIterator::SequenceIterator(std::string& seq,
+SequenceIterator::SequenceIterator(const std::string& seq,
                                    const std::vector<std::string>& seeds,
                                    unsigned num_hashes,
                                    size_t begin,
