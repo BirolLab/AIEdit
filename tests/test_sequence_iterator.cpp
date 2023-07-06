@@ -1,5 +1,4 @@
 #define CATCH_CONFIG_MAIN
-#include <btllib/random_seq_generator.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "sequence_iterator.hpp"
