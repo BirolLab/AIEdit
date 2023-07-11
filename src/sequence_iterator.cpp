@@ -53,7 +53,6 @@ bool SequenceIterator::next(unsigned n)
     while (n-- > 0 && !buffer.empty()) {
         consume();
     }
-    std::cout << std::string(1, buffer.front()) << std::endl;
     return !buffer.empty();
 }
 
