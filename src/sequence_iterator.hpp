@@ -37,8 +37,6 @@ class SequenceIterator
 
     bool next(unsigned n = 1);
 
-    void skip_kmer();
-
     void substitute_last(char new_base);
 
     void delete_last();

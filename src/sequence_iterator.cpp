@@ -56,8 +56,6 @@ bool SequenceIterator::next(unsigned n)
     return !buffer.empty();
 }
 
-void SequenceIterator::skip_kmer() {}
-
 void SequenceIterator::substitute_last(char new_base)
 {
     hash_fn.roll_back('A');
