@@ -8,6 +8,7 @@
 
 #include "mismatch_corrector.hpp"
 #include "pattern.hpp"
+#include "polisher.hpp"
 
 void populate(const std::string& seq,
               const std::vector<std::string>& seeds,
@@ -26,20 +27,26 @@ TEST_CASE("single mismatch", "[mismatch_corrector]")
     const std::string ref = "CATCGCGGCAT";
     const std::string alt = "CATCGTGGCAT";
     const unsigned position = 5;
-    const std::vector<std::string> seeds = {"11011"};
+    const std::vector<std::string> seeds = {"11111", "11011"};
 
     btllib::CountingBloomFilter8 bf(128, 3);
     populate(ref, seeds, bf);
     aiedit::MismatchCorrector mc(bf);
 
-    aiedit::Pattern pattern(1);
+    aiedit::Pattern pattern(3);
     pattern.set(0, aiedit::Edit::Type::MISMATCH);
     aiedit::SequenceIterator seq_iter(alt, seeds, bf.get_hash_num());
     seq_iter.next();
     const auto edits = mc.fix(seq_iter, pattern);
     REQUIRE(edits.size() == 1);
-    REQUIRE(edits.front().position == position);
-    REQUIRE(edits.front().before == alt[position]);
-    REQUIRE(edits.front().after == ref[position]);
-    REQUIRE(edits.front().type == aiedit::Edit::Type::MISMATCH);
+    REQUIRE(edits.front().get_position() == position);
+    REQUIRE(edits.front().get_before() == alt[position]);
+    REQUIRE(edits.front().get_after() == ref[position]);
+    REQUIRE(edits.front().get_type() == aiedit::Edit::Type::MISMATCH);
+
+    aiedit::PolishingResults results;
+    results.add_edits(edits);
+    results.sort_edits();
+    std::string edited = results.apply(alt);
+    REQUIRE(edited == ref);
 }
