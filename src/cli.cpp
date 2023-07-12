@@ -104,11 +104,15 @@ void CommandLineInterface::print_polisher_results(const std::string& seq_id,
 
 void CommandLineInterface::print_final_stats(const unsigned num_mismatches,
                                              const unsigned num_insertions,
-                                             const unsigned num_deletions)
+                                             const unsigned num_deletions,
+                                             const unsigned num_fixed_patterns,
+                                             const unsigned num_ignored)
 {
-    std::cout << "Number of bases mutated  = " << num_mismatches << std::endl;
-    std::cout << "Number of bases inserted = " << num_insertions << std::endl;
-    std::cout << "Number of bases deleted  = " << num_deletions << std::endl;
+    std::cout << "Number of patterns fixed    = " << num_fixed_patterns << std::endl;
+    std::cout << "Number of patterns ignored  = " << num_ignored << std::endl;
+    std::cout << "Number of bases mutated     = " << num_mismatches << std::endl;
+    std::cout << "Number of bases inserted    = " << num_insertions << std::endl;
+    std::cout << "Number of bases deleted     = " << num_deletions << std::endl;
 }
 
 void CommandLineInterface::start_timer(const std::string& message)

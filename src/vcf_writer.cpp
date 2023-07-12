@@ -25,10 +25,10 @@ void VCFWriter::write(const std::string& seq_id,
     {
         for (const auto& edit : edits) {
             file << seq_id << " " << seq_comment << "\t";  // CHROM
-            file << edit.position + 1 << "\t";             // POS
+            file << edit.get_position() + 1 << "\t";       // POS
             file << ".\t";                                 // ID
-            file << edit.before << "\t";                   // REF
-            file << edit.after << "\t";                    // ALT
+            file << edit.get_before() << "\t";             // REF
+            file << edit.get_after() << "\t";              // ALT
             file << ".\t";                                 // QUAL
             file << "PASS\t";                              // FILTER
             file << ".\t";                                 // INFO

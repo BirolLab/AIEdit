@@ -18,17 +18,24 @@ class Edit
         DELETION = 'D'
     };
 
-    const size_t position;
-    const Type type;
-    const char before;
-    const char after;
-
     Edit(size_t position, Type type, char before, char after)
       : position(position)
       , type(type)
       , before(before)
       , after(after)
     {}
+
+    size_t get_position() const { return position; }
+    Type get_type() const { return type; }
+    char get_before() const { return before; }
+    char get_after() const { return after; }
+
+  private:
+
+    size_t position;
+    Type type;
+    char before;
+    char after;
 };
 
 }  // namespace aiedit

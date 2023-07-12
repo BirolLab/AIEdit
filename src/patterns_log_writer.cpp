@@ -5,7 +5,7 @@
 namespace aiedit {
 
 void PatternsLogWriter::write(const std::string& seq_id,
-                              const IgnoredPatternsList& ignored_patterns)
+                              const std::vector<std::pair<unsigned, std::string>>& ignored_patterns)
 {
 #pragma omp critical
     {
