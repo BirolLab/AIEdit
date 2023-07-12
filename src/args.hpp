@@ -16,6 +16,7 @@ class ProgramArguments
     std::filesystem::path out_path;
     unsigned num_threads;
     bool contig_mode;
+    bool no_apply;
     bool verbose;
 
     /**
