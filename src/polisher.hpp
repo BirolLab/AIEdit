@@ -6,32 +6,43 @@
 #include <vector>
 
 #include "edit.hpp"
+#include "pattern.hpp"
 #include "sequence_iterator.hpp"
 
 namespace aiedit {
 
-using IgnoredPatternsList = std::vector<std::pair<unsigned, std::string>>;
-
 class PolishingResults
 {
-    friend class Polisher;
-
   public:
 
+    void add_edits(const std::vector<Edit>& edits);
+
+    const std::vector<Edit>& get_edits() const { return edits; }
+
+    void add_ignored_pattern(unsigned position, const std::string& pattern);
+
+    const std::vector<std::pair<unsigned, std::string>>& get_ignored_patterns() const
+    {
+        return ignored;
+    }
+
+    void merge(const PolishingResults& results);
+
+    void sort_edits();
+    void sort_ignored();
+
     unsigned get_num_fixed_patterns() const { return num_fixed_patterns; }
-    unsigned get_num_ignored_patterns() const { return ignored_patterns.size(); }
+    unsigned get_num_ignored_patterns() const { return ignored.size(); }
     unsigned get_num_mismatches() const { return num_mismatches; }
     unsigned get_num_insertions() const { return num_insertions; }
     unsigned get_num_deletions() const { return num_deletions; }
-    const std::vector<Edit>& get_edits() const { return edits; }
-    const IgnoredPatternsList& get_ignored_patterns() const { return ignored_patterns; }
+
+    const std::string apply(const std::string& seq) const;
 
   private:
 
-    PolishingResults() = default;
-
     std::vector<Edit> edits;
-    IgnoredPatternsList ignored_patterns;
+    std::vector<std::pair<unsigned, std::string>> ignored;
     unsigned num_fixed_patterns = 0;
     unsigned num_mismatches = 0;
     unsigned num_insertions = 0;
@@ -58,12 +69,6 @@ class Polisher
     const unsigned pattern_length;
     const btllib::CountingBloomFilter8& bf;
     const fdeep::model& model;
-
-    static void update_results(const std::vector<Edit>& mismatches,
-                               const std::vector<Edit>& indels,
-                               unsigned seq_iter_position,
-                               const std::string& pattern_string,
-                               PolishingResults& results);
 };
 
 }  // namespace aiedit
