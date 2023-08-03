@@ -2,9 +2,8 @@
 
 #include <algorithm>
 
+#include "error_corrector.hpp"
 #include "error_detector.hpp"
-#include "indel_corrector.hpp"
-#include "mismatch_corrector.hpp"
 #include "pattern_detector.hpp"
 
 namespace aiedit {
@@ -82,19 +81,12 @@ const std::string PolishingResults::apply(const std::string& seq) const
 PolishingResults Polisher::polish(SequenceIterator& seq_iter)
 {
     PolishingResults results;
-    ErrorDetector err_detector(seq_iter, bf);
+    ErrorDetector error_detector(seq_iter, bf);
     PatternDetector pattern_detector(pattern_length, bf, model);
-    MismatchCorrector mismatch_corrector(bf);
-    IndelCorrector indel_corrector(bf);
-    while (err_detector.next()) {
-        std::vector<Edit> edits;
-        auto pattern = pattern_detector.get_pattern(seq_iter);
-        if (pattern.get_count(Edit::Type::MISMATCH) > 0) {
-            edits = mismatch_corrector.fix(seq_iter, pattern);
-        } else if (pattern.get_count(Edit::Type::INSERTION) > 0 ||
-                   pattern.get_count(Edit::Type::DELETION) > 0) {
-            edits = indel_corrector.fix(seq_iter, pattern);
-        }
+    ErrorCorrector error_corrector(bf);
+    while (error_detector.next()) {
+        const auto pattern = pattern_detector.get_pattern(seq_iter);
+        const auto edits = error_corrector.fix(seq_iter, pattern);
         if (edits.empty()) {
             results.add_ignored_pattern(seq_iter.get_position(), pattern.to_string());
             seq_iter.next(pattern.get_length() + seq_iter.get_seed_length());

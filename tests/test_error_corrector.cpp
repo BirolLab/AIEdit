@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "mismatch_corrector.hpp"
+#include "error_corrector.hpp"
 #include "pattern.hpp"
 #include "polisher.hpp"
 
@@ -22,7 +22,7 @@ void populate(const std::string& seq,
     }
 }
 
-TEST_CASE("single mismatch", "[mismatch_corrector]")
+TEST_CASE("single mismatch", "[error_corrector]")
 {
     const std::string ref = "CATCGCGGCAT";
     const std::string alt = "CATCGTGGCAT";
@@ -31,13 +31,13 @@ TEST_CASE("single mismatch", "[mismatch_corrector]")
 
     btllib::CountingBloomFilter8 bf(128, 3);
     populate(ref, seeds, bf);
-    aiedit::MismatchCorrector mc(bf);
+    aiedit::ErrorCorrector ec(bf);
 
     aiedit::Pattern pattern(3);
     pattern.set(0, aiedit::Edit::Type::MISMATCH);
     aiedit::SequenceIterator seq_iter(alt, seeds, bf.get_hash_num());
     seq_iter.next();
-    const auto edits = mc.fix(seq_iter, pattern);
+    const auto edits = ec.fix(seq_iter, pattern);
     REQUIRE(edits.size() == 1);
     REQUIRE(edits.front().get_position() == position);
     REQUIRE(edits.front().get_before() == alt[position]);

@@ -1,4 +1,4 @@
-#include "mismatch_corrector.hpp"
+#include "error_corrector.hpp"
 
 #include <queue>
 
@@ -42,7 +42,7 @@ inline bool permute(SequenceIterator& seq_iter, const btllib::CountingBloomFilte
 
 namespace aiedit {
 
-std::vector<Edit> MismatchCorrector::fix(SequenceIterator& seq_iter, const Pattern& pattern)
+std::vector<Edit> ErrorCorrector::fix(SequenceIterator& seq_iter, const Pattern& pattern)
 {
     std::vector<Edit> edits;
     const unsigned num_checks = pattern.get_length();

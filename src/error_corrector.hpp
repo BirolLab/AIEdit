@@ -8,11 +8,11 @@
 
 namespace aiedit {
 
-class MismatchCorrector
+class ErrorCorrector
 {
   public:
 
-    MismatchCorrector(const btllib::CountingBloomFilter8& bf) : bf(bf) {}
+    ErrorCorrector(const btllib::CountingBloomFilter8& bf) : bf(bf) {}
 
     /**
      * Find fixes for the mismatches in the current position of the sequence iterator
