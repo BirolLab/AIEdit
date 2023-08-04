@@ -61,7 +61,7 @@ const std::string PolishingResults::apply(const std::string& seq) const
             continue;
         }
         const auto& edit = edits[current_edit];
-        if (edit.get_position() != i) {
+        if (edit.get_position() != edited.size()) {
             edited.push_back(seq[i]);
             continue;
         }
@@ -70,8 +70,6 @@ const std::string PolishingResults::apply(const std::string& seq) const
         } else if (edit.get_type() == Edit::Type::INSERTION) {
             edited.push_back(edit.get_after());
             --i;
-        } else if (edit.get_type() == Edit::Type::DELETION) {
-            ++i;
         }
         ++current_edit;
     }

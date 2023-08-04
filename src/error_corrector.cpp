@@ -66,19 +66,12 @@ inline bool fix_insertion(SequenceIterator& seq_iter,
     return fixed;
 }
 
-inline bool fix_deletion(SequenceIterator& seq_iter,
-                         const btllib::CountingBloomFilter8& bf,
-                         std::vector<Edit>& edits)
+inline bool fix_deletion(SequenceIterator& seq_iter, std::vector<Edit>& edits)
 {
     const auto original = seq_iter.get_current();
     seq_iter.delete_last();
-    const auto fixed = count(seq_iter, bf) > 0;
-    if (fixed) {
-        edits.emplace_back(seq_iter.get_position(), Edit::Type::DELETION, original, '.');
-    } else {
-        seq_iter.insert_last(original);
-    }
-    return fixed;
+    edits.emplace_back(seq_iter.get_position(), Edit::Type::DELETION, original, '.');
+    return true;
 }
 
 }  // namespace
@@ -96,11 +89,13 @@ std::vector<Edit> ErrorCorrector::fix(SequenceIterator& seq_iter, const Pattern&
         } else if (i < pattern.get_length() && pattern.get(i) == Edit::INSERTION) {
             clean = fix_insertion(seq_iter, bf, edits);
         } else if (i < pattern.get_length() && pattern.get(i) == Edit::DELETION) {
-            clean = fix_deletion(seq_iter, bf, edits);
+            clean = fix_deletion(seq_iter, edits);
         } else {
             clean = count(seq_iter, bf) > 0;
         }
-        seq_iter.next();
+        if (!seq_iter.next()) {
+            break;
+        }
     }
     if (!clean) {
         edits.clear();

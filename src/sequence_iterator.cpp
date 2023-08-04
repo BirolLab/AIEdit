@@ -43,7 +43,7 @@ void SequenceIterator::consume()
     current = buffer.front();
     buffer.pop_front();
     // TODO: skip if current == N
-    if (buffer.empty() && pos_next < end - get_seed_length()) {
+    if (buffer.empty() && pos_next < end) {
         buffer.push_back(seq[++pos_next]);
     }
 }
