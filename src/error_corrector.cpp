@@ -90,6 +90,7 @@ std::vector<Edit> ErrorCorrector::fix(SequenceIterator& seq_iter, const Pattern&
             clean = fix_insertion(seq_iter, bf, edits);
         } else if (i < pattern.get_length() && pattern.get(i) == Edit::DELETION) {
             clean = fix_deletion(seq_iter, edits);
+            continue;
         } else {
             clean = count(seq_iter, bf) > 0;
         }

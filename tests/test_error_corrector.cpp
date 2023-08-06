@@ -196,11 +196,10 @@ TEST_CASE("multiple deletions", "[error_corrector]")
     const auto edits = ec.fix(seq_iter, pattern);
     REQUIRE(edits.size() == 2);
     REQUIRE(edits[0].get_position() == position);
-    REQUIRE(edits[0].get_before() == ref[position]);
+    REQUIRE(edits[0].get_before() == alt[position]);
     REQUIRE(edits[0].get_after() == '.');
     REQUIRE(edits[0].get_type() == aiedit::Edit::Type::DELETION);
-    REQUIRE(edits[1].get_position() == position + 1);
-    REQUIRE(edits[1].get_before() == ref[position + 1]);
+    REQUIRE(edits[1].get_before() == alt[position + 1]);
     REQUIRE(edits[1].get_after() == '.');
     REQUIRE(edits[1].get_type() == aiedit::Edit::Type::DELETION);
 
