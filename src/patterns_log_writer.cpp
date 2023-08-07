@@ -10,7 +10,7 @@ void PatternsLogWriter::write(const std::string& seq_id,
 #pragma omp critical
     {
         for (const auto& pattern : ignored_patterns) {
-            file << seq_id << "\t" << pattern.first << "\t" << pattern.second << std::endl;
+            file << seq_id << "\t" << pattern.first + 1 << "\t" << pattern.second << std::endl;
         }
     }
 }
