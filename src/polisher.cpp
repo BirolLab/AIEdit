@@ -6,6 +6,26 @@
 #include "error_detector.hpp"
 #include "pattern_detector.hpp"
 
+namespace {
+
+using namespace aiedit;
+
+inline void update_seq_iter(SequenceIterator& seq_iter, const std::vector<Edit>& edits)
+{
+    for (const auto& edit : edits) {
+        seq_iter.next(edit.get_position() - seq_iter.get_position());
+        if (edit.get_type() == Edit::Type::MISMATCH) {
+            seq_iter.substitute_last(edit.get_after());
+        } else if (edit.get_type() == Edit::Type::INSERTION) {
+            seq_iter.insert_last(edit.get_after());
+        } else if (edit.get_type() == Edit::Type::DELETION) {
+            seq_iter.delete_last();
+        }
+    }
+}
+
+}  // namespace
+
 namespace aiedit {
 
 void PolishingResults::add_edits(const std::vector<Edit>& edits)
@@ -61,17 +81,19 @@ const std::string PolishingResults::apply(const std::string& seq) const
             continue;
         }
         const auto& edit = edits[current_edit];
-        if (edit.get_position() != edited.size()) {
-            edited.push_back(seq[i]);
-            continue;
-        }
-        if (edit.get_type() == Edit::Type::MISMATCH) {
+        if (edit.get_position() == edited.size() && edit.get_type() == Edit::Type::MISMATCH) {
             edited.push_back(edit.get_after());
-        } else if (edit.get_type() == Edit::Type::INSERTION) {
+            ++current_edit;
+        } else if (edit.get_position() == edited.size() &&
+                   edit.get_type() == Edit::Type::INSERTION) {
             edited.push_back(edit.get_after());
             --i;
+            ++current_edit;
+        } else if (edit.get_position() == i && edit.get_type() == Edit::Type::DELETION) {
+            ++current_edit;
+        } else {
+            edited.push_back(seq[i]);
         }
-        ++current_edit;
     }
     return edited;
 }
@@ -89,6 +111,7 @@ PolishingResults Polisher::polish(SequenceIterator& seq_iter)
             results.add_ignored_pattern(seq_iter.get_position(), pattern.to_string());
             seq_iter.next(pattern.get_length() + seq_iter.get_seed_length());
         } else {
+            update_seq_iter(seq_iter, edits);
             results.add_edits(edits);
         }
     }

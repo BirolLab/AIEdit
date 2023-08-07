@@ -179,8 +179,8 @@ TEST_CASE("single deletion", "[error_corrector]")
 
 TEST_CASE("multiple deletions", "[error_corrector]")
 {
-    const std::string ref = "CATCGTGCAT";
-    const std::string alt = "CATCGAGTGCAT";
+    const std::string ref = "CATCTTGCAT";
+    const std::string alt = "CATCTAGTGCAT";
     const unsigned position = 5;
     const std::vector<std::string> seeds = {"11111", "11011"};
 
@@ -199,6 +199,7 @@ TEST_CASE("multiple deletions", "[error_corrector]")
     REQUIRE(edits[0].get_before() == alt[position]);
     REQUIRE(edits[0].get_after() == '.');
     REQUIRE(edits[0].get_type() == aiedit::Edit::Type::DELETION);
+    REQUIRE(edits[1].get_position() == position + 1);
     REQUIRE(edits[1].get_before() == alt[position + 1]);
     REQUIRE(edits[1].get_after() == '.');
     REQUIRE(edits[1].get_type() == aiedit::Edit::Type::DELETION);

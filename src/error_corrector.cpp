@@ -60,36 +60,39 @@ inline bool fix_insertion(SequenceIterator& seq_iter,
     if (fixed) {
         const auto inserted = seq_iter.get_current();
         edits.emplace_back(seq_iter.get_position(), Edit::Type::INSERTION, '.', inserted);
-    } else {
-        seq_iter.delete_last();
     }
     return fixed;
 }
 
-inline bool fix_deletion(SequenceIterator& seq_iter, std::vector<Edit>& edits)
+inline void fix_deletion(SequenceIterator& seq_iter, std::vector<Edit>& edits, unsigned consecutive)
 {
     const auto original = seq_iter.get_current();
     seq_iter.delete_last();
-    edits.emplace_back(seq_iter.get_position(), Edit::Type::DELETION, original, '.');
-    return true;
+    edits.emplace_back(seq_iter.get_position() + consecutive, Edit::Type::DELETION, original, '.');
 }
 
 }  // namespace
 
 namespace aiedit {
 
-std::vector<Edit> ErrorCorrector::fix(SequenceIterator& seq_iter, const Pattern& pattern)
+std::vector<Edit> ErrorCorrector::fix(SequenceIterator seq_iter, const Pattern& pattern)
 {
     std::vector<Edit> edits;
     bool clean = true;
-    const unsigned num_checks = pattern.get_length();
+    const unsigned num_checks = pattern.get_length() * 2;
+    unsigned consecutive_deletions = 0;
     for (unsigned i = 0; i < num_checks && clean; i++) {
         if (i < pattern.get_length() && pattern.get(i) == Edit::MISMATCH) {
+            seq_iter.next(consecutive_deletions);
             clean = fix_mismatch(seq_iter, bf, edits);
+            consecutive_deletions = 0;
         } else if (i < pattern.get_length() && pattern.get(i) == Edit::INSERTION) {
+            seq_iter.next(consecutive_deletions);
             clean = fix_insertion(seq_iter, bf, edits);
+            consecutive_deletions = 0;
         } else if (i < pattern.get_length() && pattern.get(i) == Edit::DELETION) {
-            clean = fix_deletion(seq_iter, edits);
+            fix_deletion(seq_iter, edits, consecutive_deletions);
+            ++consecutive_deletions;
             continue;
         } else {
             clean = count(seq_iter, bf) > 0;
