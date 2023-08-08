@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from signature import get_signature
 from seed_generation import generate_seeds
+from tqdm import tqdm
 
 
 @dataclasses.dataclass
@@ -73,8 +74,7 @@ def parse_args() -> argparse.Namespace:
 def build_model(seeds: list[str], pattern_length: int) -> keras.Model:
     signature_length = pattern_length + len(seeds[0]) - 1
     x_in = keras.layers.Input((signature_length, len(seeds)))
-    z_conv = keras.layers.Conv1D(1, pattern_length, activation='relu')(x_in)
-    z_flat = keras.layers.Flatten()(z_conv)
+    z_flat = keras.layers.Flatten()(x_in)
     y_out = [
         keras.layers.Dense(4, activation='softmax', name=f'y{i}')(z_flat)
         for i in range(pattern_length)
@@ -132,7 +132,7 @@ def prepare_data(seeds: list[str], pattern_length: int, samples_per_class: int,
                  fpr: float) -> Dataset:
     x_train, y_train, x_test, y_test = [], [], [], []
     patterns = []
-    for p in get_pattern_strings(pattern_length):
+    for p in tqdm(get_pattern_strings(pattern_length), desc="GENERATING DATA", unit="pattern"):
         for i in range(max(2, int(samples_per_class * 1.2))):
             signature = get_signature(seeds, p, fpr if i > 0 else 0)
             if i < samples_per_class:
