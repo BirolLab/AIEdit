@@ -82,20 +82,24 @@ std::vector<Edit> ErrorCorrector::fix(SequenceIterator seq_iter, const Pattern& 
     const unsigned num_checks = pattern.get_length() * 2;
     unsigned consecutive_deletions = 0;
     for (unsigned i = 0; i < num_checks && clean; i++) {
-        if (i < pattern.get_length() && pattern.get(i) == Edit::MISMATCH) {
+        if (count(seq_iter, bf) > 0) {
+            ;  // do nothing
+        } else if (i >= pattern.get_length()) {
+            clean = count(seq_iter, bf);
+        } else if (pattern.get(i) == Edit::NONE) {
+            clean = false;
+        } else if (pattern.get(i) == Edit::MISMATCH) {
             seq_iter.next(consecutive_deletions);
             clean = fix_mismatch(seq_iter, bf, edits);
             consecutive_deletions = 0;
-        } else if (i < pattern.get_length() && pattern.get(i) == Edit::INSERTION) {
+        } else if (pattern.get(i) == Edit::INSERTION) {
             seq_iter.next(consecutive_deletions);
             clean = fix_insertion(seq_iter, bf, edits);
             consecutive_deletions = 0;
-        } else if (i < pattern.get_length() && pattern.get(i) == Edit::DELETION) {
+        } else if (pattern.get(i) == Edit::DELETION) {
             fix_deletion(seq_iter, edits, consecutive_deletions);
             ++consecutive_deletions;
             continue;
-        } else {
-            clean = count(seq_iter, bf) > 0;
         }
         if (!seq_iter.next()) {
             break;
