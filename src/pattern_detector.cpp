@@ -62,22 +62,31 @@ inline unsigned get_num_insertions(SequenceIterator seq_iter,
     return 0;
 }
 
+inline bool
+check_fixes(SequenceIterator seq_iter, const btllib::CountingBloomFilter8& bf, unsigned num_checks)
+{
+    while (num_checks-- > 0) {
+        for (unsigned i = 0; i < seq_iter.get_num_seeds(); i++) {
+            if (bf.contains(seq_iter.get_hashes(i)) == 0) {
+                return false;
+            }
+        }
+        if (!seq_iter.next()) {
+            return true;
+        }
+    }
+    return true;
+}
+
 inline unsigned get_num_deletions(SequenceIterator seq_iter,
                                   unsigned pattern_length,
                                   const btllib::CountingBloomFilter8& bf)
 {
-    seq_iter.next(seq_iter.get_seed_length());
     for (unsigned num_del = 1; num_del <= pattern_length; num_del++) {
-        bool fixed = true;
-        for (unsigned i = 0; i < seq_iter.get_num_seeds() && fixed; i++) {
-            if (bf.contains(seq_iter.get_hashes(i)) == 0) {
-                fixed = false;
-            }
-        }
-        if (fixed) {
+        seq_iter.delete_last();
+        if (check_fixes(seq_iter, bf, pattern_length)) {
             return num_del;
         }
-        seq_iter.next();
     }
     return 0;
 }
@@ -97,6 +106,19 @@ Pattern PatternDetector::get_pattern(SequenceIterator& seq_iter)
         if (pattern_string[pattern_string.size() - i - 1] == '1') {
             pattern.set(i, Edit::Type::MISMATCH);
         }
+    }
+    if (pattern.get_count(Edit::Type::MISMATCH) > 0) {
+        return pattern;
+    }
+    const auto num_deletions = get_num_deletions(seq_iter, pattern_length, bf);
+    if (num_deletions > 0) {
+        fill_first(pattern, Edit::Type::DELETION, num_deletions);
+        return pattern;
+    }
+    const auto num_insertions = get_num_insertions(seq_iter, pattern_length, bf, model);
+    if (num_insertions > 0) {
+        fill_first(pattern, Edit::Type::INSERTION, num_insertions);
+        return pattern;
     }
     return pattern;
 }
