@@ -7,14 +7,12 @@ namespace {
 using namespace aiedit;
 
 inline fdeep::tensor get_model_input(SequenceIterator seq_iter,
-                                     unsigned pattern_length,
                                      const btllib::CountingBloomFilter8& bf)
 {
-    const unsigned signature_length = pattern_length + seq_iter.get_seed_length() - 1;
-    const auto input_shape = fdeep::tensor_shape(signature_length, seq_iter.get_num_seeds());
-    fdeep::tensor model_input(input_shape, 1);
+    const auto shape = fdeep::tensor_shape(seq_iter.get_seed_length(), seq_iter.get_num_seeds());
+    fdeep::tensor model_input(shape, 1);
     bool has_next = true;
-    for (unsigned i = 0; i < signature_length && has_next; i++) {
+    for (unsigned i = 0; i < seq_iter.get_seed_length() && has_next; i++) {
         for (unsigned j = 0; j < seq_iter.get_num_seeds(); j++) {
             const auto is_miss = bf.contains(seq_iter.get_hashes(j)) == 0;
             model_input.set(fdeep::tensor_pos(i, j), is_miss ? 0.0 : 1.0);
@@ -52,7 +50,7 @@ inline unsigned get_num_insertions(SequenceIterator seq_iter,
 {
     for (unsigned num_ins = 1; num_ins <= pattern_length; num_ins++) {
         seq_iter.insert_last('N');
-        const auto signature = get_model_input(seq_iter, pattern_length, bf);
+        const auto signature = get_model_input(seq_iter, bf);
         const auto model_output = model.predict({signature});
         const auto argmax_y = argmax(model_output[0]);
         if (argmax_y > 0) {
@@ -97,7 +95,7 @@ namespace aiedit {
 
 Pattern PatternDetector::get_pattern(SequenceIterator& seq_iter)
 {
-    const auto signature = get_model_input(seq_iter, pattern_length, bf);
+    const auto signature = get_model_input(seq_iter, bf);
     const auto model_output = model.predict({signature});
     const auto argmax_y = argmax(model_output[0]);
     const std::string pattern_string = std::bitset<64>(argmax_y).to_string();
