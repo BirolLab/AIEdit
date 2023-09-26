@@ -72,8 +72,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def build_model(seeds: list[str], pattern_length: int) -> keras.Model:
-    signature_length = pattern_length + len(seeds[0]) - 1
-    x_in = keras.layers.Input((signature_length, len(seeds)))
+    x_in = keras.layers.Input((len(seeds[0]), len(seeds)))
     z_flat = keras.layers.Flatten()(x_in)
     y_out = keras.layers.Dense(2 ** pattern_length, activation='softmax')(z_flat)
     return keras.Model(x_in, y_out)
