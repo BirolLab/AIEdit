@@ -60,6 +60,12 @@ class Pattern
      */
     unsigned get_count(Edit::Type type);
 
+    /**
+     * Check if the pattern is empty
+     * @return `true` if all elements of the pattern are set to clean
+     */
+    bool is_empty();
+
   private:
 
     std::unique_ptr<Edit::Type[]> values;
