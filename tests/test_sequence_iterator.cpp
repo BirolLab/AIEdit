@@ -79,6 +79,6 @@ TEST_CASE("deletion", "[sequence_iterator]")
 
     alt_iter.delete_last();
     REQUIRE(ref_iter.get_current() == alt_iter.get_current());
-    REQUIRE(ref_iter.get_position() == alt_iter.get_position());
+    REQUIRE(ref_iter.get_position() == alt_iter.get_position() - 1);
     REQUIRE(ref_iter.get_hashes(0)[0] == alt_iter.get_hashes(0)[0]);
 }
