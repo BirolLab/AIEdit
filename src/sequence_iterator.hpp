@@ -35,6 +35,8 @@ class SequenceIterator
       , num_seeds(seq_iter.num_seeds)
     {}
 
+    bool has_next();
+
     bool next(unsigned n = 1);
 
     void substitute_last(char new_base);

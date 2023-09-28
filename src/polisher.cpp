@@ -15,9 +15,11 @@ inline void update_seq_iter(SequenceIterator& seq_iter, const std::vector<Edit>&
     for (const auto& edit : edits) {
         seq_iter.next(edit.get_position() - seq_iter.get_position());
         if (edit.get_type() == Edit::Type::MISMATCH) {
-            seq_iter.substitute_last(edit.get_after());
+            seq_iter.substitute_last(edit.get_after()[0]);
         } else if (edit.get_type() == Edit::Type::INSERTION) {
-            seq_iter.insert_last(edit.get_after());
+            for (const auto c : edit.get_after()) {
+                seq_iter.insert_last(c);
+            }
         } else if (edit.get_type() == Edit::Type::DELETION) {
             seq_iter.delete_last();
         }
@@ -81,16 +83,15 @@ const std::string PolishingResults::apply(const std::string& seq) const
             continue;
         }
         const auto& edit = edits[current_edit];
-        if (edit.get_position() == edited.size() && edit.get_type() == Edit::Type::MISMATCH) {
-            edited.push_back(edit.get_after());
+        if (edit.get_position() == i && edit.get_type() == Edit::Type::MISMATCH) {
+            edited.push_back(edit.get_after()[0]);
             ++current_edit;
-        } else if (edit.get_position() == edited.size() &&
-                   edit.get_type() == Edit::Type::INSERTION) {
-            edited.push_back(edit.get_after());
-            --i;
+        } else if (edit.get_position() == i && edit.get_type() == Edit::Type::INSERTION) {
+            edited.append(edit.get_after());
             ++current_edit;
         } else if (edit.get_position() == i && edit.get_type() == Edit::Type::DELETION) {
             ++current_edit;
+            i += edit.get_before().size() - 1;
         } else {
             edited.push_back(seq[i]);
         }
@@ -105,14 +106,19 @@ PolishingResults Polisher::polish(SequenceIterator& seq_iter)
     PatternDetector pattern_detector(pattern_length, bf, model);
     ErrorCorrector error_corrector(bf);
     while (error_detector.next()) {
-        const auto pattern = pattern_detector.get_pattern(seq_iter);
-        const auto edits = error_corrector.fix(seq_iter, pattern);
-        if (edits.empty()) {
+        auto pattern = pattern_detector.get_pattern(seq_iter);
+        std::vector<Edit> edits;
+        if (!pattern.is_empty()) {
+            edits = error_corrector.fix(seq_iter, pattern);
+        }
+        if (!pattern.is_empty() && edits.empty()) {
             results.add_ignored_pattern(seq_iter.get_position(), pattern.to_string());
             seq_iter.next(pattern.get_length() + seq_iter.get_seed_length());
-        } else {
+        } else if (!pattern.is_empty()) {
             update_seq_iter(seq_iter, edits);
             results.add_edits(edits);
+        } else {
+            seq_iter.next();
         }
     }
     return results;

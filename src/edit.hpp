@@ -18,7 +18,7 @@ class Edit
         DELETION = 'D'
     };
 
-    Edit(size_t position, Type type, char before, char after)
+    Edit(size_t position, Type type, const std::string& before, const std::string& after)
       : position(position)
       , type(type)
       , before(before)
@@ -27,15 +27,15 @@ class Edit
 
     size_t get_position() const { return position; }
     Type get_type() const { return type; }
-    char get_before() const { return before; }
-    char get_after() const { return after; }
+    const std::string& get_before() const { return before; }
+    const std::string& get_after() const { return after; }
 
   private:
 
     size_t position;
     Type type;
-    char before;
-    char after;
+    std::string before;
+    std::string after;
 };
 
 }  // namespace aiedit

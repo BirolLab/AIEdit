@@ -1,5 +1,7 @@
 #include "sequence_iterator.hpp"
 
+#include <iostream>
+
 namespace {
 
 using namespace aiedit;
@@ -48,12 +50,14 @@ void SequenceIterator::consume()
     }
 }
 
+bool SequenceIterator::has_next() { return !buffer.empty(); }
+
 bool SequenceIterator::next(unsigned n)
 {
     while (n-- > 0 && !buffer.empty()) {
         consume();
     }
-    return !buffer.empty();
+    return has_next();
 }
 
 void SequenceIterator::substitute_last(char new_base)
@@ -65,8 +69,10 @@ void SequenceIterator::substitute_last(char new_base)
 
 void SequenceIterator::delete_last()
 {
-    hash_fn.roll_back('A');
-    consume();
+    if (!buffer.empty()) {
+        hash_fn.roll_back('A');
+        consume();
+    }
 }
 
 void SequenceIterator::insert_last(char new_base)
@@ -78,7 +84,7 @@ void SequenceIterator::insert_last(char new_base)
 
 char SequenceIterator::get_current() const { return current; }
 
-size_t SequenceIterator::get_position() const { return hash_fn.get_pos() + hash_fn.get_k() - 1; }
+size_t SequenceIterator::get_position() const { return pos_next - 1; }
 
 const std::vector<uint64_t> SequenceIterator::get_hashes(unsigned i) const
 {

@@ -19,7 +19,7 @@ class ErrorCorrector
      * @param seq_iter Sequence iterator pointing to the mismatch region
      * @return `true` if any edits were applied
      */
-    std::vector<Edit> fix(SequenceIterator seq_iter, const Pattern& pattern);
+    std::vector<Edit> fix(SequenceIterator seq_iter, Pattern& pattern);
 
   private:
 
