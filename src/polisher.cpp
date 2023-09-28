@@ -21,7 +21,9 @@ inline void update_seq_iter(SequenceIterator& seq_iter, const std::vector<Edit>&
                 seq_iter.insert_last(c);
             }
         } else if (edit.get_type() == Edit::Type::DELETION) {
-            seq_iter.delete_last();
+            for (unsigned i = 0; i < edit.get_before().size(); i++) {
+                seq_iter.delete_last();
+            }
         }
     }
 }
