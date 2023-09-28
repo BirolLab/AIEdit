@@ -97,11 +97,9 @@ inline std::vector<Edit> fix_deletions(SequenceIterator& seq_iter,
     const auto position = seq_iter.get_position();
     std::string before;
     for (unsigned i = 0; i < pattern.get_length(); i++) {
-        if (pattern.get(i) == Edit::Type::DELETION) {
+        if (pattern.get(i) == Edit::Type::DELETION && seq_iter.has_next()) {
             before.push_back(seq_iter.get_current());
-            if (seq_iter.has_next()) {
-                seq_iter.delete_last();
-            }
+            seq_iter.delete_last();
         } else if (count(seq_iter, bf) == 0) {
             return std::vector<Edit>();
         }
