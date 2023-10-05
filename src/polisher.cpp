@@ -115,7 +115,7 @@ PolishingResults Polisher::polish(SequenceIterator& seq_iter)
         }
         if (!pattern.is_empty() && edits.empty()) {
             results.add_ignored_pattern(seq_iter.get_position(), pattern.to_string());
-            seq_iter.next(pattern.get_length() + seq_iter.get_seed_length());
+            seq_iter.next();
         } else if (!pattern.is_empty()) {
             update_seq_iter(seq_iter, edits);
             results.add_edits(edits);
