@@ -47,10 +47,11 @@ inline std::vector<Edit> fix_mismatches(SequenceIterator& seq_iter,
         if (pattern.get(i) == Edit::Type::MISMATCH) {
             const auto before = std::string(1, seq_iter.get_current());
             const auto fixed = permute(seq_iter, bf);
-            if (fixed) {
+            const bool changed = seq_iter.get_current() != before.front();
+            if (fixed && changed) {
                 const std::string after(1, seq_iter.get_current());
                 edits.emplace_back(seq_iter.get_position(), Edit::Type::MISMATCH, before, after);
-            } else {
+            } else if (changed) {
                 return std::vector<Edit>();
             }
         } else if (count(seq_iter, bf) == 0) {
@@ -82,9 +83,6 @@ inline std::vector<Edit> fix_insertions(SequenceIterator& seq_iter,
         } else if (count(seq_iter, bf) == 0) {
             return std::vector<Edit>();
         }
-        if (!seq_iter.next()) {
-            break;
-        }
     }
     Edit edit(position, Edit::Type::INSERTION, before, inserted + before);
     return std::vector<Edit>(1, edit);
@@ -103,9 +101,6 @@ inline std::vector<Edit> fix_deletions(SequenceIterator& seq_iter,
         } else if (count(seq_iter, bf) == 0) {
             return std::vector<Edit>();
         }
-        if (!seq_iter.next()) {
-            break;
-        }
     }
     Edit edit(position, Edit::Type::DELETION, before, ".");
     return std::vector<Edit>(1, edit);
@@ -119,10 +114,10 @@ std::vector<Edit> ErrorCorrector::fix(SequenceIterator seq_iter, Pattern& patter
 {
     if (pattern.get_count(Edit::Type::MISMATCH) > 0) {
         return fix_mismatches(seq_iter, pattern, bf);
-    } else if (pattern.get_count(Edit::Type::INSERTION) > 0) {
-        return fix_insertions(seq_iter, pattern, bf);
     } else if (pattern.get_count(Edit::Type::DELETION) > 0) {
         return fix_deletions(seq_iter, pattern, bf);
+    } else if (pattern.get_count(Edit::Type::INSERTION) > 0) {
+        return fix_insertions(seq_iter, pattern, bf);
     }
     return std::vector<Edit>();
 }
