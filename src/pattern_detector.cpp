@@ -53,7 +53,7 @@ inline unsigned get_num_insertions(SequenceIterator seq_iter,
         const auto signature = get_model_input(seq_iter, bf);
         const auto model_output = model.predict({signature});
         const auto argmax_y = argmax(model_output[0]);
-        if (argmax_y > 0) {
+        if (argmax_y == (1U << num_ins) - 1) {
             return num_ins;
         }
     }
