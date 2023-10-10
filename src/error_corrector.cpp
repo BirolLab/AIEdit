@@ -71,12 +71,13 @@ inline std::vector<Edit> fix_insertions(SequenceIterator& seq_iter,
     const auto position = seq_iter.get_position();
     const std::string before(1, seq_iter.get_current());
     std::string inserted;
-    for (unsigned i = 0; i < pattern.get_length(); i++) {
-        if (pattern.get(i) == Edit::Type::INSERTION) {
+    for (unsigned i = 0; i < pattern.get_length() * 2; i++) {
+        if (i < pattern.get_length() && pattern.get(i) == Edit::Type::INSERTION) {
             seq_iter.insert_last('A');
             const auto fixed = permute(seq_iter, bf);
             if (fixed) {
                 inserted.push_back(seq_iter.get_current());
+                seq_iter.next();
             } else {
                 return std::vector<Edit>();
             }
