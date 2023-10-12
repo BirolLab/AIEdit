@@ -12,17 +12,19 @@ using namespace aiedit;
 
 inline void update_seq_iter(SequenceIterator& seq_iter, const std::vector<Edit>& edits)
 {
-    for (const auto& edit : edits) {
-        seq_iter.next(edit.get_position() - seq_iter.get_position());
-        if (edit.get_type() == Edit::Type::MISMATCH) {
-            seq_iter.substitute_last(edit.get_after()[0]);
-        } else if (edit.get_type() == Edit::Type::INSERTION) {
-            for (const auto c : edit.get_after()) {
-                seq_iter.insert_last(c);
-            }
-        } else if (edit.get_type() == Edit::Type::DELETION) {
-            for (unsigned i = 0; i < edit.get_before().size(); i++) {
-                seq_iter.delete_last();
+    if (edits[0].get_type() == Edit::Type::INSERTION) {
+        for (const auto c : edits[0].get_after()) {
+            seq_iter.insert_last(c);
+        }
+    } else if (edits[0].get_type() == Edit::Type::DELETION) {
+        for (unsigned i = 1; i < edits[0].get_before().size(); i++) {
+            seq_iter.delete_last();
+        }
+    } else {
+        for (const auto& edit : edits) {
+            seq_iter.next(edit.get_position() - seq_iter.get_position());
+            if (edit.get_type() == Edit::Type::MISMATCH) {
+                seq_iter.substitute_last(edit.get_after()[0]);
             }
         }
     }
@@ -91,9 +93,9 @@ const std::string PolishingResults::apply(const std::string& seq) const
         } else if (edit.get_position() == i && edit.get_type() == Edit::Type::INSERTION) {
             edited.append(edit.get_after());
             ++current_edit;
-        } else if (edit.get_position() == i && edit.get_type() == Edit::Type::DELETION) {
+        } else if (edit.get_position() + 1 == i && edit.get_type() == Edit::Type::DELETION) {
             ++current_edit;
-            i += edit.get_before().size() - 1;
+            i += edit.get_before().size() - 2;
         } else {
             edited.push_back(seq[i]);
         }

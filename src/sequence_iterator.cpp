@@ -31,6 +31,7 @@ SequenceIterator::SequenceIterator(const std::string& seq,
   , begin(begin)
   , end(end)
   , pos_next(begin + seeds[0].size())
+  , previous(seq[begin + seeds[0].size() - 1])
   , current(seq[begin + seeds[0].size()])
   , buffer(1, seq[begin + seeds[0].size()])
   , hash_fn(seq.data(), seeds, num_hashes, seeds[0].size(), begin)
@@ -42,6 +43,7 @@ SequenceIterator::SequenceIterator(const std::string& seq,
 void SequenceIterator::consume()
 {
     hash_fn.roll(buffer.front());
+    previous = current;
     current = buffer.front();
     buffer.pop_front();
     // TODO: skip if current == N
@@ -81,6 +83,8 @@ void SequenceIterator::insert_last(char new_base)
     substitute_last(new_base);
     buffer.push_front(backup);
 }
+
+char SequenceIterator::get_previous() const { return previous; }
 
 char SequenceIterator::get_current() const { return current; }
 

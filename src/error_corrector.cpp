@@ -94,7 +94,7 @@ inline std::vector<Edit> fix_deletions(SequenceIterator& seq_iter,
                                        const btllib::CountingBloomFilter8& bf)
 {
     const auto position = seq_iter.get_position();
-    std::string before;
+    std::string before = std::string(1, seq_iter.get_previous());
     for (unsigned i = 0; i < pattern.get_length(); i++) {
         if (pattern.get(i) == Edit::Type::DELETION && seq_iter.has_next()) {
             before.push_back(seq_iter.get_current());
@@ -103,7 +103,7 @@ inline std::vector<Edit> fix_deletions(SequenceIterator& seq_iter,
             return std::vector<Edit>();
         }
     }
-    Edit edit(position, Edit::Type::DELETION, before, ".");
+    Edit edit(position - 1, Edit::Type::DELETION, before, before.substr(0, 1));
     return std::vector<Edit>(1, edit);
 }
 

@@ -29,6 +29,7 @@ class SequenceIterator
       , begin(seq_iter.begin)
       , end(seq_iter.end)
       , pos_next(seq_iter.pos_next)
+      , previous(seq_iter.previous)
       , current(seq_iter.current)
       , buffer(seq_iter.buffer)
       , hash_fn(seq_iter.hash_fn)
@@ -45,6 +46,8 @@ class SequenceIterator
 
     void insert_last(char new_base);
 
+    char get_previous() const;
+
     char get_current() const;
 
     const std::vector<uint64_t> get_hashes(unsigned i) const;
@@ -59,7 +62,7 @@ class SequenceIterator
 
     std::string_view seq;
     size_t begin, end, pos_next;
-    char current;
+    char previous, current;
     std::deque<char> buffer;
     nthash::BlindSeedNtHash hash_fn;
     const unsigned num_seeds;
