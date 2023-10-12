@@ -24,4 +24,6 @@ std::string Pattern::to_string() const
     return s;
 }
 
+bool Pattern::is_empty() { return counts[Edit::Type::NONE] == length; }
+
 }  // namespace aiedit

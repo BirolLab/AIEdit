@@ -63,7 +63,9 @@ class CommandLineInterface
      */
     static void print_final_stats(const unsigned num_mismatches,
                                   const unsigned num_insertions,
-                                  const unsigned num_deletions);
+                                  const unsigned num_deletions,
+                                  const unsigned num_fixed_patterns,
+                                  const unsigned num_ignored);
 
     /**
      * Start the timer

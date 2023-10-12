@@ -1,0 +1,4 @@
+tensorflow-cpu
+matplotlib
+tqdm
+numpy

@@ -33,13 +33,18 @@ void ProgramArguments::parse(int argc, char** argv)
       .default_value(false)
       .implicit_value(true);
 
+    parser.add_argument("--no-apply")
+      .help("don't apply edits and skip writing to edited.fa")
+      .default_value(false)
+      .implicit_value(true);
+
     parser.add_argument("--verbose")
       .help("print more details to stdout and log ignored patterns to ignored.tsv")
       .default_value(false)
       .implicit_value(true);
 
     help_message = parser.help().str();
-    
+
     parser.parse_args(argc, argv);
 
     in_path = std::filesystem::path(parser.get("input_file"));
@@ -48,6 +53,7 @@ void ProgramArguments::parse(int argc, char** argv)
     out_path = std::filesystem::path(parser.get("-o"));
     num_threads = parser.get<unsigned>("-t");
     contig_mode = parser.get<bool>("--contig-mode");
+    no_apply = parser.get<bool>("--no-apply");
     verbose = parser.get<bool>("--verbose");
 }
 

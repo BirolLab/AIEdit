@@ -20,7 +20,7 @@ class PatternsLogWriter
       : file_name(path)
       , file(path)
     {
-      file << "seq\tposition\tpattern" << std::endl;
+        file << "seq\tposition\tpattern" << std::endl;
     }
 
     /**
@@ -28,7 +28,8 @@ class PatternsLogWriter
      * @param seq_id Sequence name.
      * @param ignored_patterns List of ignored patterns
      */
-    void write(const std::string& seq_id, const IgnoredPatternsList& ignored_patterns);
+    void write(const std::string& seq_id,
+               const std::vector<std::pair<unsigned, std::string>>& ignored_patterns);
 
     /**
      * Delete the created file

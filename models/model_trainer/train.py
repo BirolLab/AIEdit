@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from signature import get_signature
 from seed_generation import generate_seeds
+from tqdm import tqdm
 
 
 @dataclasses.dataclass
@@ -71,20 +72,10 @@ def parse_args() -> argparse.Namespace:
 
 
 def build_model(seeds: list[str], pattern_length: int) -> keras.Model:
-    signature_length = pattern_length + len(seeds[0]) - 1
-    x_in = keras.layers.Input((signature_length, len(seeds)))
-    z_conv = keras.layers.Conv1D(1, pattern_length, activation='relu')(x_in)
-    z_flat = keras.layers.Flatten()(z_conv)
-    y_out = [
-        keras.layers.Dense(4, activation='softmax', name=f'y{i}')(z_flat)
-        for i in range(pattern_length)
-    ]
+    x_in = keras.layers.Input((len(seeds[0]), len(seeds)))
+    z_flat = keras.layers.Flatten()(x_in)
+    y_out = keras.layers.Dense(2 ** pattern_length, activation='softmax')(z_flat)
     return keras.Model(x_in, y_out)
-
-
-def reshape_y(y: list[np.array]):
-    y = np.array(y)
-    return [y[:, i, :] for i in range(y.shape[1])]
 
 
 def train(model: keras.Model, data: Dataset, num_epochs: int):
@@ -92,9 +83,9 @@ def train(model: keras.Model, data: Dataset, num_epochs: int):
                   loss=keras.losses.CategoricalCrossentropy(),
                   metrics=[keras.metrics.CategoricalAccuracy()])
     x_train = np.array(data.x_train)
-    y_train = reshape_y(data.y_train)
+    y_train = np.array(data.y_train)
     x_val = np.array(data.x_test)
-    y_val = reshape_y(data.y_test)
+    y_val = np.array(data.y_test)
     training = model.fit(x_train,
                          y_train,
                          batch_size=1,
@@ -115,16 +106,12 @@ def get_pattern_strings(pattern_length: int) -> list[str]:
 
 
 def get_pattern_tensor(pattern_string: str) -> np.array:
-    pattern = np.zeros((len(pattern_string), 4))
+    pattern = np.zeros(2 ** len(pattern_string))
+    i1 = 0
     for i in range(len(pattern_string)):
         if pattern_string[i] == 'M':
-            pattern[i][1] = 1.0
-        elif pattern_string[i] == "I":
-            pattern[i][2] = 1.0
-        elif pattern_string[i] == "D":
-            pattern[i][3] = 1.0
-        else:
-            pattern[i][0] = 1.0
+            i1 += 2 ** i
+    pattern[i1] = 1.0
     return pattern
 
 
@@ -132,7 +119,7 @@ def prepare_data(seeds: list[str], pattern_length: int, samples_per_class: int,
                  fpr: float) -> Dataset:
     x_train, y_train, x_test, y_test = [], [], [], []
     patterns = []
-    for p in get_pattern_strings(pattern_length):
+    for p in tqdm(get_pattern_strings(pattern_length), desc="GENERATING DATA", unit="pattern"):
         for i in range(max(2, int(samples_per_class * 1.2))):
             signature = get_signature(seeds, p, fpr if i > 0 else 0)
             if i < samples_per_class:
@@ -167,26 +154,18 @@ def save_model(model: keras.Model, pattern_length: int, seeds: list[str],
         json.dump(json_data, json_file, indent=4)
 
 
-def plot_training_stats(stats: dict, pattern_length: int,
-                        out_path: str) -> None:
-    fig, ax = plt.subplots(2, 2, figsize=(8, 8), dpi=300)
-    for i in range(pattern_length):
-        ax[0][0].plot(stats[f'y{i}_loss'], label=f'y{i}')
-        ax[0][1].plot(stats[f'y{i}_categorical_accuracy'], label=f'y{i}')
-        ax[1][0].plot(stats[f'val_y{i}_loss'], label=f'y{i}')
-        ax[1][1].plot(stats[f'val_y{i}_categorical_accuracy'], label=f'y{i}')
-    ax[0][0].set_xlabel("Epoch")
-    ax[0][0].set_ylabel("Training loss")
-    ax[0][0].legend()
-    ax[0][1].set_xlabel("Epoch")
-    ax[0][1].set_ylabel("Training accuracy")
-    ax[0][1].legend()
-    ax[1][0].set_xlabel("Epoch")
-    ax[1][0].set_ylabel("Validation loss")
-    ax[1][0].legend()
-    ax[1][1].set_xlabel("Epoch")
-    ax[1][1].set_ylabel("Validation accuracy")
-    ax[1][1].legend()
+def plot_training_stats(stats: dict, out_path: str) -> None:
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4), dpi=300)
+    ax[0].plot(stats[f'loss'], label="Training")
+    ax[0].plot(stats[f'val_loss'], label="Validation")
+    ax[1].plot(stats[f'categorical_accuracy'], label="Training")
+    ax[1].plot(stats[f'val_categorical_accuracy'], label="Validation")
+    ax[0].set_xlabel("Epoch")
+    ax[0].set_ylabel("Loss")
+    ax[0].legend()
+    ax[1].set_xlabel("Epoch")
+    ax[1].set_ylabel("Accuracy")
+    ax[1].legend()
     fig.tight_layout()
     plt.savefig(os.path.join(os.path.dirname(out_path), "training.png"))
 
@@ -205,7 +184,7 @@ def main():
     training_stats = train(model, data, args.e)
     save_model(model, args.w, args.s, args.o)
     if args.plot_stats:
-        plot_training_stats(training_stats, args.w, args.o)
+        plot_training_stats(training_stats, args.o)
 
 
 if __name__ == "__main__":

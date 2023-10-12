@@ -24,16 +24,16 @@ void VCFWriter::write(const std::string& seq_id,
 #pragma omp critical
     {
         for (const auto& edit : edits) {
-            file << seq_id << " " << seq_comment << "\t";  // CHROM
-            file << edit.position + 1 << "\t";             // POS
-            file << ".\t";                                 // ID
-            file << edit.before << "\t";                   // REF
-            file << edit.after << "\t";                    // ALT
-            file << ".\t";                                 // QUAL
-            file << "PASS\t";                              // FILTER
-            file << ".\t";                                 // INFO
-            file << "GT\t";                                // FORMAT
-            file << "1/1" << std::endl;                    // INTEGRATION
+            file << seq_id << (seq_comment != "" ? " " : "") << seq_comment << "\t";  // CHROM
+            file << edit.get_position() + 1 << "\t";                                  // POS
+            file << ".\t";                                                            // ID
+            file << edit.get_before() << "\t";                                        // REF
+            file << edit.get_after() << "\t";                                         // ALT
+            file << ".\t";                                                            // QUAL
+            file << "PASS\t";                                                         // FILTER
+            file << ".\t";                                                            // INFO
+            file << "GT\t";                                                           // FORMAT
+            file << "1/1" << std::endl;                                               // INTEGRATION
         }
     }
 }

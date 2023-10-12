@@ -1,6 +1,7 @@
 #ifndef AIEDIT_SEQ_HPP
 #define AIEDIT_SEQ_HPP
 
+#include <deque>
 #include <nthash/nthash.hpp>
 #include <string>
 #include <vector>
@@ -11,135 +12,62 @@ class SequenceIterator
 {
   public:
 
-    using HashVector = std::vector<std::vector<uint64_t>>;
-
-    SequenceIterator(std::string& seq, const std::vector<std::string>& seeds, unsigned num_hashes)
-      : SequenceIterator(seq, seeds, num_hashes, 0, seq.size())
-    {}
-
-    SequenceIterator(std::string& seq,
+    SequenceIterator(const std::string& seq,
                      const std::vector<std::string>& seeds,
                      unsigned num_hashes,
                      size_t begin,
-                     size_t end)
-      : seq(seq)
-      , seeds(seeds)
-      , hash_fn(seq, seeds, num_hashes, seeds[0].size(), begin)
-      , begin(begin)
-      , end(end)
+                     size_t end);
+
+    SequenceIterator(const std::string& seq,
+                     const std::vector<std::string>& seeds,
+                     unsigned num_hashes)
+      : SequenceIterator(seq, seeds, num_hashes, 0, seq.size())
     {}
 
-    SequenceIterator(const SequenceIterator& seq_iter)
+    SequenceIterator(SequenceIterator& seq_iter)
       : seq(seq_iter.seq)
-      , seeds(seq_iter.seeds)
-      , hash_fn(seq_iter.hash_fn)
       , begin(seq_iter.begin)
       , end(seq_iter.end)
+      , pos_next(seq_iter.pos_next)
+      , previous(seq_iter.previous)
+      , current(seq_iter.current)
+      , buffer(seq_iter.buffer)
+      , hash_fn(seq_iter.hash_fn)
+      , num_seeds(seq_iter.num_seeds)
     {}
 
-    /**
-     * Advance to the next k-mer
-     * @param n Number of bases to roll
-     */
-    void next(unsigned n = 1);
-
-    /**
-     * Roll to the previous k-mer
-     * @param n Number of bases to roll
-     */
-    void previous(unsigned n = 1);
-
-    /**
-     * Check if the iterator can advance
-     * @return `true` if the iterator can advance, `false` if iterator is at the
-     * end
-     */
     bool has_next();
 
-    /**
-     * Get value of a base in a position
-     * @param position Position of the base
-     * @return Value in the position
-     */
-    char get_base(size_t position);
+    bool next(unsigned n = 1);
 
-    /**
-     * Get the position of the current base
-     * @return Position of the current k-mer's last character in the sequence
-     */
-    size_t get_position();
+    void substitute_last(char new_base);
 
-    /**
-     * Get the current k-mers hash values
-     * @return Vector containing hash arrays generated for each spaced seed
-     */
-    HashVector get_hashes();
+    void delete_last();
 
-    /**
-     * Get the length of the spaced seeds
-     * @return Length of each spaced seed
-     */
-    unsigned get_seed_length();
+    void insert_last(char new_base);
 
-    /**
-     * Get the length of the spaced seeds
-     * @return Length of each spaced seed
-     */
-    unsigned get_num_seeds();
+    char get_previous() const;
 
-    /**
-     * Get the sequence contents
-     * @return `const` reference to the sequence string
-     */
-    const std::string& get_sequence();
+    char get_current() const;
 
-    /**
-     * Get the next `window_size` hashes without advancing the iterator
-     * @param window_size Number of iteration to peek
-     * @return Array of vectors containing the hash arrays (from `get_hashes`)
-     */
-    std::vector<HashVector> peek_hashes(unsigned window_size);
+    const std::vector<uint64_t> get_hashes(unsigned i) const;
 
-    /**
-     * Update a base's value
-     * @param position Position of the base
-     * @param value Base's new value
-     */
-    void update(size_t position, char value);
+    size_t get_position() const;
 
-    /**
-     * Insert a new base
-     * @param position Position of the new base
-     * @param value Base's value
-     */
-    void insert(size_t position, char value);
+    unsigned get_seed_length() const;
 
-    /**
-     * Insert new bases
-     * @param position Position of the new bases
-     * @param value Values
-     */
-    void insert(size_t position, std::string bases);
-
-    /**
-     * Delete a base
-     * @param position Position of the base
-     */
-    void remove(size_t position, unsigned num_bases = 1);
+    unsigned get_num_seeds() const;
 
   private:
 
-    std::string& seq;
-    const std::vector<std::string>& seeds;
-    nthash::SeedNtHash hash_fn;
-    size_t begin, end;
+    std::string_view seq;
+    size_t begin, end, pos_next;
+    char previous, current;
+    std::deque<char> buffer;
+    nthash::BlindSeedNtHash hash_fn;
+    const unsigned num_seeds;
 
-    /**
-     * Convert an ntHash hash array to a vector of hashes
-     * @param nthash_hashes Array of hash values from ntHash
-     * @return Vector of hash arrays, one for each spaced seed
-     */
-    HashVector to_hash_vector(const uint64_t* nthash_hashes);
+    void consume();
 };
 
 }  // namespace aiedit

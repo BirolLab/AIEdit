@@ -42,16 +42,15 @@ def get_signature(seeds: list[str],
     # create signature
     h = btllib.SeedNtHash(alt, btllib.parse_seeds(seeds),
                           bf.get_hash_num_per_seed(), seed_length)
-    signature_length = seed_length + pattern_length - 1
-    signature = np.empty((signature_length, len(seeds)))
-    for i in range(signature_length):
+    signature = np.empty((seed_length, len(seeds)))
+    for i in range(seed_length):
         h.roll()
         for j in range(len(seeds)):
             begin = j * bf.get_hash_num_per_seed()
             end = (j + 1) * bf.get_hash_num_per_seed()
             hashes = h.hashes()[begin:end]
             signature[i][j] = 1.0 if bf.contains(hashes) else 0.0
-            if random.uniform(0, 1) <= fpr:
+            if random.uniform(0, 1) < fpr:
                 signature[i][j] = 1.0
     return signature
 
@@ -67,12 +66,10 @@ def to_string(signature: np.array, sep='\n'):
 
 if __name__ == "__main__":
     seeds = [
-        '10111111111111100100111111111111101',
-        '10011111111111100000111111111111001',
-        '10001111111111110101111111111110001',
-        '10000111111111110001111111111100001',
-        '10000011111111111011111111111000001'
+        '1011111111001001111111101',
+        '1001111111000001111111001',
+        '1000111111101011111110001',
+        '1000011111100011111100001',
+        '1000001111110111111000001'
     ]
-    p = set(to_string(get_signature(seeds, 'I----'), ',') for _ in range(100))
-    print(*list(p), sep='\n')
-    print(len(p))
+    print(to_string(get_signature(seeds, 'D--', verbose=True)))
