@@ -7,9 +7,6 @@
 [submodule "vendor/frugally-deep"]
 	path = vendor/frugally-deep
 	url = https://github.com/Dobiasd/frugally-deep.git
-[submodule "vendor/FunctionalPlus"]
-	path = vendor/FunctionalPlus
-	url = https://github.com/Dobiasd/FunctionalPlus.git
 [submodule "vendor/eigen"]
 	path = vendor/eigen
 	url = https://gitlab.com/libeigen/eigen.git

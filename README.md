@@ -14,6 +14,7 @@
 - C++ compiler with c++17 and OpenMP support
 - [Meson](https://mesonbuild.com/)
 - [btllib](https://github.com/bcgsc/btllib)
+- [FunctionalPlus](https://github.com/Dobiasd/FunctionalPlus)
 - [ntHash](https://github.com/bcgsc/ntHash)
 - [catch2](https://github.com/catchorg/Catch2) (optional, required only for running tests)
 
@@ -21,7 +22,6 @@ No need to install, available in the `vendor` folder as git submodules:
 - [argparse](https://github.com/p-ranav/argparse)
 - [json](https://github.com/nlohmann/json)
 - [frugally-deep](https://github.com/Dobiasd/frugally-deep)
-- [FunctionalPlus](https://github.com/Dobiasd/FunctionalPlus)
 - [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
 
 # Compilation

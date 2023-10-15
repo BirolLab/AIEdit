@@ -24,6 +24,7 @@ compiler = meson.get_compiler('cpp')
 
 dependencies = [
     dependency('openmp'),
+    dependency('FunctionalPlus', modules: ['FunctionalPlus::fplus']),
     compiler.find_library('btllib'),
     compiler.find_library('nthash'),
 ]
@@ -31,7 +32,6 @@ dependencies = [
 include_dirs = [
     include_directories('vendor/argparse/include'),
     include_directories('vendor/json/single_include'),
-    include_directories('vendor/FunctionalPlus/include_all_in_one/include'),
     include_directories('vendor/frugally-deep/include'),
     include_directories('vendor/eigen'),
 ]
