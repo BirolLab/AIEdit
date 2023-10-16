@@ -15,6 +15,7 @@
 - [Meson](https://mesonbuild.com/)
 - [btllib](https://github.com/bcgsc/btllib)
 - [FunctionalPlus](https://github.com/Dobiasd/FunctionalPlus)
+- [json](https://github.com/nlohmann/json)
 - [ntHash](https://github.com/bcgsc/ntHash)
 - [catch2](https://github.com/catchorg/Catch2) (optional, required only for running tests)
 
