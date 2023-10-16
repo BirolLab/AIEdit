@@ -23,15 +23,15 @@ configure_file(
 compiler = meson.get_compiler('cpp')
 
 dependencies = [
-    dependency('openmp'),
-    dependency('nlohmann_json'),
+    dependency('argparse'),
     dependency('FunctionalPlus', modules: ['FunctionalPlus::fplus']),
+    dependency('nlohmann_json'),
+    dependency('openmp'),
     compiler.find_library('btllib'),
     compiler.find_library('nthash'),
 ]
 
 include_dirs = [
-    include_directories('vendor/argparse/include'),
     include_directories('vendor/frugally-deep/include'),
     include_directories('vendor/eigen'),
 ]

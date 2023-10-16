@@ -1,6 +1,3 @@
-[submodule "vendor/argparse"]
-	path = vendor/argparse
-	url = https://github.com/p-ranav/argparse.git
 [submodule "vendor/frugally-deep"]
 	path = vendor/frugally-deep
 	url = https://github.com/Dobiasd/frugally-deep.git
