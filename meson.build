@@ -44,17 +44,14 @@ executable(
 )
 
 # --------------------------------- TESTS ---------------------------------
-if get_option('buildtype') != 'release'
-    catch2 = dependency(
-        'Catch2',
-        method: 'cmake',
-        modules: ['Catch2::Catch2WithMain'],
-        required: false,
-    )
+catch2 = dependency(
+    'Catch2',
+    method: 'cmake',
+    modules: ['Catch2::Catch2WithMain'],
+    required: false,
+)
 
-    if not catch2.found()
-        error('Tests require catch2 to be installed.')
-    endif
+if catch2.found()
 
     tests = run_command(
         'scripts/list_tests.sh',
@@ -67,8 +64,12 @@ if get_option('buildtype') != 'release'
             test_name,
             sources + [test_file],
             dependencies: [catch2] + dependencies,
-            include_directories: ['src'] + include_dirs,
+            include_directories: ['src'],
         )
         test(test_name, test_exec)
     endforeach
+
+else
+    warning('Tests require catch2 to be installed.')
+
 endif
