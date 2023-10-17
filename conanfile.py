@@ -1,4 +1,5 @@
 from conan import ConanFile
+from conan.tools.meson import Meson
 
 
 class AIEditRecipe(ConanFile):
@@ -6,3 +7,8 @@ class AIEditRecipe(ConanFile):
     build_requires = "meson/1.2.2"
     settings = "os", "compiler", "build_type", "arch"
     generators = "PkgConfigDeps", "MesonToolchain"
+
+    def build(self):
+        meson = Meson(self)
+        meson.configure()
+        meson.build()
