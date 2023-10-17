@@ -8,22 +8,15 @@
   / ____ \ _| |_| |___| (_| | | |_         
  /_/    \_\_____|______\__,_|_|\__|
  ```
- 
+
 # Dependencies
 
 - C++ compiler with c++17 and OpenMP support
 - [Meson](https://mesonbuild.com/)
 - [btllib](https://github.com/bcgsc/btllib)
-- [FunctionalPlus](https://github.com/Dobiasd/FunctionalPlus)
-- [json](https://github.com/nlohmann/json)
-- [ntHash](https://github.com/bcgsc/ntHash)
-- [catch2](https://github.com/catchorg/Catch2) (optional, required only for running tests)
-
-No need to install, available in the `vendor` folder as git submodules:
 - [argparse](https://github.com/p-ranav/argparse)
 - [json](https://github.com/nlohmann/json)
 - [frugally-deep](https://github.com/Dobiasd/frugally-deep)
-- [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
 
 # Compilation
 
@@ -49,6 +42,8 @@ meson compile -C build
 This will create the executable `aiedit` in the `build` directory.
 
 # Run Tests
+
+- [catch2](https://github.com/catchorg/Catch2) (optional, required only for running tests)
 
 If [catch2](https://github.com/catchorg/Catch2) is installed, AIEdit's unit tests can be run by executing `ninja test` in the `build` directory.
 

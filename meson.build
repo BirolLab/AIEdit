@@ -24,16 +24,11 @@ compiler = meson.get_compiler('cpp')
 
 dependencies = [
     dependency('argparse'),
-    dependency('FunctionalPlus', modules: ['FunctionalPlus::fplus']),
+    dependency('frugally-deep', modules: ['frugally-deep::fdeep']),
     dependency('nlohmann_json'),
     dependency('openmp'),
     compiler.find_library('btllib'),
     compiler.find_library('nthash'),
-]
-
-include_dirs = [
-    include_directories('vendor/frugally-deep/include'),
-    include_directories('vendor/eigen'),
 ]
 
 sources = run_command(
@@ -45,7 +40,6 @@ executable(
     'aiedit',
     ['src/main.cpp'] + sources,
     dependencies: dependencies,
-    include_directories: include_dirs,
     install: true,
 )
 
