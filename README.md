@@ -9,48 +9,52 @@
  /_/    \_\_____|______\__,_|_|\__|
  ```
 
-# Dependencies
+# Requirements
 
-- C++ compiler with c++17 and OpenMP support
-- [Meson](https://mesonbuild.com/)
+- C++ compiler with C++17 support
+- [conan](https://conan.io/) (optional, recommended for installing dependencies)
 - [btllib](https://github.com/bcgsc/btllib)
+- [meson](https://mesonbuild.com/)
 - [argparse](https://github.com/p-ranav/argparse)
 - [json](https://github.com/nlohmann/json)
 - [frugally-deep](https://github.com/Dobiasd/frugally-deep)
 
-# Compilation
+# Installation
 
-First, clone the repo and `cd` into the `AIEdit` folder:
+## Using `conan` (recommended)
+
+1. Setup your `conan` profile if required (e.g., when using `compilers` from `conda`)
+1. Compile btllib (or install from `conda`) and set the necessary flags
+1. Build AIEdit in the `build` folder by running the following in the project's root folder:
 
 ```shell
-git clone --recurse-submodules git@github.com:bcgsc/AIEdit.git
-cd AIEdit
+conan build . -of build
 ```
 
-Create a directory named `build` for compiling and installing AIEdit:
+You can add any other arguments to the `conan` command accordingly.
+
+## Manually
+
+1. Install [meson](https://mesonbuild.com/) and the C++ dependencies. All are available on `conda` except [frugally-deep](https://github.com/Dobiasd/frugally-deep/blob/master/INSTALL.md). 
+1. Build AIEdit in the `build` folder by running the following in the project's root folder:
 
 ```shell
 meson setup build
-```
-
-Finally, build the project:
-
-```shell
 meson compile -C build
 ```
 
-This will create the executable `aiedit` in the `build` directory.
+# Running Tests
 
-# Run Tests
+If [catch2](https://github.com/catchorg/Catch2) was available during compilation, you can run AIEdit's unit tests:
 
-- [catch2](https://github.com/catchorg/Catch2) (optional, required only for running tests)
-
-If [catch2](https://github.com/catchorg/Catch2) is installed, AIEdit's unit tests can be run by executing `ninja test` in the `build` directory.
+```shell
+meson test -C build
+```
 
 # Usage
 
 ```
-Usage: AIEdit [options] input_file
+Usage: aiedit [options] input_file
 
 Artificially-intelligent long read genome polisher
 
@@ -68,21 +72,12 @@ Optional arguments:
 --verbose         	print more details to stdout and log ignored patterns to ignored.tsv [default: false]
 ```
 
-Use [ntHits](https://github.com/bcgsc/ntHits) to generate the Bloom filter (for AIEdit's `-b` argument).
+Use [ntHits](https://github.com/bcgsc/ntHits) to generate the Bloom filter (for AIEdit's `-b` argument). AIEdit will read the necessary parameters, such as the spaced seed patterns, from the Bloom filter file.
 
-AIEdit will read the necessary parameters, such as the spaced seed patterns, from the Bloom filter file.
+# Output Files
 
-Example:
+The following files are created in the output folder (specified by `-o`). `<input_file>` is replaced by the draft assembly file's name:
 
-```shell
-ntHits -h 1 -c 1 --outbloom -s 111001101100111,101010101010101,111100101001111,1100101111010011 reads_1.fa reads_2.fa
-ai-edit -a draft.fa -b repeats_k15.bf
-```
-
-# Output files
-
-The following files are created in the output folder (specified by `-o`, `<input_file>` is replaced by the file name given as input to the program):
-
-- `<input_file>-aiedit-polished.fa`, polished data in FASTA format
-- `<input_file>-aiedit-variants.vcf`, list of edits in VCF format
+- `<input_file>-aiedit-polished.fa`, polished assembly in FASTA format
+- `<input_file>-aiedit-variants.vcf`, list of edits as a VCF file
 - `<input_file>-aiedit-ignored.tsv`, list of detected error patterns which AIEdit failed to fix
