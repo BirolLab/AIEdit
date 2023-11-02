@@ -2,7 +2,7 @@
 #define AIEDIT_SEQ_HPP
 
 #include <deque>
-#include <nthash/nthash.hpp>
+#include <btllib/nthash.hpp>
 #include <string>
 #include <vector>
 
@@ -64,7 +64,7 @@ class SequenceIterator
     size_t begin, end, pos_next;
     char previous, current;
     std::deque<char> buffer;
-    nthash::BlindSeedNtHash hash_fn;
+    btllib::BlindSeedNtHash hash_fn;
     const unsigned num_seeds;
 
     void consume();

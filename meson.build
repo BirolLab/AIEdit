@@ -28,7 +28,6 @@ dependencies = [
     dependency('nlohmann_json'),
     dependency('openmp'),
     compiler.find_library('btllib'),
-    compiler.find_library('nthash'),
 ]
 
 sources = run_command(
