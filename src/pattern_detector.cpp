@@ -76,6 +76,19 @@ check_fixes(SequenceIterator seq_iter, const btllib::CountingBloomFilter8& bf, u
     return true;
 }
 
+inline Pattern model_output_to_pattern(const fdeep::tensors& model_output, unsigned pattern_length)
+{
+    const auto argmax_y = argmax(model_output[0]);
+    const std::string pattern_string = std::bitset<64>(argmax_y).to_string();
+    Pattern pattern(pattern_length);
+    for (unsigned i = 0; i < pattern.get_length(); i++) {
+        if (pattern_string[pattern_string.size() - i - 1] == '1') {
+            pattern.set(i, Edit::Type::MISMATCH);
+        }
+    }
+    return pattern;
+}
+
 inline unsigned get_num_deletions(SequenceIterator seq_iter,
                                   unsigned pattern_length,
                                   const btllib::CountingBloomFilter8& bf)
@@ -97,14 +110,7 @@ Pattern PatternDetector::get_pattern(SequenceIterator& seq_iter)
 {
     const auto signature = get_model_input(seq_iter, bf);
     const auto model_output = model.predict({signature});
-    const auto argmax_y = argmax(model_output[0]);
-    const std::string pattern_string = std::bitset<64>(argmax_y).to_string();
-    Pattern pattern(pattern_length);
-    for (unsigned i = 0; i < pattern.get_length(); i++) {
-        if (pattern_string[pattern_string.size() - i - 1] == '1') {
-            pattern.set(i, Edit::Type::MISMATCH);
-        }
-    }
+    auto pattern = model_output_to_pattern(model_output, pattern_length);
     if (pattern.get_count(Edit::Type::MISMATCH) > 0) {
         return pattern;
     }
