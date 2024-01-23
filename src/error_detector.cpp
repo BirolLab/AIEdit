@@ -8,7 +8,7 @@ bool ErrorDetector::next()
 {
     bool has_miss = false;
     while (!has_miss && seq_iter.next()) {
-        has_miss = bf.contains(seq_iter.get_hashes(0)) == 0;
+        has_miss = bf.contains(seq_iter.get_kmer_hashes()) == 0;
     }
     return has_miss;
 }

@@ -9,12 +9,12 @@ using namespace aiedit;
 inline fdeep::tensor get_model_input(SequenceIterator seq_iter,
                                      const btllib::CountingBloomFilter8& bf)
 {
-    const auto shape = fdeep::tensor_shape(seq_iter.get_seed_length(), seq_iter.get_num_seeds());
+    const auto shape = fdeep::tensor_shape(seq_iter.get_k(), seq_iter.get_num_seeds());
     fdeep::tensor model_input(shape, 1);
     bool has_next = true;
-    for (unsigned i = 0; i < seq_iter.get_seed_length() && has_next; i++) {
+    for (unsigned i = 0; i < seq_iter.get_k() && has_next; i++) {
         for (unsigned j = 0; j < seq_iter.get_num_seeds(); j++) {
-            const auto is_miss = bf.contains(seq_iter.get_hashes(j)) == 0;
+            const auto is_miss = bf.contains(seq_iter.get_seed_hashes(j)) == 0;
             model_input.set(fdeep::tensor_pos(i, j), is_miss ? 0.0 : 1.0);
         }
         has_next = seq_iter.next();
@@ -51,9 +51,15 @@ inline unsigned get_num_insertions(SequenceIterator seq_iter,
     for (unsigned num_ins = 1; num_ins <= pattern_length; num_ins++) {
         seq_iter.insert_last('N');
         const auto signature = get_model_input(seq_iter, bf);
-        const auto model_output = model.predict({signature});
-        const auto argmax_y = argmax(model_output[0]);
-        if (argmax_y == (1U << num_ins) - 1) {
+        const auto y = model.predict({signature})[0];
+        bool check = true;
+        for (unsigned i = 0; i < pattern_length && check; i++) {
+            if ((i < num_ins && y.get(fdeep::tensor_pos(i)) < 0.5) ||
+                (i > num_ins && y.get(fdeep::tensor_pos(i)) >= 0.5)) {
+                check = false;
+            }
+        }
+        if (check) {
             return num_ins;
         }
     }
@@ -64,10 +70,8 @@ inline bool
 check_fixes(SequenceIterator seq_iter, const btllib::CountingBloomFilter8& bf, unsigned num_checks)
 {
     while (num_checks-- > 0) {
-        for (unsigned i = 0; i < seq_iter.get_num_seeds(); i++) {
-            if (bf.contains(seq_iter.get_hashes(i)) == 0) {
-                return false;
-            }
+        if (bf.contains(seq_iter.get_kmer_hashes()) == 0) {
+            return false;
         }
         if (!seq_iter.next()) {
             return true;
@@ -78,11 +82,9 @@ check_fixes(SequenceIterator seq_iter, const btllib::CountingBloomFilter8& bf, u
 
 inline Pattern model_output_to_pattern(const fdeep::tensors& model_output, unsigned pattern_length)
 {
-    const auto argmax_y = argmax(model_output[0]);
-    const std::string pattern_string = std::bitset<64>(argmax_y).to_string();
     Pattern pattern(pattern_length);
     for (unsigned i = 0; i < pattern.get_length(); i++) {
-        if (pattern_string[pattern_string.size() - i - 1] == '1') {
+        if (model_output[0].get(fdeep::tensor_pos(i)) >= 0.5) {
             pattern.set(i, Edit::Type::MISMATCH);
         }
     }

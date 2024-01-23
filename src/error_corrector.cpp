@@ -8,34 +8,17 @@ using namespace aiedit;
 
 const char ALPHABET[4] = {'A', 'C', 'G', 'T'};
 
-inline unsigned count(SequenceIterator& seq_iter, const btllib::CountingBloomFilter8& bf)
-{
-    unsigned sum = 0;
-    for (unsigned i = 0; i < seq_iter.get_num_seeds(); i++) {
-        const auto c = bf.contains(seq_iter.get_hashes(i));
-        if (c == 0) {
-            return 0;
-        }
-        sum += c;
-    }
-    return sum;
-}
-
 inline bool permute(SequenceIterator& seq_iter, const btllib::CountingBloomFilter8& bf)
 {
     char original = seq_iter.get_current();
-    char fix = original;
-    unsigned max_count = 0;
     for (const auto c : ALPHABET) {
         seq_iter.substitute_last(c);
-        const auto count_c = count(seq_iter, bf);
-        if (count_c > max_count) {
-            fix = c;
-            max_count = count_c;
+        if (bf.contains(seq_iter.get_kmer_hashes()) > 0 && c != original) {
+            return true;
         }
     }
-    seq_iter.substitute_last(fix);
-    return max_count > 0;
+    seq_iter.substitute_last(original);
+    return false;
 }
 
 inline std::vector<Edit> fix_mismatches(SequenceIterator& seq_iter,
@@ -47,14 +30,11 @@ inline std::vector<Edit> fix_mismatches(SequenceIterator& seq_iter,
         if (pattern.get(i) == Edit::Type::MISMATCH) {
             const auto before = std::string(1, seq_iter.get_current());
             const auto fixed = permute(seq_iter, bf);
-            const bool changed = seq_iter.get_current() != before.front();
-            if (fixed && changed) {
+            if (fixed) {
                 const std::string after(1, seq_iter.get_current());
                 edits.emplace_back(seq_iter.get_position(), Edit::Type::MISMATCH, before, after);
-            } else if (changed) {
-                return std::vector<Edit>();
             }
-        } else if (count(seq_iter, bf) == 0) {
+        } else if (bf.contains(seq_iter.get_kmer_hashes()) == 0) {
             return std::vector<Edit>();
         }
         if (!seq_iter.next()) {
@@ -81,7 +61,7 @@ inline std::vector<Edit> fix_insertions(SequenceIterator& seq_iter,
             } else {
                 return std::vector<Edit>();
             }
-        } else if (count(seq_iter, bf) == 0) {
+        } else if (bf.contains(seq_iter.get_kmer_hashes()) == 0) {
             return std::vector<Edit>();
         }
     }
@@ -99,7 +79,7 @@ inline std::vector<Edit> fix_deletions(SequenceIterator& seq_iter,
         if (pattern.get(i) == Edit::Type::DELETION && seq_iter.has_next()) {
             before.push_back(seq_iter.get_current());
             seq_iter.delete_last();
-        } else if (count(seq_iter, bf) == 0) {
+        } else if (bf.contains(seq_iter.get_kmer_hashes()) == 0) {
             return std::vector<Edit>();
         }
     }
