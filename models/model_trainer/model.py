@@ -1,36 +1,31 @@
-import os
 import json
-from tensorflow.keras import Model
-from tensorflow.keras.layers import Input, Flatten, Dense
-from tensorflow.keras.losses import CategoricalCrossentropy
-from tensorflow.keras.metrics import CategoricalAccuracy
-from tensorflow.keras.optimizers import Adam
-import numpy as np
-from datetime import datetime
-from tqdm.keras import TqdmCallback
+import os
 
+import numpy as np
 from data import Dataset
 from fdeep_convert import convert
-
-
-def get_model_name(seeds: list[str], pattern_length: int, version: str) -> str:
-    return f"{hex(hash(''.join(seeds)))[-6:]}-w{pattern_length}-v{version}-{datetime.today().strftime('%Y_%m_%d')}"
+from keras import Model
+from keras.layers import Dense, Flatten, Input
+from keras.losses import BinaryCrossentropy
+from keras.metrics import BinaryAccuracy
+from keras.optimizers import Adam
+from tqdm.keras import TqdmCallback
 
 
 def build_model(seeds: list[str], pattern_length: int, version: str) -> Model:
-    x_in = Input((len(seeds[0]), len(seeds)))
+    signature_length = len(seeds[0])
+    x_in = Input((signature_length, len(seeds)))
     z_flat = Flatten()(x_in)
-    y_out = Dense(2**pattern_length, activation="softmax")(z_flat)
-    return Model(
-        x_in, y_out, name=get_model_name(seeds, pattern_length, version)
-    )
+    y_out = Dense(pattern_length, activation="sigmoid")(z_flat)
+    model_name = f"{hex(hash(''.join(seeds)))[-8:]}-w{pattern_length}-v{version}"
+    return Model(x_in, y_out, name=model_name)
 
 
 def train_model(model: Model, data: Dataset, num_epochs: int):
     model.compile(
         optimizer=Adam(learning_rate=0.001),
-        loss=CategoricalCrossentropy(),
-        metrics=[CategoricalAccuracy()],
+        loss=BinaryCrossentropy(),
+        metrics=[BinaryAccuracy()],
     )
     x_train = np.array(data.x_train)
     y_train = np.array(data.y_train)
