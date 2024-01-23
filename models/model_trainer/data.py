@@ -25,13 +25,8 @@ def get_pattern_strings(pattern_length: int) -> list[str]:
 
 
 def get_pattern_tensor(pattern_string: str) -> np.array:
-    pattern = np.zeros(2 ** len(pattern_string))
-    i1 = 0
-    for i in range(len(pattern_string)):
-        if pattern_string[i] == "M":
-            i1 += 2**i
-    pattern[i1] = 1.0
-    return pattern
+    pattern = [1.0 if b == "M" else 0.0 for b in pattern_string]
+    return np.array(pattern)
 
 
 def prepare_data(

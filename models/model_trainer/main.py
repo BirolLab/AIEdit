@@ -15,7 +15,7 @@ LOGO = (
     " /_/    \\_\\_____|______\\__,_|_|\\__|"
 )
 
-TRAINER_VERSION = "0.1"
+TRAINER_VERSION = "0.2"
 
 
 def main():
@@ -37,7 +37,9 @@ def main():
     print()
     print("Training model")
     training_stats = train_model(model, data, args.e)
-    save_model(model, args.w, args.s, args.o)
+    model_file_name = args.o or model.name + ".json"
+    save_model(model, args.w, args.s, model_file_name)
+    print("Model saved to", model_file_name)
     if args.plot_stats:
         plot_training_stats(training_stats, args.o)
 
