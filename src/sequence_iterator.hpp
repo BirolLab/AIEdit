@@ -50,11 +50,12 @@ class SequenceIterator
 
     char get_current() const;
 
-    const std::vector<uint64_t> get_hashes(unsigned i) const;
+    const std::vector<uint64_t> get_kmer_hashes() const;
+    const std::vector<uint64_t> get_seed_hashes(unsigned i) const;
 
     size_t get_position() const;
 
-    unsigned get_seed_length() const;
+    unsigned get_k() const;
 
     unsigned get_num_seeds() const;
 

@@ -30,6 +30,14 @@ inline void update_seq_iter(SequenceIterator& seq_iter, const std::vector<Edit>&
     }
 }
 
+inline void find_next_hit(SequenceIterator& seq_iter, const btllib::CountingBloomFilter8& bf)
+{
+    bool has_miss = true;
+    while (has_miss && seq_iter.next()) {
+        has_miss = bf.contains(seq_iter.get_kmer_hashes()) == 0;
+    }
+}
+
 }  // namespace
 
 namespace aiedit {
@@ -117,7 +125,7 @@ PolishingResults Polisher::polish(SequenceIterator& seq_iter)
         }
         if (!pattern.is_empty() && edits.empty()) {
             results.add_ignored_pattern(seq_iter.get_position(), pattern.to_string());
-            seq_iter.next();
+            find_next_hit(seq_iter, bf);
         } else if (!pattern.is_empty()) {
             update_seq_iter(seq_iter, edits);
             results.add_edits(edits);
