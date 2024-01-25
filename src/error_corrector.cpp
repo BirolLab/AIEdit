@@ -11,14 +11,18 @@ const char ALPHABET[4] = {'A', 'C', 'G', 'T'};
 inline bool permute(SequenceIterator& seq_iter, const btllib::CountingBloomFilter8& bf)
 {
     char original = seq_iter.get_current();
+    char fix = original;
+    unsigned max_count = 0;
     for (const auto c : ALPHABET) {
         seq_iter.substitute_last(c);
-        if (bf.contains(seq_iter.get_kmer_hashes()) > 0 && c != original) {
-            return true;
+        const auto count_c = bf.contains(seq_iter.get_kmer_hashes());
+        if (count_c > max_count) {
+            fix = c;
+            max_count = count_c;
         }
     }
-    seq_iter.substitute_last(original);
-    return false;
+    seq_iter.substitute_last(fix);
+    return fix != original;
 }
 
 inline std::vector<Edit> fix_mismatches(SequenceIterator& seq_iter,

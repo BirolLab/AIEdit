@@ -42,8 +42,8 @@ def get_signature(seeds: list[str],
     # create signature
     h = btllib.SeedNtHash(alt, btllib.parse_seeds(seeds),
                           bf.get_hash_num_per_seed(), seed_length)
-    signature = np.empty((seed_length, len(seeds)))
-    for i in range(seed_length):
+    signature = np.empty((seed_length // 2 + 1, len(seeds)))
+    for i in range(signature.shape[0]):
         h.roll()
         for j in range(len(seeds)):
             begin = j * bf.get_hash_num_per_seed()

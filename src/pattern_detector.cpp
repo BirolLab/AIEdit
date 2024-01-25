@@ -9,10 +9,11 @@ using namespace aiedit;
 inline fdeep::tensor get_model_input(SequenceIterator seq_iter,
                                      const btllib::CountingBloomFilter8& bf)
 {
-    const auto shape = fdeep::tensor_shape(seq_iter.get_k(), seq_iter.get_num_seeds());
+    const unsigned signature_length = seq_iter.get_k() / 2 + 1;
+    const auto shape = fdeep::tensor_shape(signature_length, seq_iter.get_num_seeds());
     fdeep::tensor model_input(shape, 1);
     bool has_next = true;
-    for (unsigned i = 0; i < seq_iter.get_k() && has_next; i++) {
+    for (unsigned i = 0; i < signature_length && has_next; i++) {
         for (unsigned j = 0; j < seq_iter.get_num_seeds(); j++) {
             const auto is_miss = bf.contains(seq_iter.get_seed_hashes(j)) == 0;
             model_input.set(fdeep::tensor_pos(i, j), is_miss ? 0.0 : 1.0);
