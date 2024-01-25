@@ -125,13 +125,11 @@ PolishingResults Polisher::polish(SequenceIterator& seq_iter)
         }
         if (!pattern.is_empty() && edits.empty()) {
             results.add_ignored_pattern(seq_iter.get_position(), pattern.to_string());
-            find_next_hit(seq_iter, bf);
         } else if (!pattern.is_empty()) {
             update_seq_iter(seq_iter, edits);
             results.add_edits(edits);
-        } else {
-            seq_iter.next();
         }
+        find_next_hit(seq_iter, bf);
     }
     return results;
 }
