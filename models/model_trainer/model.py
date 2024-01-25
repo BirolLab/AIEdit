@@ -13,7 +13,7 @@ from tqdm.keras import TqdmCallback
 
 
 def build_model(seeds: list[str], pattern_length: int, version: str) -> Model:
-    signature_length = len(seeds[0])
+    signature_length = len(seeds[0]) // 2 + 1
     x_in = Input((signature_length, len(seeds)))
     z_flat = Flatten()(x_in)
     y_out = Dense(pattern_length, activation="sigmoid")(z_flat)
