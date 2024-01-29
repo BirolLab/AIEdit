@@ -115,7 +115,7 @@ PolishingResults Polisher::polish(SequenceIterator& seq_iter)
 {
     PolishingResults results;
     ErrorDetector error_detector(seq_iter, bf);
-    PatternDetector pattern_detector(pattern_length, bf, model);
+    PatternDetector pattern_detector(bf, model);
     ErrorCorrector error_corrector(bf);
     while (error_detector.next()) {
         auto pattern = pattern_detector.get_pattern(seq_iter);
