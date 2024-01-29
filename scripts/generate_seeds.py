@@ -8,15 +8,13 @@ def generate_seeds(
 ) -> list[str]:
     seeds = ["1" * kmer_length]
     for n_gap in range(1, pattern_length + 1):
-        n_gap_cares = random.randrange(1, pattern_length, 2)
-        mid = ["0"] * n_gap + ["1"] * n_gap_cares + ["0"] * n_gap
-        cares = ["1"] * ((kmer_length - len(mid)) // 2)
-        seed = cares + mid + cares
-        w = seed.count("1")
-        c = "0" if seed_weight < w else "1"
-        for i in random.sample(range(2, len(cares) - 1), abs(seed_weight - w) // 2):
-            seed[i] = seed[len(seed) - 1 - i] = c
-        seeds.append("".join(seed))
+        end = "1" + "0" * n_gap + "1"
+        w = kmer_length - n_gap * 2
+        mid = ["1"] * (w - 4)
+        if w > seed_weight:
+            for i in random.sample(range(len(mid)), (w - seed_weight) // 2):
+                mid[i] = mid[len(mid) - 1 - i] = "0"
+        seeds.append(end + "".join(mid) + end)
     return seeds
 
 
