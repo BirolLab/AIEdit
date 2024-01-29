@@ -1,19 +1,14 @@
-import dataclasses
 import numpy as np
+import numpy.typing as np_types
 from tqdm import tqdm
 from signature import get_signature
 
 
-@dataclasses.dataclass
-class Dataset:
-    x_train: list[np.array]
-    y_train: list[np.array]
-    x_test: list[np.array]
-    y_test: list[np.array]
-    patterns: list[str]
+def _pattern_to_array(pattern: str) -> np_types.ArrayLike:
+    return np.array([1.0 if b == "M" else 0.0 for b in pattern])
 
 
-def get_pattern_strings(pattern_length: int) -> list[str]:
+def _get_pattern_strings(pattern_length: int) -> list[str]:
     pattern_strings = []
     for i in range(2 ** (pattern_length - 1), 2**pattern_length):
         p_str = np.base_repr(i, 2).zfill(pattern_length).replace("1", "M")
@@ -24,26 +19,51 @@ def get_pattern_strings(pattern_length: int) -> list[str]:
     return pattern_strings
 
 
-def get_pattern_tensor(pattern_string: str) -> np.array:
-    pattern = [1.0 if b == "M" else 0.0 for b in pattern_string]
-    return np.array(pattern)
+class Dataset:
+    def __init__(
+        self, seeds: list[str], pattern_length: int, class_size: int, fpr: float
+    ) -> None:
+        self.__seeds = seeds
+        self.__pattern_length = pattern_length
+        self.__class_size = class_size
+        self.__fpr = fpr
+        self.__x_train = []
+        self.__y_train = []
+        self.__x_test = []
+        self.__y_test = []
+        self.__prepare_data()
 
+    @property
+    def x_train(self):
+        return np.array(self.__x_train)
 
-def prepare_data(
-    seeds: list[str], pattern_length: int, samples_per_class: int, fpr: float
-) -> Dataset:
-    x_train, y_train, x_test, y_test = [], [], [], []
-    patterns = []
-    for p in tqdm(
-        get_pattern_strings(pattern_length), desc="Generating data", unit="patterns"
-    ):
-        for i in range(max(2, int(samples_per_class * 1.2))):
-            signature = get_signature(seeds, p, fpr if i > 0 else 0)
-            if i < samples_per_class:
-                x_train.append(signature)
-                y_train.append(get_pattern_tensor(p))
+    @property
+    def y_train(self):
+        return np.array(self.__y_train)
+
+    @property
+    def x_test(self):
+        return np.array(self.__x_test)
+
+    @property
+    def y_test(self):
+        return np.array(self.__y_test)
+    
+    def print_details(self):
+        print(f"Training data size: {len(self.__x_train)}")
+        print(f"Testing data size: {len(self.__x_test)}")
+
+    def __populate_class(self, pattern: str):
+        for i in range(max(2, int(self.__class_size * 1.2))):
+            signature = get_signature(self.__seeds, pattern, self.__fpr if i > 0 else 0)
+            if i < self.__class_size:
+                self.__x_train.append(signature)
+                self.__y_train.append(_pattern_to_array(pattern))
             else:
-                x_test.append(signature)
-                y_test.append(get_pattern_tensor(p))
-            patterns.append(p)
-    return Dataset(x_train, y_train, x_test, y_test, patterns)
+                self.__x_test.append(signature)
+                self.__y_test.append(_pattern_to_array(pattern))
+
+    def __prepare_data(self):
+        patterns = _get_pattern_strings(self.__pattern_length)
+        for p in tqdm(patterns, desc="Generating data", unit="patterns"):
+            self.__populate_class(p)
