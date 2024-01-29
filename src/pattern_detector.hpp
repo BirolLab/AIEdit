@@ -14,11 +14,8 @@ class PatternDetector
 
   public:
 
-    PatternDetector(unsigned pattern_length,
-                    const btllib::CountingBloomFilter8& bf,
-                    const fdeep::model& model)
-      : pattern_length(pattern_length)
-      , bf(bf)
+    PatternDetector(const btllib::CountingBloomFilter8& bf, const fdeep::model& model)
+      : bf(bf)
       , model(model)
     {}
 
@@ -31,7 +28,6 @@ class PatternDetector
 
   private:
 
-    const unsigned pattern_length;
     const btllib::CountingBloomFilter8& bf;
     const fdeep::model& model;
 };

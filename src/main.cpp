@@ -49,7 +49,7 @@ int main(int argc, char** argv)
     aiedit::PatternsLogWriter ignored_writer(prefix + "-aiedit-ignored.tsv");
 
     cli.start_timer(args.no_apply ? "Detecting edits" : "Detecting and applying edits");
-    aiedit::Polisher polisher(model_json["pattern_length"], bf, model);
+    aiedit::Polisher polisher(bf, model);
     unsigned num_snp = 0;
     unsigned num_ins = 0;
     unsigned num_del = 0;

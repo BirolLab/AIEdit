@@ -7,9 +7,10 @@ namespace {
 using namespace aiedit;
 
 inline fdeep::tensor get_model_input(SequenceIterator seq_iter,
-                                     const btllib::CountingBloomFilter8& bf)
+                                     const btllib::CountingBloomFilter8& bf,
+                                     unsigned signature_length)
 {
-    const unsigned signature_length = seq_iter.get_k() / 2 + 1;
+
     const auto shape = fdeep::tensor_shape(signature_length, seq_iter.get_num_seeds());
     fdeep::tensor model_input(shape, 1);
     bool has_next = true;
@@ -49,9 +50,11 @@ inline unsigned get_num_insertions(SequenceIterator seq_iter,
                                    const btllib::CountingBloomFilter8& bf,
                                    const fdeep::model& model)
 {
+    const auto in_width = model.get_input_shapes()[0].width_;
+    const auto signature_length = fplus::just_with_default<std::size_t>(0, in_width);
     for (unsigned num_ins = 1; num_ins <= pattern_length; num_ins++) {
         seq_iter.insert_last('N');
-        const auto signature = get_model_input(seq_iter, bf);
+        const auto signature = get_model_input(seq_iter, bf, signature_length);
         const auto y = model.predict({signature})[0];
         bool check = true;
         for (unsigned i = 0; i < pattern_length && check; i++) {
@@ -81,9 +84,9 @@ check_fixes(SequenceIterator seq_iter, const btllib::CountingBloomFilter8& bf, u
     return true;
 }
 
-inline Pattern model_output_to_pattern(const fdeep::tensors& model_output, unsigned pattern_length)
+inline Pattern model_output_to_pattern(const fdeep::tensors& model_output)
 {
-    Pattern pattern(pattern_length);
+    Pattern pattern(model_output[0].depth());
     for (unsigned i = 0; i < pattern.get_length(); i++) {
         if (model_output[0].get(fdeep::tensor_pos(i)) >= 0.5) {
             pattern.set(i, Edit::Type::MISMATCH);
@@ -111,18 +114,20 @@ namespace aiedit {
 
 Pattern PatternDetector::get_pattern(SequenceIterator& seq_iter)
 {
-    const auto signature = get_model_input(seq_iter, bf);
+    const auto in_width = model.get_input_shapes()[0].width_;
+    const auto signature_length = fplus::just_with_default<std::size_t>(0, in_width);
+    const auto signature = get_model_input(seq_iter, bf, signature_length);
     const auto model_output = model.predict({signature});
-    auto pattern = model_output_to_pattern(model_output, pattern_length);
+    auto pattern = model_output_to_pattern(model_output);
     if (pattern.get_count(Edit::Type::MISMATCH) > 0) {
         return pattern;
     }
-    const auto num_deletions = get_num_deletions(seq_iter, pattern_length, bf);
+    const auto num_deletions = get_num_deletions(seq_iter, model_output[0].depth(), bf);
     if (num_deletions > 0) {
         fill_first(pattern, Edit::Type::DELETION, num_deletions);
         return pattern;
     }
-    const auto num_insertions = get_num_insertions(seq_iter, pattern_length, bf, model);
+    const auto num_insertions = get_num_insertions(seq_iter, model_output[0].depth(), bf, model);
     if (num_insertions > 0) {
         fill_first(pattern, Edit::Type::INSERTION, num_insertions);
         return pattern;
