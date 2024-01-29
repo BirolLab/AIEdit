@@ -13,13 +13,16 @@ class ProgramArguments:
             required=True,
         )
         self.__parser.add_argument(
-            "-w", help="maximum pattern length", default=5, type=int
+            "-n", help="signature length", type=int, required=True
+        )
+        self.__parser.add_argument(
+            "-w", help="maximum pattern length", type=int, required=True
         )
         self.__parser.add_argument(
             "-e", help="number of training epochs", default=20, type=int
         )
         self.__parser.add_argument(
-            "-n", help="number of samples per class", default=20, type=int
+            "-p", help="number of samples per class", default=1, type=int
         )
         self.__parser.add_argument(
             "-fpr", help="false positive rate for simulation", default=0.001, type=float
@@ -42,6 +45,10 @@ class ProgramArguments:
     @property
     def seeds(self) -> list[str]:
         return self.__parsed_args.s
+
+    @property
+    def signature_length(self) -> int:
+        return self.__parsed_args.n
 
     @property
     def pattern_length(self) -> int:
@@ -68,6 +75,7 @@ class ProgramArguments:
         return self.__parsed_args.plots
 
     def print_values(self):
+        print("Signature length:", self.signature_length)
         print("Pattern length:", self.pattern_length)
         print("Number of spaced seeds:", len(self.seeds))
         print("Spaced seed length:", len(self.seeds[0]))

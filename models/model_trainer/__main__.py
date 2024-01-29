@@ -21,11 +21,12 @@ print(LOGO, f"model-trainer v{TRAINER_VERSION}", sep="\t", end=os.linesep * 2)
 args = ProgramArguments()
 args.print_values()
 
-model = MismatchDetector(args.seeds, args.pattern_length)
+model = MismatchDetector(args.seeds, args.signature_length, args.pattern_length)
 model.print_summary()
 
 dataset = Dataset(
     args.seeds,
+    args.signature_length,
     args.pattern_length,
     args.num_samples_per_class,
     args.false_positive_rate,

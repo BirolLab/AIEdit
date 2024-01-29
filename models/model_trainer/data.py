@@ -21,9 +21,15 @@ def _get_pattern_strings(pattern_length: int) -> list[str]:
 
 class Dataset:
     def __init__(
-        self, seeds: list[str], pattern_length: int, class_size: int, fpr: float
+        self,
+        seeds: list[str],
+        signature_length: int,
+        pattern_length: int,
+        class_size: int,
+        fpr: float,
     ) -> None:
         self.__seeds = seeds
+        self.__signature_length = signature_length
         self.__pattern_length = pattern_length
         self.__class_size = class_size
         self.__fpr = fpr
@@ -48,14 +54,19 @@ class Dataset:
     @property
     def y_test(self):
         return np.array(self.__y_test)
-    
+
     def print_details(self):
         print(f"Training data size: {len(self.__x_train)}")
         print(f"Testing data size: {len(self.__x_test)}")
 
     def __populate_class(self, pattern: str):
         for i in range(max(2, int(self.__class_size * 1.2))):
-            signature = get_signature(self.__seeds, pattern, self.__fpr if i > 0 else 0)
+            signature = get_signature(
+                self.__seeds,
+                self.__signature_length,
+                pattern,
+                self.__fpr if i > 0 else 0,
+            )
             if i < self.__class_size:
                 self.__x_train.append(signature)
                 self.__y_train.append(_pattern_to_array(pattern))
