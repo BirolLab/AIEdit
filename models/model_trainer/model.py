@@ -7,11 +7,13 @@ from fdeep_convert import convert
 
 
 class MismatchDetector:
-    def __init__(self, seeds: list[str], pattern_length: int) -> None:
+    def __init__(
+        self, seeds: list[str], signature_length: int, pattern_length: int
+    ) -> None:
         super().__init__()
         self.__seeds = seeds
+        self.__signature_length = signature_length
         self.__pattern_length = pattern_length
-        signature_length = len(seeds[0]) // 2 + 1
         self.__model = keras.models.Sequential(
             [
                 keras.layers.Input((signature_length, len(seeds))),
@@ -28,6 +30,10 @@ class MismatchDetector:
     @property
     def seeds(self) -> list[str]:
         return self.__seeds
+
+    @property
+    def signature_length(self) -> int:
+        return self.__signature_length
 
     @property
     def pattern_length(self) -> int:
@@ -53,6 +59,7 @@ class MismatchDetector:
         os.remove(temp_file)
         with open(path) as json_file:
             json_data = json.load(json_file)
+        json_data["signature_length"] = self.__signature_length
         json_data["pattern_length"] = self.__pattern_length
         json_data["seeds"] = self.__seeds
         with open(path, "w") as json_file:
