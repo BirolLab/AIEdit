@@ -13,18 +13,19 @@
 #include "sequence_iterator.hpp"
 #include "vcf_writer.hpp"
 
+static constexpr char const* VERSION = "@PROJECT_VERSION@";
+
 int main(int argc, char** argv)
 {
-    aiedit::ProgramArguments args;
+    ProgramArguments args;
     try {
-        args.parse(argc, argv);
+        args.parse(argc, argv, VERSION);
     } catch (const std::runtime_error& err) {
         std::cerr << err.what() << std::endl;
-        std::cerr << args.get_help_message();
         return EXIT_FAILURE;
     }
 
-    aiedit::CommandLineInterface cli(args.verbose);
+    CommandLineInterface cli(args.verbose, VERSION);
 
     cli.print_logo();
     cli.print_args(args);
@@ -45,11 +46,11 @@ int main(int argc, char** argv)
     const std::string prefix = args.out_path / std::filesystem::path(args.in_path).stem();
     btllib::SeqReader seq_reader(args.in_path, btllib::SeqReader::Flag::LONG_MODE);
     btllib::SeqWriter seq_writer(prefix + "-aiedit-polished.fa", btllib::SeqWriter::FASTA);
-    aiedit::VCFWriter vcf_writer(prefix + "-aiedit-variants.vcf", args.in_path);
-    aiedit::PatternsLogWriter ignored_writer(prefix + "-aiedit-ignored.tsv");
+    VCFWriter vcf_writer(prefix + "-aiedit-variants.vcf", args.in_path, VERSION);
+    PatternsLogWriter ignored_writer(prefix + "-aiedit-ignored.tsv");
 
     cli.start_timer(args.no_apply ? "Detecting edits" : "Detecting and applying edits");
-    aiedit::Polisher polisher(bf, model);
+    Polisher polisher(bf, model);
     unsigned num_snp = 0;
     unsigned num_ins = 0;
     unsigned num_del = 0;
@@ -58,7 +59,7 @@ int main(int argc, char** argv)
     if (args.contig_mode) {
 #pragma omp parallel
         for (auto record : seq_reader) {
-            aiedit::SequenceIterator seq_iter(record.seq, seeds, bf.get_hash_num());
+            SequenceIterator seq_iter(record.seq, seeds, bf.get_hash_num());
             auto results = polisher.polish(seq_iter);
             num_snp += results.get_num_mismatches();
             num_ins += results.get_num_insertions();
@@ -77,7 +78,7 @@ int main(int argc, char** argv)
         }
     } else {
         for (auto record : seq_reader) {
-            aiedit::PolishingResults results;
+            PolishingResults results;
             bool too_short = record.seq.size() < seeds[0].size() * args.num_threads;
             unsigned num_chunks = too_short ? 1 : args.num_threads;
             const unsigned chunk_size = record.seq.size() / num_chunks;
@@ -85,7 +86,7 @@ int main(int argc, char** argv)
             for (unsigned i = 0; i < num_chunks; i++) {
                 const unsigned begin = i * chunk_size;
                 const unsigned end = i < num_chunks - 1 ? (i + 1) * chunk_size : record.seq.size();
-                aiedit::SequenceIterator seq_iter(record.seq, seeds, bf.get_hash_num(), begin, end);
+                SequenceIterator seq_iter(record.seq, seeds, bf.get_hash_num(), begin, end);
                 auto chunk_results = polisher.polish(seq_iter);
 #pragma omp critical
                 results.merge(chunk_results);
@@ -107,7 +108,7 @@ int main(int argc, char** argv)
         }
     }
     cli.stop_timer();
-    aiedit::CommandLineInterface::print_final_stats(num_snp, num_ins, num_del, num_fix, num_ign);
+    CommandLineInterface::print_final_stats(num_snp, num_ins, num_del, num_fix, num_ign);
 
     return EXIT_SUCCESS;
 }

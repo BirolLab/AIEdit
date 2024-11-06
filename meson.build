@@ -12,32 +12,22 @@ project(
     ],
 )
 
-conf = configuration_data()
-conf.set('PROJECT_VERSION', meson.project_version())
-configure_file(
-    input: 'src/version.hpp.in',
-    output: 'version.hpp',
-    configuration: conf,
-)
-
-compiler = meson.get_compiler('cpp')
-
 dependencies = [
     dependency('argparse'),
     dependency('frugally-deep', modules: ['frugally-deep::fdeep']),
     dependency('nlohmann_json'),
     dependency('openmp'),
-    compiler.find_library('btllib'),
+    meson.get_compiler('cpp').find_library('btllib'),
 ]
-
-sources = run_command(
-    'scripts/list_sources.sh',
-    check: true,
-).stdout().strip().split()
 
 executable(
     'aiedit',
-    ['src/main.cpp'] + sources,
+    configure_file(
+        input: 'src/main.cpp',
+        output: 'main.cpp',
+        configuration: {'PROJECT_VERSION': meson.project_version()},
+    ),
+    include_directories: include_directories('src'),
     dependencies: dependencies,
     install: true,
 )

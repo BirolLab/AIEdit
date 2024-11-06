@@ -1,10 +1,7 @@
-#ifndef AIEDIT_EDIT_HPP
-#define AIEDIT_EDIT_HPP
+#pragma once
 
 #include <cstddef>
 #include <string>
-
-namespace aiedit {
 
 class Edit
 {
@@ -37,7 +34,3 @@ class Edit
     std::string before;
     std::string after;
 };
-
-}  // namespace aiedit
-
-#endif  // AIEDIT_EDIT_HPP

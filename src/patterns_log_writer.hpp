@@ -1,12 +1,10 @@
-#ifndef PATTERNS_LOG_WRITER_HPP
-#define PATTERNS_LOG_WRITER_HPP
+#pragma once
 
+#include <cstdio>
 #include <fstream>
 #include <string>
 
 #include "polisher.hpp"
-
-namespace aiedit {
 
 class PatternsLogWriter
 {
@@ -29,19 +27,23 @@ class PatternsLogWriter
      * @param ignored_patterns List of ignored patterns
      */
     void write(const std::string& seq_id,
-               const std::vector<std::pair<unsigned, std::string>>& ignored_patterns);
+               const std::vector<std::pair<unsigned, std::string>>& ignored_patterns)
+    {
+#pragma omp critical
+        {
+            for (const auto& pattern : ignored_patterns) {
+                file << seq_id << "\t" << pattern.first + 1 << "\t" << pattern.second << std::endl;
+            }
+        }
+    }
 
     /**
      * Delete the created file
      */
-    void delete_file();
+    void delete_file() { std::remove(file_name.data()); }
 
   private:
 
     const std::string file_name;
     std::ofstream file;
 };
-
-}  // namespace aiedit
-
-#endif
