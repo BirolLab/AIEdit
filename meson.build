@@ -51,7 +51,7 @@ if catch2.found()
         test_name = test_file.split('.cpp')[0].split('/')[-1]
         test_exec = executable(
             test_name,
-            sources + [test_file],
+            test_file,
             dependencies: [catch2] + dependencies,
             include_directories: ['src'],
         )
