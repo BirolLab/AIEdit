@@ -4,10 +4,9 @@ import re
 import warnings
 
 import btllib
+import keras
 import numpy as np
 import pandas as pd
-from keras.layers import Conv1D, Input
-from keras.models import Sequential, load_model
 
 
 def extend_hashes(fwd_hash, rev_hash, k, h):
@@ -67,34 +66,125 @@ def parse_args():
     return parser.parse_args()
 
 
-def generate_data(
-    seq_path: str,
-    vars_path: str,
-    cbf_path: str,
-    hist_path: str,
-    seeds: list[str],
-    max_ind: int,
-):
-    print("reading variations file...")
-    vars = pd.read_csv(vars_path, delimiter=r"\s+", nrows=2000)
-    print(f"number of vars: {len(vars)}")
-    print("grouping vars based on reads...")
-    vars = {seq_name: data for seq_name, data in vars.groupby("Seq_name")}
-    print(f"num reads = {len(vars)}")
-    print("reading cbf...")
-    cbf = btllib.CountingBloomFilter8(cbf_path)  # type: ignore
-    num_hashes = cbf.get_hash_num()
-    print(f"cbf fpr = {cbf.get_fpr()}")
-    hist = pd.read_csv(hist_path, delimiter=r"\s+", index_col=0)
+def read_seeds(path: str) -> list[str]:
+    with open(path) as file:
+        seeds = [line.strip() for line in file]
+    assert len(set(map(len, seeds))) == 1, "seeds should be the same length"
+    return seeds
+
+
+def read_vars(path: str) -> tuple[int, dict[str, pd.DataFrame]]:
+    vars = pd.read_csv(path, delimiter=r"\s+", nrows=2000)
+    num_vars = len(vars)
+    vars = {str(seq_name): seq_vars for seq_name, seq_vars in vars.groupby("Seq_name")}
+    return num_vars, vars
+
+
+def read_histogram(path: str) -> pd.DataFrame:
+    hist = pd.read_csv(path, delimiter=r"\s+", index_col=0)
     hist.loc[0] = [0, 1, 0, 0]
     norm_cols = ["error", "heterozygous", "homozygous"]
     row_sum = hist[norm_cols].sum(axis=1)
     hist[norm_cols] = hist[norm_cols].div(row_sum, axis=0)
-    sr = btllib.SeqReader(seq_path, btllib.SeqReaderFlag.LONG_MODE)  # type: ignore
-    print("seeds:", *seeds, sep=os.linesep)
-    assert len(set(map(len, seeds))) == 1, "seeds should be the same length"
+    return hist
+
+
+def load_model(num_seeds: int, max_ind: int, model_path: str) -> keras.models.Model:
+    model = None
+    if os.path.isfile(model_path):
+        model = keras.models.load_model(model_path)
+    if not model:
+        layers = [
+            keras.layers.Input(shape=(None, num_seeds + max_ind)),
+            keras.layers.Conv1D(64, 30, padding="same", activation="relu"),
+            keras.layers.Conv1D(128, 30, padding="same", activation="relu"),
+            keras.layers.Conv1D(64, 30, padding="same", activation="relu"),
+            keras.layers.Conv1D(max_ind + 3, 30, padding="same", activation="softmax"),
+        ]
+        model = keras.models.Sequential(layers)
+        model.compile(
+            optimizer="adam",
+            loss="categorical_crossentropy",
+            weighted_metrics=["categorical_accuracy"],
+        )
+    model.summary()
+    return model
+
+
+def get_inputs(
+    seq: str,
+    head: int,
+    tail: int,
+    seeds: list[str],
+    max_indels: int,
+    cbf,
+    hist: pd.DataFrame,
+):
     k = len(seeds[0])
-    for record in sr:
+    num_hashes = cbf.get_hash_num()
+    x = np.zeros(shape=(1, len(seq) - k + 1, len(seeds) + max_indels))
+    for i_seed, seed in enumerate(seeds):
+        svec = btllib.parse_seeds([seed])  # type: ignore
+        nh = btllib.SeedNtHash(seq, svec, num_hashes, k, head)  # type: ignore
+        while nh.roll() and nh.get_pos() < len(seq) - tail:
+            err_prob = hist.loc[cbf.contains(nh.hashes())]["error"]
+            x[0, nh.get_pos() - head, i_seed] = err_prob
+    sh = SkipHash(seq, num_hashes, k, max_indels, head)
+    while sh.roll() and sh.get_pos() < len(seq) - tail:
+        if sh.get_pos() - head < k // 2:
+            continue
+        for i in range(len(sh.hashes())):
+            err_prob = hist.loc[cbf.contains(sh.hashes()[i])]["error"]
+            x[0, sh.get_pos() - head - k // 2, i + len(seeds)] = err_prob
+    x[0, -k // 2 :, len(seeds) :] = 1.0
+    return x
+
+
+def get_targets(vars: pd.DataFrame, seq_len: int, k: int, max_indels):
+    y = np.zeros(shape=(1, seq_len - k + 1, max_indels + 3))
+    y[0, :, 0] = 1.0
+    pos_diff = 0
+    for _, row in vars.sort_values("Seq_pos").iterrows():
+        seq_pos = row["Seq_pos"] + pos_diff - k + 1
+        if row["error_type"] == "mis":
+            y[0, seq_pos : seq_pos + row["error_length"], 0] = 0.0
+            y[0, seq_pos : seq_pos + row["error_length"], 1] = 1.0
+        elif row["error_type"] == "ins":
+            y[0, seq_pos : seq_pos + row["error_length"], 0] = 0.0
+            y[0, seq_pos : seq_pos + row["error_length"], 2] = 1.0
+            pos_diff += row["error_length"]
+        elif row["error_type"] == "del":
+            num_ins = min(row["error_length"], y.shape[-1] - 3)
+            y[0, seq_pos - 1, 0] = 0.0
+            y[0, seq_pos - 1, num_ins + 2] = 1.0
+            pos_diff -= row["error_length"]
+    return y
+
+
+def filter_samples(x, y, k):
+    mask = np.zeros(x.shape[1], dtype=bool)
+    num_clean = np.convolve(y[0, :, 0], np.ones(k), mode="valid")
+    for start in np.where(num_clean < k)[0]:
+        mask[start - k : start + k] = True
+    return x[:, mask, :], y[:, mask, :]
+
+
+def get_sample_weights(x, y):
+    sample_weights = np.ones(shape=(1, x.shape[1]))
+    mask = (x[0, :, 0] < 0.5) & (y[0, :, 0] == 1.0)
+    sample_weights[0, mask] = 1 - y[0, :, 0].sum() / y.shape[1]
+    return y
+
+
+def generate_data(
+    reads_path: str,
+    vars: dict[str, pd.DataFrame],
+    cbf,
+    hist: pd.DataFrame,
+    seeds: list[str],
+    max_ind: int,
+):
+    for record in btllib.SeqReader(reads_path, btllib.SeqReaderFlag.LONG_MODE):  # type: ignore
         match = re.search(r"F_(\d+)_\d+_(\d+)", record.id)
         if not match:
             warnings.warn(f"invalid read id: {record.id}")
@@ -104,75 +194,29 @@ def generate_data(
             continue
         head = int(match.group(1))
         tail = int(match.group(2))
-        x = np.zeros(shape=(1, len(record.seq) - k + 1, len(seeds) + max_ind))
-        y = np.zeros(shape=(1, len(record.seq) - k + 1, max_ind + 3))
-        y[0, :, 0] = 1.0
-        for i_seed, seed in enumerate(seeds):
-            svec = btllib.parse_seeds([seed])  # type: ignore
-            nh = btllib.SeedNtHash(record.seq, svec, num_hashes, k, head)  # type: ignore
-            while nh.roll() and nh.get_pos() < len(record.seq) - tail:
-                err_prob = hist.loc[cbf.contains(nh.hashes())]["error"]
-                x[0, nh.get_pos() - head, i_seed] = err_prob
-        sh = SkipHash(record.seq, num_hashes, k, max_ind, head)
-        while sh.roll() and sh.get_pos() < len(record.seq) - tail:
-            if sh.get_pos() - head < k // 2:
-                continue
-            for i in range(len(sh.hashes())):
-                err_prob = hist.loc[cbf.contains(sh.hashes()[i])]["error"]
-                x[0, sh.get_pos() - head - k // 2, i + len(seeds)] = err_prob
-        x[0, -k // 2 :, len(seeds) :] = 1.0
-        pos_diff = 0
-        for _, row in vars[record.id].sort_values("Seq_pos").iterrows():
-            seq_pos = row["Seq_pos"] + pos_diff - k + 1
-            if row["error_type"] == "mis":
-                y[0, seq_pos : seq_pos + row["error_length"], 0] = 0.0
-                y[0, seq_pos : seq_pos + row["error_length"], 1] = 1.0
-            elif row["error_type"] == "ins":
-                y[0, seq_pos : seq_pos + row["error_length"], 0] = 0.0
-                y[0, seq_pos : seq_pos + row["error_length"], 2] = 1.0
-                pos_diff += row["error_length"]
-            elif row["error_type"] == "del":
-                num_ins = min(row["error_length"], y.shape[-1] - 3)
-                y[0, seq_pos - 1, 0] = 0.0
-                y[0, seq_pos - 1, num_ins + 2] = 1.0
-                pos_diff -= row["error_length"]
-        np.set_printoptions(precision=3)
-        np.set_printoptions(linewidth=np.inf)
-        for i in range(x.shape[1]):
-            print(i, x[0, i], y[0, i])
-        return x, y
-        # yield record.id, x, y
-
-
-def make_model(num_seeds: int, max_ind: int):
-    model = Sequential(
-        [
-            Input(shape=(None, num_seeds)),
-            Conv1D(64, kernel_size=30, padding="same", activation="relu"),
-            Conv1D(128, kernel_size=30, padding="same", activation="relu"),
-            Conv1D(64, kernel_size=30, padding="same", activation="relu"),
-            Conv1D(max_ind + 3, kernel_size=30, padding="same", activation="softmax"),
-        ]
-    )
-    return model
+        x = get_inputs(record.seq, head, tail, seeds, max_ind, cbf, hist)
+        y = get_targets(vars[record.id], len(record.seq), len(seeds[0]), max_ind)
+        x, y = filter_samples(x, y, len(seeds[0]))
+        sample_weights = get_sample_weights(x, y)
+        yield x, y, sample_weights
 
 
 def main():
     args = parse_args()
-    with open(args.s) as fp:
-        seeds = list(map(str.strip, fp.readlines()))
-    generate_data(args.r, args.e, args.b, args.m, seeds, args.i)
-    return
-    model = None
-    if os.path.isfile(args.o):
-        model = load_model(args.o)
-    if not model:
-        model = make_model(len(seeds), args.i)
-    model.compile(optimizer="adam", loss="categorical_crossentropy")
-    model.summary()
-    for read_id, x, y in generate_data(args.r, args.e, args.b, args.m, seeds, args.i):
-        print(read_id)
-        model.fit(x, y, epochs=args.n)
+    seeds = read_seeds(args.s)
+    hist = read_histogram(args.m)
+    model = load_model(len(seeds), args.i, args.o)
+    print("reading variations file...")
+    num_vars, vars = read_vars(args.e)
+    print(f"number of vars: {num_vars}")
+    print(f"number of reads: {len(vars)}")
+    print("reading cbf...")
+    cbf = btllib.CountingBloomFilter8(args.b)  # type: ignore
+    print(f"cbf fpr: {cbf.get_fpr()}")
+    print("seeds:", *seeds, sep=os.linesep)
+    data_generator = generate_data(args.r, vars, cbf, hist, seeds, args.i)
+    for x, y, w in data_generator:
+        model.fit(x, y, epochs=args.n, sample_weight=w)
         model.save(args.o)
 
 
