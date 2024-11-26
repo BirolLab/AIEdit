@@ -4,7 +4,6 @@ import re
 import warnings
 
 import btllib
-import numpy as np
 import pandas as pd
 import torch
 import torchinfo
@@ -119,8 +118,8 @@ def print_model_summary(model):
 
 def get_inputs(
     seq: str,
-    head: int,
-    tail: int,
+    start: int,
+    end: int,
     seeds: list[str],
     max_indels: int,
     cbf,
@@ -128,30 +127,32 @@ def get_inputs(
 ):
     k = len(seeds[0])
     num_hashes = cbf.get_hash_num()
-    x = torch.zeros(len(seeds) + max_indels, len(seq) - k + 1)
+    x = torch.zeros(len(seeds) + max_indels, end - start)
     for i_seed, seed in enumerate(seeds):
         svec = btllib.parse_seeds([seed])  # type: ignore
-        nh = btllib.SeedNtHash(seq, svec, num_hashes, k, head)  # type: ignore
-        while nh.roll() and nh.get_pos() < len(seq) - tail:
+        nh = btllib.SeedNtHash(seq, svec, num_hashes, k)  # type: ignore
+        while nh.roll() and nh.get_pos() < end:
+            if nh.get_pos() < start:
+                continue
             err_prob = hist.loc[cbf.contains(nh.hashes())]["error"]
-            x[i_seed, nh.get_pos() - head] = err_prob
-    sh = SkipHash(seq, num_hashes, k, max_indels, head)
-    while sh.roll() and sh.get_pos() < len(seq) - tail:
-        if sh.get_pos() - head < k // 2:
+            x[i_seed, nh.get_pos() - start] = err_prob
+    sh = SkipHash(seq, num_hashes, k, max_indels, start)
+    while sh.roll() and sh.get_pos() < end:
+        if sh.get_pos() - start < k // 2:
             continue
         for i in range(len(sh.hashes())):
             err_prob = hist.loc[cbf.contains(sh.hashes()[i])]["error"]
-            x[i + len(seeds), sh.get_pos() - head - k // 2] = err_prob
+            x[i + len(seeds), sh.get_pos() - start - k // 2] = err_prob
     x[len(seeds) :, -k // 2 :] = 1.0
     return x
 
 
 def get_targets(vars: pd.DataFrame, seq_len: int, k: int, max_indels):
-    y = torch.zeros(max_indels + 3, seq_len - k + 1)
+    y = torch.zeros(max_indels + 3, seq_len)
     y[0, :] = 1.0
     pos_diff = 0
-    for _, row in vars.sort_values("Seq_pos").iterrows():
-        seq_pos = row["Seq_pos"] + pos_diff - k + 1
+    for _, row in vars.iterrows():
+        seq_pos = row["Seq_pos"] - vars.iloc[0]["Seq_pos"] + pos_diff + 1
         if row["error_type"] == "mis":
             y[0, seq_pos : seq_pos + row["error_length"]] = 0.0
             y[1, seq_pos : seq_pos + row["error_length"]] = 1.0
@@ -180,9 +181,9 @@ def filter_samples(x, y, k):
 
 
 def get_sample_weights(x, y):
-    sample_weights = torch.ones(x.size(1))
     mask = (x[0, :] < 0.5) & (y[0, :] == 1.0)
-    sample_weights[mask] = 1 - y[0, :].sum() / y.size(1)
+    sample_weights = torch.ones(x.size(1))
+    sample_weights[mask] = 0.01
     return sample_weights
 
 
@@ -196,34 +197,48 @@ def generate_data(
 ):
     seq_reader = btllib.SeqReader(reads_path, btllib.SeqReaderFlag.LONG_MODE)  # type: ignore
     for record in seq_reader:
-        match = re.search(r"F_(\d+)_\d+_(\d+)", record.id)
+        match = re.search(r"F_(\d+)_\d+_\d+", record.id)
         if not match:
             warnings.warn(f"invalid read id: {record.id}")
             continue
         if record.id not in vars:
             warnings.warn(f"read has no errors: {record.id}")
             continue
-        head = int(match.group(1))
-        tail = int(match.group(2))
-        x = get_inputs(record.seq, head, tail, seeds, max_ind, cbf, hist)
-        y = get_targets(vars[record.id], len(record.seq), len(seeds[0]), max_ind)
-        x, y = filter_samples(x, y, len(seeds[0]))
-        sample_weights = get_sample_weights(x, y)
-        yield record.id, x, y, sample_weights
+        k = len(seeds[0])
+        read_vars = vars[record.id].sort_values("Seq_pos")
+        read_vars["Seq_pos"] += int(match.group(1))
+        pos_ends = (read_vars["Seq_pos"] + read_vars["error_length"]).shift().fillna(0)
+        read_vars["group"] = (read_vars["Seq_pos"] - pos_ends > 2 * k).cumsum()
+        x_read, y_read, w_read = [], [], []
+        for _, group in read_vars.groupby("group"):
+            start = int(group.iloc[0]["Seq_pos"] - k + 1)
+            end = group.iloc[-1]["Seq_pos"] + group.iloc[-1]["error_length"]
+            start, end = int(start), int(end)
+            x = get_inputs(record.seq, start, end, seeds, max_ind, cbf, hist)
+            y = get_targets(group, end - start, k, max_ind)
+            w = get_sample_weights(x, y)
+            x_read.append(x)
+            y_read.append(y)
+            w_read.append(w)
+        yield record.id, x_read, y_read, w_read
 
 
-def train(model, optimizer, read_id, x, y_true, sample_weights, num_epochs):
+def train(model, optimizer, read_id, x, y, sample_weights, num_epochs):
     ce_loss = torch.nn.CrossEntropyLoss(reduction="none")
-    y_true = y_true.permute(1, 0).argmax(dim=1)
     loss_history = []
     for i in range(num_epochs):
-        optimizer.zero_grad()
-        y_pred = model(x).permute(1, 0)
-        loss = (ce_loss(y_pred, y_true) * sample_weights).mean()
-        loss.backward()
-        optimizer.step()
-        print(f"[{read_id}] Epoch {i + 1}/{num_epochs}: loss = {loss.item():.4f}")
-        loss_history.append(loss.item())
+        epoch_loss = 0
+        for x_batch, y_batch, w_batch in zip(x, y, sample_weights):
+            optimizer.zero_grad()
+            y_true = y_batch.permute(1, 0).argmax(dim=1)
+            y_pred = model(x_batch).permute(1, 0)
+            loss = (ce_loss(y_pred, y_true) * w_batch).mean()
+            loss.backward()
+            optimizer.step()
+            epoch_loss += loss.item()
+        epoch_loss /= len(x)
+        print(f"[{read_id}] Epoch {i + 1}/{num_epochs}: loss = {epoch_loss:.4f}")
+        loss_history.append(epoch_loss)
     return loss_history
 
 
