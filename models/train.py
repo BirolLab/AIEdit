@@ -4,9 +4,10 @@ import re
 import warnings
 
 import btllib
-import keras
 import numpy as np
 import pandas as pd
+import torch
+import torchinfo
 
 
 def extend_hashes(fwd_hash, rev_hash, k, h):
@@ -89,26 +90,31 @@ def read_histogram(path: str) -> pd.DataFrame:
     return hist
 
 
-def load_model(num_seeds: int, max_ind: int, model_path: str) -> keras.models.Model:
-    model = None
-    if os.path.isfile(model_path):
-        model = keras.models.load_model(model_path)
-    if not model:
-        layers = [
-            keras.layers.Input(shape=(None, num_seeds + max_ind)),
-            keras.layers.Conv1D(64, 30, padding="same", activation="relu"),
-            keras.layers.Conv1D(128, 30, padding="same", activation="relu"),
-            keras.layers.Conv1D(64, 30, padding="same", activation="relu"),
-            keras.layers.Conv1D(max_ind + 3, 30, padding="same", activation="softmax"),
-        ]
-        model = keras.models.Sequential(layers)
-        model.compile(
-            optimizer="adam",
-            loss="categorical_crossentropy",
-            weighted_metrics=["categorical_accuracy"],
-        )
-    model.summary()
-    return model
+def load_model(
+    num_seeds: int,
+    max_ind: int,
+    path: str,
+) -> tuple[torch.nn.Module, torch.optim.AdamW]:
+    model = torch.nn.Sequential(
+        torch.nn.Conv1d(num_seeds + max_ind, 64, 7, padding="same"),
+        torch.nn.ReLU(),
+        torch.nn.Conv1d(64, 128, 7, padding="same"),
+        torch.nn.ReLU(),
+        torch.nn.Conv1d(128, 64, 7, padding="same"),
+        torch.nn.ReLU(),
+        torch.nn.Conv1d(64, max_ind + 3, 7, padding="same"),
+    )
+    optimizer = torch.optim.AdamW(model.parameters())
+    if os.path.isfile(path):
+        checkpoint = torch.load(path, weights_only=True)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+    return model, optimizer
+
+
+def print_model_summary(model):
+    num_channels = next(model.parameters()).size(1)
+    torchinfo.summary(model, input_size=(1, num_channels, 100))
 
 
 def get_inputs(
@@ -122,58 +128,62 @@ def get_inputs(
 ):
     k = len(seeds[0])
     num_hashes = cbf.get_hash_num()
-    x = np.zeros(shape=(1, len(seq) - k + 1, len(seeds) + max_indels))
+    x = torch.zeros(len(seeds) + max_indels, len(seq) - k + 1)
     for i_seed, seed in enumerate(seeds):
         svec = btllib.parse_seeds([seed])  # type: ignore
         nh = btllib.SeedNtHash(seq, svec, num_hashes, k, head)  # type: ignore
         while nh.roll() and nh.get_pos() < len(seq) - tail:
             err_prob = hist.loc[cbf.contains(nh.hashes())]["error"]
-            x[0, nh.get_pos() - head, i_seed] = err_prob
+            x[i_seed, nh.get_pos() - head] = err_prob
     sh = SkipHash(seq, num_hashes, k, max_indels, head)
     while sh.roll() and sh.get_pos() < len(seq) - tail:
         if sh.get_pos() - head < k // 2:
             continue
         for i in range(len(sh.hashes())):
             err_prob = hist.loc[cbf.contains(sh.hashes()[i])]["error"]
-            x[0, sh.get_pos() - head - k // 2, i + len(seeds)] = err_prob
-    x[0, -k // 2 :, len(seeds) :] = 1.0
+            x[i + len(seeds), sh.get_pos() - head - k // 2] = err_prob
+    x[len(seeds) :, -k // 2 :] = 1.0
     return x
 
 
 def get_targets(vars: pd.DataFrame, seq_len: int, k: int, max_indels):
-    y = np.zeros(shape=(1, seq_len - k + 1, max_indels + 3))
-    y[0, :, 0] = 1.0
+    y = torch.zeros(max_indels + 3, seq_len - k + 1)
+    y[0, :] = 1.0
     pos_diff = 0
     for _, row in vars.sort_values("Seq_pos").iterrows():
         seq_pos = row["Seq_pos"] + pos_diff - k + 1
         if row["error_type"] == "mis":
-            y[0, seq_pos : seq_pos + row["error_length"], 0] = 0.0
-            y[0, seq_pos : seq_pos + row["error_length"], 1] = 1.0
+            y[0, seq_pos : seq_pos + row["error_length"]] = 0.0
+            y[1, seq_pos : seq_pos + row["error_length"]] = 1.0
         elif row["error_type"] == "ins":
-            y[0, seq_pos : seq_pos + row["error_length"], 0] = 0.0
-            y[0, seq_pos : seq_pos + row["error_length"], 2] = 1.0
+            y[0, seq_pos : seq_pos + row["error_length"]] = 0.0
+            y[2, seq_pos : seq_pos + row["error_length"]] = 1.0
             pos_diff += row["error_length"]
         elif row["error_type"] == "del":
-            num_ins = min(row["error_length"], y.shape[-1] - 3)
-            y[0, seq_pos - 1, 0] = 0.0
-            y[0, seq_pos - 1, num_ins + 2] = 1.0
+            num_ins = min(row["error_length"], max_indels)
+            y[0, seq_pos - 1] = 0.0
+            y[num_ins + 2, seq_pos - 1] = 1.0
             pos_diff -= row["error_length"]
     return y
 
 
 def filter_samples(x, y, k):
-    mask = np.zeros(x.shape[1], dtype=bool)
-    num_clean = np.convolve(y[0, :, 0], np.ones(k), mode="valid")
-    for start in np.where(num_clean < k)[0]:
-        mask[start - k : start + k] = True
-    return x[:, mask, :], y[:, mask, :]
+    mask = torch.zeros(x.size(1)).bool()
+    num_clean = torch.nn.functional.conv1d(
+        y[0, :].unsqueeze(0).unsqueeze(0),
+        torch.ones(1, 1, k),
+    ).squeeze()
+    for start in torch.where(num_clean < k)[0]:
+        start = start.item()
+        mask[max(0, start - k) : start + k] = True
+    return x[:, mask], y[:, mask]
 
 
 def get_sample_weights(x, y):
-    sample_weights = np.ones(shape=(1, x.shape[1]))
-    mask = (x[0, :, 0] < 0.5) & (y[0, :, 0] == 1.0)
-    sample_weights[0, mask] = 1 - y[0, :, 0].sum() / y.shape[1]
-    return y
+    sample_weights = torch.ones(x.size(1))
+    mask = (x[0, :] < 0.5) & (y[0, :] == 1.0)
+    sample_weights[mask] = 1 - y[0, :].sum() / y.size(1)
+    return sample_weights
 
 
 def generate_data(
@@ -184,7 +194,8 @@ def generate_data(
     seeds: list[str],
     max_ind: int,
 ):
-    for record in btllib.SeqReader(reads_path, btllib.SeqReaderFlag.LONG_MODE):  # type: ignore
+    seq_reader = btllib.SeqReader(reads_path, btllib.SeqReaderFlag.LONG_MODE)  # type: ignore
+    for record in seq_reader:
         match = re.search(r"F_(\d+)_\d+_(\d+)", record.id)
         if not match:
             warnings.warn(f"invalid read id: {record.id}")
@@ -198,26 +209,46 @@ def generate_data(
         y = get_targets(vars[record.id], len(record.seq), len(seeds[0]), max_ind)
         x, y = filter_samples(x, y, len(seeds[0]))
         sample_weights = get_sample_weights(x, y)
-        yield x, y, sample_weights
+        yield record.id, x, y, sample_weights
+
+
+def train(model, optimizer, read_id, x, y_true, sample_weights, num_epochs):
+    ce_loss = torch.nn.CrossEntropyLoss(reduction="none")
+    y_true = y_true.permute(1, 0).argmax(dim=1)
+    loss_history = []
+    for i in range(num_epochs):
+        optimizer.zero_grad()
+        y_pred = model(x).permute(1, 0)
+        loss = (ce_loss(y_pred, y_true) * sample_weights).mean()
+        loss.backward()
+        optimizer.step()
+        print(f"[{read_id}] Epoch {i + 1}/{num_epochs}: loss = {loss.item():.4f}")
+        loss_history.append(loss.item())
+    return loss_history
 
 
 def main():
     args = parse_args()
     seeds = read_seeds(args.s)
     hist = read_histogram(args.m)
-    model = load_model(len(seeds), args.i, args.o)
-    print("reading variations file...")
+    model, optimizer = load_model(len(seeds), args.i, args.o)
+    print_model_summary(model)
+    print("Reading variants file...")
     num_vars, vars = read_vars(args.e)
-    print(f"number of vars: {num_vars}")
-    print(f"number of reads: {len(vars)}")
-    print("reading cbf...")
+    print(f"Number of variants = {num_vars}")
+    print(f"Number of reads = {len(vars)}")
+    print("Reading CBF...")
     cbf = btllib.CountingBloomFilter8(args.b)  # type: ignore
-    print(f"cbf fpr: {cbf.get_fpr()}")
-    print("seeds:", *seeds, sep=os.linesep)
+    print(f"CBF FPR = {cbf.get_fpr()}")
+    print("Seeds:", *seeds, sep=os.linesep)
     data_generator = generate_data(args.r, vars, cbf, hist, seeds, args.i)
-    for x, y, w in data_generator:
-        model.fit(x, y, epochs=args.n, sample_weight=w)
-        model.save(args.o)
+    for read_id, x, y, w in data_generator:
+        train(model, optimizer, read_id, x, y, w, args.n)
+        state_dict = {
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+        }
+        torch.save(state_dict, args.o)
 
 
 if __name__ == "__main__":
