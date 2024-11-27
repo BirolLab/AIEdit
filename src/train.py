@@ -3,54 +3,11 @@ import os
 import re
 import warnings
 
+import aiedit_torch_extensions
 import btllib
 import pandas as pd
 import torch
 import torchinfo
-
-
-def extend_hashes(fwd_hash, rev_hash, k, h):
-    hash_array = [0] * h
-    hash_array[0] = (fwd_hash + rev_hash) % (2**64)
-    for i in range(1, h):
-        t_val = (hash_array[0] * (i ^ k * btllib.MULTISEED) % (2**64)) % (2**64)  # type: ignore
-        t_val ^= (t_val >> btllib.MULTISHIFT) % (2**64)  # type: ignore
-        hash_array[i] = t_val % (2**64)
-    return hash_array
-
-
-class SkipHash:
-
-    def __init__(self, seq, h, k, g, p0=0) -> None:
-        self._h = h
-        self.__hashers = [btllib.NtHash(seq, 1, k // 2)]  # type: ignore
-        for _ in range(p0):
-            self.__hashers[0].roll()
-        for i in range(g):
-            pos = k // 2 + i + p0 + 1
-            self.__hashers.append(btllib.NtHash(seq, 1, k - k // 2))  # type: ignore
-            for _ in range(pos):
-                self.__hashers[-1].roll()
-
-    def roll(self):
-        can_roll = True
-        for i in range(len(self.__hashers)):
-            can_roll = self.__hashers[i].roll()
-        return can_roll
-
-    def get_pos(self):
-        return self.__hashers[0].get_pos()
-
-    def hashes(self):
-        del_hashes = []
-        k = self.__hashers[0].get_k() + self.__hashers[1].get_k()
-        f_0 = self.__hashers[0].get_forward_hash()
-        r_0 = self.__hashers[0].get_reverse_hash()
-        for i in range(1, len(self.__hashers)):
-            f_i = btllib.srol(f_0, self.__hashers[i].get_k()) ^ self.__hashers[i].get_forward_hash()  # type: ignore
-            r_i = r_0 ^ btllib.srol(self.__hashers[i].get_reverse_hash(), self.__hashers[0].get_k())  # type: ignore
-            del_hashes.append(extend_hashes(f_i, r_i, k, self._h))
-        return del_hashes
 
 
 def parse_args():
@@ -114,37 +71,6 @@ def load_model(
 def print_model_summary(model):
     num_channels = next(model.parameters()).size(1)
     torchinfo.summary(model, input_size=(1, num_channels, 100))
-
-
-def get_inputs(
-    seq: str,
-    start: int,
-    end: int,
-    seeds: list[str],
-    max_indels: int,
-    cbf,
-    hist: pd.DataFrame,
-):
-    k = len(seeds[0])
-    num_hashes = cbf.get_hash_num()
-    x = torch.zeros(len(seeds) + max_indels, end - start)
-    for i_seed, seed in enumerate(seeds):
-        svec = btllib.parse_seeds([seed])  # type: ignore
-        nh = btllib.SeedNtHash(seq, svec, num_hashes, k)  # type: ignore
-        while nh.roll() and nh.get_pos() < end:
-            if nh.get_pos() < start:
-                continue
-            err_prob = hist.loc[cbf.contains(nh.hashes())]["error"]
-            x[i_seed, nh.get_pos() - start] = err_prob
-    sh = SkipHash(seq, num_hashes, k, max_indels, start)
-    while sh.roll() and sh.get_pos() < end:
-        if sh.get_pos() - start < k // 2:
-            continue
-        for i in range(len(sh.hashes())):
-            err_prob = hist.loc[cbf.contains(sh.hashes()[i])]["error"]
-            x[i + len(seeds), sh.get_pos() - start - k // 2] = err_prob
-    x[len(seeds) :, -k // 2 :] = 1.0
-    return x
 
 
 def get_targets(vars: pd.DataFrame, seq_len: int, k: int, max_indels):
@@ -214,7 +140,9 @@ def generate_data(
             start = int(group.iloc[0]["Seq_pos"] - k + 1)
             end = group.iloc[-1]["Seq_pos"] + group.iloc[-1]["error_length"]
             start, end = int(start), int(end)
-            x = get_inputs(record.seq, start, end, seeds, max_ind, cbf, hist)
+            x = aiedit_torch_extensions.get_model_inputs(
+                record.seq, start, end, seeds, max_ind, cbf, hist
+            )
             y = get_targets(group, end - start, k, max_ind)
             w = get_sample_weights(x, y)
             x_read.append(x)
