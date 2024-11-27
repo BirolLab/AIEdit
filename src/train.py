@@ -93,7 +93,7 @@ def load_model(
     num_seeds: int,
     max_ind: int,
     path: str,
-) -> tuple[torch.nn.Module, torch.optim.AdamW]:
+) -> tuple[torch.nn.Module, torch.optim.adamw.AdamW]:
     model = torch.nn.Sequential(
         torch.nn.Conv1d(num_seeds + max_ind, 64, 7, padding="same"),
         torch.nn.ReLU(),
@@ -103,7 +103,7 @@ def load_model(
         torch.nn.ReLU(),
         torch.nn.Conv1d(64, max_ind + 3, 7, padding="same"),
     )
-    optimizer = torch.optim.AdamW(model.parameters())
+    optimizer = torch.optim.adamw.AdamW(model.parameters())
     if os.path.isfile(path):
         checkpoint = torch.load(path, weights_only=True)
         model.load_state_dict(checkpoint["model_state_dict"])
