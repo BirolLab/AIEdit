@@ -10,7 +10,8 @@ TEST_CASE("Test alternating bases in model input", "[feature_extraction]")
     const std::string seq = "CATACGGGTTACGTACGT";
     btllib::CountingBloomFilter8 cbf(1024, 3);
     std::vector<float> probs = {1};
-    const auto x = aiedit::get_model_input(seq, 0, 11, {"1111111"}, 1, cbf, probs);
+    uintptr_t cbf_ptr = reinterpret_cast<uintptr_t>(&cbf);
+    const auto x = aiedit::get_model_input(seq, 0, 11, {"1111111"}, 1, cbf_ptr, probs);
     const auto x_true = torch::tensor({1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1});
     REQUIRE(x[0].equal(x_true));
 }
@@ -28,7 +29,8 @@ TEST_CASE("Test model input for mismatches", "[feature_extraction]")
         }
     }
     const std::vector<float> probs = {1, 0.1, 0.2, 0.3, 0.4};
-    const auto x = aiedit::get_model_input(ref, 1, 14, seeds, 1, cbf, probs);
+    uintptr_t cbf_ptr = reinterpret_cast<uintptr_t>(&cbf);
+    const auto x = aiedit::get_model_input(ref, 1, 14, seeds, 1, cbf_ptr, probs);
     const auto x_true =
       torch::tensor({0.3, 0.3, 1.0, 1.0, 1.0, 0.1, 1.0, 1.0, 1.0, 0.1, 0.1, 0.1, 0.2});
     REQUIRE(x[1].equal(x_true));
@@ -46,7 +48,8 @@ TEST_CASE("Test model input for deletions", "[feature_extraction]")
         }
     }
     const std::vector<float> probs = {1, 0.1, 0.2, 0.3, 0.4};
-    const auto x = aiedit::get_model_input(ref, 1, 16, {"1111111"}, 2, cbf, probs);
+    uintptr_t cbf_ptr = reinterpret_cast<uintptr_t>(&cbf);
+    const auto x = aiedit::get_model_input(ref, 1, 16, {"1111111"}, 2, cbf_ptr, probs);
     const auto x2_true =
       torch::tensor({1.0, 1.0, 1.0, 0.3, 0.3, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0});
     const auto x3_true =

@@ -52,7 +52,7 @@ def load_model(
     path: str,
 ) -> tuple[torch.nn.Module, torch.optim.AdamW]:
     model = torch.nn.Sequential(
-        torch.nn.Conv1d(num_seeds + max_ind, 64, 7, padding="same"),
+        torch.nn.Conv1d(num_seeds + 2 * max_ind + 1, 64, 7, padding="same"),
         torch.nn.ReLU(),
         torch.nn.Conv1d(64, 128, 7, padding="same"),
         torch.nn.ReLU(),
@@ -137,11 +137,11 @@ def generate_data(
         read_vars["group"] = (read_vars["Seq_pos"] - pos_ends > 2 * k).cumsum()
         x_read, y_read, w_read = [], [], []
         for _, group in read_vars.groupby("group"):
-            start = int(group.iloc[0]["Seq_pos"] - k + 1)
+            start = max(group.iloc[0]["Seq_pos"] - k + 1, 0)
             end = group.iloc[-1]["Seq_pos"] + group.iloc[-1]["error_length"]
             start, end = int(start), int(end)
-            x = aiedit_torch_extensions.get_model_inputs(
-                record.seq, start, end, seeds, max_ind, cbf, hist
+            x = aiedit_torch_extensions.get_model_input(
+                record.seq, start, end, seeds, max_ind, int(cbf), hist["error"].tolist()
             )
             y = get_targets(group, end - start, k, max_ind)
             w = get_sample_weights(x, y)

@@ -15,17 +15,21 @@ torch::Tensor get_model_input(const std::string& seq,
                               unsigned end,
                               const std::vector<std::string>& seeds,
                               unsigned max_indels,
-                              const btllib::CountingBloomFilter8& cbf,
+                              uintptr_t cbf_ptr,
                               std::vector<float> error_probs)
 {
+    auto* cbf = reinterpret_cast<btllib::CountingBloomFilter8*>(cbf_ptr);
+    if (!cbf) {
+        throw std::runtime_error("Invalid CountingBloomFilter pointer");
+    }
     const auto k = seeds[0].size();
-    const auto num_hashes = cbf.get_hash_num();
+    const auto num_hashes = cbf->get_hash_num();
     auto x = torch::ones({(unsigned)seeds.size() + max_indels * 2 + 1, end - start});
     btllib::SeedNtHash nh(seq, seeds, num_hashes, k, start);
     while (nh.roll() && nh.get_pos() < end) {
         for (unsigned i = 0; i < seeds.size(); i++) {
             const auto hashes = nh.hashes() + i * num_hashes;
-            x[i + 1][nh.get_pos() - start] = error_probs[cbf.contains(hashes)];
+            x[i + 1][nh.get_pos() - start] = error_probs[cbf->contains(hashes)];
         }
     }
     aiedit::DeleteGapHash dh(seq, num_hashes, k, max_indels, start);
@@ -35,14 +39,14 @@ torch::Tensor get_model_input(const std::string& seq,
         x[0][dh.get_pos() - start + k / 2] = curr == prev ? 0.0 : 1.0;
         prev = curr;
         for (unsigned i = 0; i < max_indels; i++) {
-            const auto prob = error_probs[cbf.contains(dh.hashes()[i])];
+            const auto prob = error_probs[cbf->contains(dh.hashes()[i])];
             x[i + seeds.size() + 1][dh.get_pos() - start + k / 2] = prob;
         }
     }
     aiedit::InsertGapHash ih(seq, num_hashes, k, max_indels, start);
     while (ih.roll() && ih.get_pos() < end - k / 2) {
         for (unsigned i = 0; i < max_indels; i++) {
-            const auto prob = error_probs[cbf.contains(ih.hashes()[i])];
+            const auto prob = error_probs[cbf->contains(ih.hashes()[i])];
             x[i + seeds.size() + max_indels + 1][ih.get_pos() - start + k / 2] = prob;
         }
     }
