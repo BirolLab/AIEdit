@@ -2,7 +2,9 @@
 
 #include <btllib/counting_bloom_filter.hpp>
 #include <cctype>
+#include <string>
 #include <torch/torch.h>
+#include <vector>
 
 #include "gap_hash.hpp"
 
@@ -18,7 +20,7 @@ torch::Tensor get_model_input(const std::string& seq,
 {
     const auto k = seeds[0].size();
     const auto num_hashes = cbf.get_hash_num();
-    auto x = torch::ones({(unsigned)seeds.size() + max_indels + 1, end - start});
+    auto x = torch::ones({(unsigned)seeds.size() + max_indels * 2 + 1, end - start});
     btllib::SeedNtHash nh(seq, seeds, num_hashes, k, start);
     while (nh.roll() && nh.get_pos() < end) {
         for (unsigned i = 0; i < seeds.size(); i++) {
@@ -26,15 +28,22 @@ torch::Tensor get_model_input(const std::string& seq,
             x[i + 1][nh.get_pos() - start] = error_probs[cbf.contains(hashes)];
         }
     }
-    aiedit::GapHash gh(seq, num_hashes, k, max_indels, start);
+    aiedit::DeleteGapHash dh(seq, num_hashes, k, max_indels, start);
     char prev = 0;
-    while (gh.roll() && gh.get_pos() < end - k / 2) {
-        char curr = std::toupper(seq[gh.get_pos() - start + k / 2]);
-        x[0][gh.get_pos() - start + k / 2] = curr == prev ? 0.0 : 1.0;
+    while (dh.roll() && dh.get_pos() < end - k / 2) {
+        char curr = std::toupper(seq[dh.get_pos() - start + k / 2]);
+        x[0][dh.get_pos() - start + k / 2] = curr == prev ? 0.0 : 1.0;
         prev = curr;
         for (unsigned i = 0; i < max_indels; i++) {
-            const auto prob = error_probs[cbf.contains(gh.hashes()[i])];
-            x[i + seeds.size() + 1][gh.get_pos() - start + k / 2] = prob;
+            const auto prob = error_probs[cbf.contains(dh.hashes()[i])];
+            x[i + seeds.size() + 1][dh.get_pos() - start + k / 2] = prob;
+        }
+    }
+    aiedit::InsertGapHash ih(seq, num_hashes, k, max_indels, start);
+    while (ih.roll() && ih.get_pos() < end - k / 2) {
+        for (unsigned i = 0; i < max_indels; i++) {
+            const auto prob = error_probs[cbf.contains(ih.hashes()[i])];
+            x[i + seeds.size() + max_indels + 1][ih.get_pos() - start + k / 2] = prob;
         }
     }
     return x;
