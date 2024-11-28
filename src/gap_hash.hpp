@@ -56,4 +56,4 @@ class GapHash
     std::vector<btllib::NtHash> hashers;
 };
 
-};  // namespace aiedit
+}  // namespace aiedit

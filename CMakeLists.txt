@@ -21,6 +21,17 @@ link_libraries(pthread omp ${BTLLIB} ${TORCH_LIBRARIES} ${TORCH_PYTHON_LIBRARY})
 add_executable(aiedit src/main.cpp)
 pybind11_add_module(aiedit_torch_extensions src/torch_extensions.cpp)
 
+add_custom_command(
+    OUTPUT "${CMAKE_BINARY_DIR}/train.py"
+    COMMAND ${CMAKE_COMMAND} -E copy
+            "${PROJECT_SOURCE_DIR}/src/train.py"
+            "${CMAKE_BINARY_DIR}/train.py"
+    DEPENDS "${PROJECT_SOURCE_DIR}/src/train.py"
+    COMMENT "Copying training script to build directory"
+)
+
+add_custom_target(copy_scripts ALL DEPENDS "${CMAKE_BINARY_DIR}/train.py")
+
 # Tests
 find_package(Catch2)
 
