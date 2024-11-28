@@ -21,4 +21,16 @@ link_libraries(pthread omp ${BTLLIB} ${TORCH_LIBRARIES} ${TORCH_PYTHON_LIBRARY})
 add_executable(aiedit src/main.cpp)
 pybind11_add_module(aiedit_torch_extensions src/torch_extensions.cpp)
 
-add_subdirectory(tests)
+# Tests
+find_package(Catch2)
+
+if (${Catch2_FOUND})
+    file(GLOB test_files "tests/test_*.cpp")
+    add_executable(aiedit_tests ${test_files})
+    target_include_directories(aiedit_tests PRIVATE "${PROJECT_SOURCE_DIR}/src")
+    target_link_libraries(aiedit_tests PRIVATE Catch2::Catch2WithMain)
+    include(Catch)
+    catch_discover_tests(aiedit_tests)
+else (${Catch2_FOUND})
+    message(STATUS "Compiling tests requires Catch2 to be installed")
+endif (${Catch2_FOUND})
