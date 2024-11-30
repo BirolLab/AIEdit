@@ -15,6 +15,9 @@ class DeleteGapHash
                   size_t pos = 0)
       : num_hashes(num_hashes)
     {
+        if (kmer_size / 2 < 3) {
+            throw std::runtime_error("[DeleteGapHash] k-mer size is too short");
+        }
         hashers.emplace_back(seq, 1, kmer_size / 2, pos);
         for (unsigned gap = 1; gap <= max_gap; gap++) {
             const auto k = kmer_size - kmer_size / 2;
@@ -70,6 +73,9 @@ class InsertGapHash
       : num_hashes(num_hashes)
       , seq(seq)
     {
+        if (kmer_size / 2 < 3) {
+            throw std::runtime_error("[InsertGapHash] k-mer size is too short");
+        }
         for (unsigned gap = 1; gap <= max_gap; gap++) {
             const unsigned k_f = (kmer_size - gap) / 2;
             const unsigned k_s = k_f + (kmer_size - gap) % 2;
