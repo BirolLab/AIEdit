@@ -3,11 +3,12 @@ import os
 import re
 import warnings
 
-import aiedit_torch_extensions
 import btllib
 import pandas as pd
 import torch
 import torchinfo
+
+from aiedit_torch_extensions import get_model_input
 
 
 def parse_args():
@@ -106,13 +107,6 @@ def filter_samples(x, y, k):
     return x[:, mask], y[:, mask]
 
 
-def get_sample_weights(x, y):
-    mask = (x[0, :] < 0.5) & (y[0, :] == 1.0)
-    sample_weights = torch.ones(x.size(1))
-    sample_weights[mask] = 0.01
-    return sample_weights
-
-
 def generate_data(
     reads_path: str,
     vars: dict[str, pd.DataFrame],
@@ -121,6 +115,7 @@ def generate_data(
     seeds: list[str],
     max_ind: int,
 ):
+    probs = hist["error"].tolist()
     seq_reader = btllib.SeqReader(reads_path, btllib.SeqReaderFlag.LONG_MODE)  # type: ignore
     for record in seq_reader:
         match = re.search(r"F_(\d+)_\d+_\d+", record.id)
@@ -135,32 +130,33 @@ def generate_data(
         read_vars["Seq_pos"] += int(match.group(1))
         pos_ends = (read_vars["Seq_pos"] + read_vars["error_length"]).shift().fillna(0)
         read_vars["group"] = (read_vars["Seq_pos"] - pos_ends > 2 * k).cumsum()
-        x_read, y_read, w_read = [], [], []
+        x_read, y_read = [], []
         for _, group in read_vars.groupby("group"):
             start = max(group.iloc[0]["Seq_pos"] - k + 1, 0)
             end = group.iloc[-1]["Seq_pos"] + group.iloc[-1]["error_length"]
             start, end = int(start), int(end)
-            x = aiedit_torch_extensions.get_model_input(
-                record.seq, start, end, seeds, max_ind, int(cbf), hist["error"].tolist()
-            )
+            x = get_model_input(record.seq, start, end, seeds, max_ind, int(cbf), probs)
             y = get_targets(group, end - start, k, max_ind)
-            w = get_sample_weights(x, y)
             x_read.append(x)
             y_read.append(y)
-            w_read.append(w)
-        yield record.id, x_read, y_read, w_read
+        yield record.id, x_read, y_read
 
 
-def train(model, optimizer, read_id, x, y, sample_weights, num_epochs):
-    ce_loss = torch.nn.CrossEntropyLoss(reduction="none")
+def weighted_ce_loss(logits, targets, reduction_factor=0.01):
+    ce_loss = torch.nn.functional.cross_entropy(logits, targets, reduction="none")
+    ce_loss[(logits.argmax(dim=1) == targets) & (targets == 0)] *= reduction_factor
+    return ce_loss.mean()
+
+
+def train(model, optimizer, read_id, x, y, num_epochs):
     loss_history = []
     for i in range(num_epochs):
         epoch_loss = 0
-        for x_batch, y_batch, w_batch in zip(x, y, sample_weights):
+        for x_batch, y_batch in zip(x, y):
             optimizer.zero_grad()
             y_true = y_batch.permute(1, 0).argmax(dim=1)
             y_pred = model(x_batch).permute(1, 0)
-            loss = (ce_loss(y_pred, y_true) * w_batch).mean()
+            loss = weighted_ce_loss(y_pred, y_true)
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()
@@ -185,8 +181,8 @@ def main():
     print(f"CBF FPR = {cbf.get_fpr()}")
     print("Seeds:", *seeds, sep=os.linesep)
     data_generator = generate_data(args.r, vars, cbf, hist, seeds, args.i)
-    for read_id, x, y, w in data_generator:
-        train(model, optimizer, read_id, x, y, w, args.n)
+    for read_id, x, y in data_generator:
+        train(model, optimizer, read_id, x, y, args.n)
         state_dict = {
             "model_state_dict": model.state_dict(),
             "optimizer_state_dict": optimizer.state_dict(),
