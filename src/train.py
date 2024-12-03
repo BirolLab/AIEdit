@@ -1,27 +1,13 @@
 import argparse
-import math
 import os
 import re
 import warnings
 
+import aiedit_torch_extensions as ext
 import btllib
 import pandas as pd
 import torch
 import torchinfo
-from aiedit_torch_extensions import get_model_input
-
-
-def positional_encoding(max_length: int, dim: int):
-    position = torch.arange(max_length).unsqueeze(1)
-    div_term = torch.arange(0, dim, 2)
-    div_term = torch.exp(div_term * (-math.log(10000.0) / dim))
-    pos_enc = torch.zeros(max_length, dim)
-    pos_enc[:, 0::2] = torch.sin(position * div_term)
-    if dim % 2 != 0:
-        pos_enc[:, 1::2] = torch.cos(position * div_term)[:, 0:-1]
-    else:
-        pos_enc[:, 1::2] = torch.cos(position * div_term)
-    return pos_enc
 
 
 class Model(torch.nn.Module):
@@ -34,8 +20,8 @@ class Model(torch.nn.Module):
     ):
         super(Model, self).__init__()
         model_dim = num_seeds + 2 * max_indels + 1
-        self.__probs_enc = positional_encoding(max_length, model_dim)
-        self.__edits_enc = positional_encoding(max_length, 5)
+        self.__probs_enc = ext.positional_encoding(max_length, model_dim)
+        self.__edits_enc = ext.positional_encoding(max_length, 5)
         self.register_buffer("probs_enc", self.__probs_enc)
         self.register_buffer("edits_enc", self.__edits_enc)
         self.__probs_attn = torch.nn.MultiheadAttention(model_dim, 1)
@@ -90,11 +76,7 @@ def read_seeds(path: str) -> list[str]:
     with open(path) as file:
         seeds = [line.strip() for line in file]
     assert len(set(map(len, seeds))) == 1, "seeds should be the same length"
-    x_seeds = torch.empty(len(seeds[0]), len(seeds))
-    for i in range(x_seeds.size(0)):
-        for j in range(x_seeds.size(1)):
-            x_seeds[i, j] = int(seeds[j][i])
-    return seeds, x_seeds
+    return seeds
 
 
 def read_vars(path: str) -> tuple[int, dict[str, pd.DataFrame]]:
@@ -154,7 +136,7 @@ def generate_data(
     cbf,
     hist: pd.DataFrame,
     seeds: list[str],
-    max_ind: int,
+    max_indels: int,
 ):
     probs = hist["error"].tolist()
     seq_reader = btllib.SeqReader(reads_path, btllib.SeqReaderFlag.LONG_MODE)  # type: ignore
@@ -166,7 +148,7 @@ def generate_data(
         if record.id not in vars:
             warnings.warn(f"read has no errors: {record.id}")
             continue
-        k = len(seeds[0])
+        seq, k = record.seq, len(seeds[0])
         read_vars = vars[record.id].sort_values("Seq_pos")
         read_vars["Seq_pos"] += int(match.group(1))
         pos_ends = (read_vars["Seq_pos"] + read_vars["error_length"]).shift().fillna(0)
@@ -176,7 +158,7 @@ def generate_data(
         for _, group in read_vars.groupby("group"):
             start = max(group.iloc[0]["Seq_pos"] - k + 1, 0) + pos_diff
             end = group.iloc[-1]["Seq_pos"] + group.iloc[-1]["error_length"] + pos_diff
-            x = get_model_input(record.seq, start, end, seeds, max_ind, int(cbf), probs)
+            x = ext.get_model_input(seq, start, end, seeds, max_indels, int(cbf), probs)
             y, pos_diff = get_targets(group, pos_diff)
             if validiate_sample(x, y, len(seeds)):
                 x_read.append(x)
@@ -209,7 +191,7 @@ def train(model, optimizer, read_id, x, x_seeds, y, num_epochs):
 
 def main():
     args = parse_args()
-    seeds, x_seeds = read_seeds(args.s)
+    seeds = read_seeds(args.s)
     hist = read_histogram(args.m)
     model = Model(len(seeds), args.i)
     optimizer = torch.optim.AdamW(model.parameters())
@@ -225,6 +207,8 @@ def main():
     cbf = btllib.CountingBloomFilter8(args.b)  # type: ignore
     print(f"CBF FPR = {cbf.get_fpr()}")
     print("Seeds:", *seeds, sep=os.linesep)
+    x_seeds = ext.encode_seeds(seeds)
+    x_seeds += ext.positional_encoding(len(seeds[0]), len(seeds))
     data_generator = generate_data(args.r, vars, cbf, hist, seeds, args.i)
     for read_id, x, y in data_generator:
         train(model, optimizer, read_id, x, x_seeds, y, args.n)
