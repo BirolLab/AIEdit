@@ -227,7 +227,6 @@ def main():
     print("Seeds:", *seeds, sep=os.linesep)
     data_generator = generate_data(args.r, vars, cbf, hist, seeds, args.i)
     for read_id, x, y in data_generator:
-        continue
         train(model, optimizer, read_id, x, x_seeds, y, args.n)
         state_dict = {
             "model_state_dict": model.state_dict(),
