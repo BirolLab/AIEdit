@@ -12,50 +12,34 @@ import torchinfo
 
 class Model(torch.nn.Module):
 
-    def __init__(
-        self,
-        num_seeds: int,
-        max_indels: int,
-        max_length: int = 1000,
-    ):
+    def __init__(self, num_seeds: int, max_indels: int, hidden_dim: int = 32):
         super(Model, self).__init__()
         model_dim = num_seeds + 2 * max_indels + 1
-        self.__probs_enc = ext.positional_encoding(max_length, model_dim)
-        self.__edits_enc = ext.positional_encoding(max_length, 5)
-        self.register_buffer("probs_enc", self.__probs_enc)
-        self.register_buffer("edits_enc", self.__edits_enc)
-        self.__probs_attn = torch.nn.MultiheadAttention(model_dim, 1)
-        self.__seeds_attn = torch.nn.MultiheadAttention(
-            embed_dim=model_dim,
-            num_heads=1,
-            kdim=num_seeds,
-            vdim=num_seeds,
+        self.__pos_enc = ext.positional_encoding(1000, hidden_dim)
+        self.register_buffer("pos_enc", self.__pos_enc)
+        self.__probs_proj = torch.nn.Linear(model_dim, hidden_dim)
+        self.__seeds_proj = torch.nn.Linear(num_seeds, hidden_dim)
+        self.__edits_proj = torch.nn.Linear(5, hidden_dim)
+        self.__seeds2probs = torch.nn.Transformer(
+            hidden_dim, 4, 1, 1, hidden_dim, batch_first=True
         )
-        self.__edits_attn = torch.nn.MultiheadAttention(
-            embed_dim=5,
-            num_heads=1,
-            kdim=model_dim,
-            vdim=model_dim,
+        self.__probs2edits = torch.nn.Transformer(
+            hidden_dim, 4, 1, 1, hidden_dim, batch_first=True
         )
-        self.__masked_attn = torch.nn.MultiheadAttention(5, 1)
-        self.__probs_norm = torch.nn.LayerNorm(model_dim)
-        self.__seeds_norm = torch.nn.LayerNorm(model_dim)
-        self.__edits_norm = torch.nn.LayerNorm(5)
-        self.__out = torch.nn.Linear(5, 5)
+        self.__out = torch.nn.Linear(hidden_dim, 5)
         self.__input_sizes = [(100, model_dim), (25, num_seeds), (max_indels, 5)]
 
     def summary(self):
         torchinfo.summary(self, input_size=self.__input_sizes)
 
     def forward(self, x_probs, x_seeds, x_edits):
-        x_s = x_probs + self.__probs_enc[: x_probs.size(0), :]
-        x_s = self.__probs_norm(x_s + self.__probs_attn(x_s, x_s, x_s)[0])
-        x_s = self.__seeds_norm(x_s + self.__seeds_attn(x_s, x_seeds, x_seeds)[0])
+        x_probs = self.__probs_proj(x_probs) + self.__pos_enc[: x_probs.size(0), :]
+        x_seeds = self.__seeds_proj(x_seeds)
+        x_edits = self.__edits_proj(x_edits) + self.__pos_enc[: x_edits.size(0), :]
+        x_probs = self.__seeds2probs(x_seeds, x_probs)
         mask = torch.ones(x_edits.size(0), x_edits.size(0))
         mask = torch.triu(mask * float("-inf"), diagonal=1)
-        x_t = x_edits + self.__edits_enc[: x_edits.size(0), :]
-        x_t, _ = self.__masked_attn(x_t, x_t, x_t, attn_mask=mask, is_causal=True)
-        y = self.__edits_norm(x_t + self.__edits_attn(x_t, x_s, x_s)[0])
+        y = self.__probs2edits(x_probs, x_edits, tgt_mask=mask, tgt_is_causal=True)
         return self.__out(y)
 
 
@@ -199,6 +183,7 @@ def main():
         checkpoint = torch.load(args.o, weights_only=True)
         model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+    model.summary()
     print("Reading variants file...")
     num_vars, vars = read_vars(args.e)
     print(f"Number of variants = {num_vars}")
