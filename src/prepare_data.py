@@ -30,7 +30,7 @@ def read_seeds(path: str) -> list[str]:
 
 
 def read_vars(path: str) -> tuple[int, dict[str, pd.DataFrame]]:
-    vars = pd.read_csv(path, delimiter=r"\s+", nrows=2000)
+    vars = pd.read_csv(path, delimiter=r"\s+")
     num_vars = len(vars)
     vars = {str(seq_name): seq_vars for seq_name, seq_vars in vars.groupby("Seq_name")}
     return num_vars, vars
@@ -51,22 +51,22 @@ def get_targets(vars: pd.DataFrame, pos_diff: int):
     targets = torch.zeros(num_edits + 2, 5)
     targets[-1, 4] = 1.0
     for _, row in vars.iterrows():
-        seq_pos = row["Seq_pos"] - vars.iloc[0]["Seq_pos"]
+        i = row["Seq_pos"] - vars.iloc[0]["Seq_pos"] + 1
         if row["error_type"] == "mis":
-            targets[seq_pos : seq_pos + row["error_length"], 0] = 0.0
-            targets[seq_pos : seq_pos + row["error_length"], 1] = 1.0
+            targets[i : i + row["error_length"], 0] = 0.0
+            targets[i : i + row["error_length"], 1] = 1.0
         elif row["error_type"] == "ins":
-            targets[seq_pos : seq_pos + row["error_length"], 0] = 0.0
-            targets[seq_pos : seq_pos + row["error_length"], 2] = 1.0
+            targets[i : i + row["error_length"], 0] = 0.0
+            targets[i : i + row["error_length"], 2] = 1.0
             pos_diff += row["error_length"]
         elif row["error_type"] == "del":
-            targets[seq_pos : seq_pos + row["error_length"], 0] = 0.0
-            targets[seq_pos : seq_pos + row["error_length"], 3] = 1.0
+            targets[i : i + row["error_length"], 0] = 0.0
+            targets[i : i + row["error_length"], 3] = 1.0
             pos_diff -= row["error_length"]
     return targets, pos_diff
 
 
-def validiate_sample(x, y, num_seeds: int) -> bool:
+def validate_sample(x, y, num_seeds: int) -> bool:
     max_indels = x.size(1) - 1 - num_seeds
     x_seeds = x[:, 1 : num_seeds + 1]
     x_ins = x[:, -2 * max_indels : -max_indels]
@@ -92,16 +92,22 @@ def generate_data(
     probs = hist["error"].tolist()
     sr = btllib.SeqReader(reads_path, btllib.SeqReaderFlag.LONG_MODE)  # type: ignore
     for record in tqdm.tqdm(sr, total=len(vars), unit="reads", desc="Generating data"):
-        match = re.search(r"F_(\d+)_\d+_\d+", record.id)
+        seq, k = record.seq, len(seeds[0])
+        match = re.search(r"(F|R)_(\d+)_\d+_\d+", record.id)
         if not match:
             warnings.warn(f"invalid read id: {record.id}")
+            continue
+        if match.group(1) == "R":
             continue
         if record.id not in vars:
             warnings.warn(f"read has no errors: {record.id}")
             continue
-        seq, k = record.seq, len(seeds[0])
+        head = int(match.group(2))
+        if len(seq) - head < 3 * k:
+            warnings.warn(f"read is too short ({len(seq)}): {record.id}")
+            continue
         read_vars = vars[record.id].sort_values("Seq_pos")
-        read_vars["Seq_pos"] += int(match.group(1))
+        read_vars["Seq_pos"] += head
         pos_ends = (read_vars["Seq_pos"] + read_vars["error_length"]).shift().fillna(0)
         read_vars["group"] = (read_vars["Seq_pos"] - pos_ends > 2 * k).cumsum()
         pos_diff = 0
@@ -110,7 +116,7 @@ def generate_data(
             end = group.iloc[-1]["Seq_pos"] + group.iloc[-1]["error_length"] + pos_diff
             x = ext.get_model_input(seq, start, end, seeds, max_indels, int(cbf), probs)
             y, pos_diff = get_targets(group, pos_diff)
-            if validiate_sample(x, y, len(seeds)):
+            if validate_sample(x, y, len(seeds)):
                 data.append((x, y))
     return data
 
