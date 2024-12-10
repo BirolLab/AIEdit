@@ -1,5 +1,7 @@
 import argparse
 import os
+import random
+import typing
 
 import aiedit_torch_extensions as ext
 import torch
@@ -9,95 +11,116 @@ import tqdm
 
 class Model(torch.nn.Module):
 
-    def __init__(self, num_seeds: int, max_indels: int, hidden_dim: int = 32):
-        super(Model, self).__init__()
-        model_dim = num_seeds + 2 * max_indels + 1
-        self.__pos_enc = ext.positional_encoding(1000, hidden_dim)
-        self.register_buffer("pos_enc", self.__pos_enc)
-        self.__probs_proj = torch.nn.Linear(model_dim, hidden_dim)
-        self.__seeds_proj = torch.nn.Linear(num_seeds, hidden_dim)
-        self.__edits_proj = torch.nn.Linear(5, hidden_dim)
-        self.__seeds2probs = torch.nn.Transformer(
-            hidden_dim, 4, 1, 1, hidden_dim, batch_first=True
-        )
-        self.__probs2edits = torch.nn.Transformer(
-            hidden_dim, 4, 1, 1, hidden_dim, batch_first=True
-        )
-        self.__out = torch.nn.Linear(hidden_dim, 5)
-        self.__input_sizes = [(100, model_dim), (25, num_seeds), (max_indels, 5)]
+    num_seeds: typing.Final[int]
+    max_indels: typing.Final[int]
+    max_k: typing.Final[int]
 
+    def __init__(self, num_seeds: int, max_indels: int, max_k: int, dim: int):
+        super(Model, self).__init__()
+        probs_dim = num_seeds + 2 * max_indels + 1
+        self.register_buffer("pos_enc", ext.positional_encoding(2000, dim))
+        self.probs_proj = torch.nn.Linear(probs_dim, dim)
+        self.seeds_proj = torch.nn.Linear(max_k, dim)
+        self.edits_proj = torch.nn.Linear(5, dim)
+        self.seeds2probs = torch.nn.Transformer(dim, 4, 1, 1, dim, batch_first=True)
+        self.probs2edits = torch.nn.Transformer(dim, 4, 1, 1, dim, batch_first=True)
+        self.out = torch.nn.Linear(dim, 5)
+        self.num_seeds = num_seeds
+        self.max_indels = max_indels
+        self.max_k = max_k
+        self.input_sizes = [(100, probs_dim), (num_seeds, max_k), (max_indels, 5)]
+
+    @torch.jit.ignore
     def summary(self):
-        torchinfo.summary(self, input_size=self.__input_sizes)
+        torchinfo.summary(self, input_size=self.input_sizes)
 
     def forward(self, x_probs, x_seeds, x_edits):
-        x_probs = self.__probs_proj(x_probs) + self.__pos_enc[: x_probs.size(0), :]
-        x_seeds = self.__seeds_proj(x_seeds)
-        x_edits = self.__edits_proj(x_edits) + self.__pos_enc[: x_edits.size(0), :]
-        x_probs = self.__seeds2probs(x_seeds, x_probs)
+        x_probs = self.probs_proj(x_probs) + self.pos_enc[: x_probs.size(0), :]
+        x_seeds = self.seeds_proj(x_seeds)
+        x_edits = self.edits_proj(x_edits) + self.pos_enc[: x_edits.size(0), :]
+        x_probs = self.seeds2probs(x_seeds, x_probs)
         mask = torch.ones(x_edits.size(0), x_edits.size(0))
         mask = torch.triu(mask * float("-inf"), diagonal=1)
-        y = self.__probs2edits(x_probs, x_edits, tgt_mask=mask, tgt_is_causal=True)
-        return self.__out(y)
+        y = self.probs2edits(x_probs, x_edits, tgt_mask=mask, tgt_is_causal=True)
+        return self.out(y)
 
 
 def parse_args():
     default_t = torch.get_num_threads()
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", help="path to dataset", required=True)
-    parser.add_argument("-n", help="number of epochs", type=int, default=5)
+    parser.add_argument("-d", help="path to dataset", required=True, nargs="+")
+    parser.add_argument("-n", help="number of epochs", type=int, default=1)
     parser.add_argument("-t", help="number of threads", type=int, default=default_t)
+    parser.add_argument("-k", help="maximum kmer length", type=int, default=128)
+    parser.add_argument("-m", help="hidden dimension", type=int, default=128)
     parser.add_argument("-o", help="path to model checkpoint file", required=True)
     return parser.parse_args()
 
 
-def weighted_ce_loss(logits, targets, reduction_factor=0.01):
+def load_data(paths: list[str]):
+    data = [torch.load(file, weights_only=True) for file in paths]
+    max_indels = set(d["max_indels"] for d in data)
+    num_seeds = set(len(d["seeds"]) for d in data)
+    assert len(max_indels) == 1, "All datasets must have the same maximum indel length"
+    assert len(num_seeds) == 1, "All datasets must have the same number of seeds"
+    return data, max_indels.pop(), num_seeds.pop()
+
+
+def weighted_ce_loss(logits, targets, reduction_factor=0.1):
     ce_loss = torch.nn.functional.cross_entropy(logits, targets, reduction="none")
     ce_loss[(logits.argmax(dim=1) == targets) & (targets == 0)] *= reduction_factor
-    return ce_loss.mean()
+    return ce_loss.sum()
 
 
-def train(model, optimizer, data, x_seeds, i_epoch):
-    epoch_loss = 0
-    pbar = tqdm.tqdm(data, unit="patterns", desc=f"Epoch {i_epoch + 1}")
+def train(model, optimizer, data, i_epoch):
+    x_seeds = [ext.encode_seeds(d["seeds"], model.max_k) for d in data]
+    indices = [(i, j) for i, d in enumerate(data) for j in range(len(d["data"]))]
+    random.shuffle(indices)
+    epoch_loss, num_true, num_out = 0, 0, 0
+    pbar = tqdm.tqdm(indices, ascii=" >=", desc=f"Epoch {i_epoch + 1}", ncols=100)
     i_pattern = 1
-    for x, y in pbar:
+    for i_data, i_sample in pbar:
+        x, y = data[i_data]["data"][i_sample]
         optimizer.zero_grad()
-        y_pred = model(x, x_seeds, y)[:-1, :]
-        loss = weighted_ce_loss(y_pred, y[1:, :].argmax(dim=1))
+        y_pred = model(x, x_seeds[i_data], y[:-1, :])
+        y_true = y[1:, :].argmax(dim=1)
+        loss = weighted_ce_loss(y_pred, y_true)
         loss.backward()
         optimizer.step()
         epoch_loss += loss.item()
-        pbar.set_postfix_str(f"loss={epoch_loss/i_pattern:.4f}")
+        avg_loss = epoch_loss / i_pattern
+        num_ignore = ((y_true == 0) & (y_pred.argmax(dim=1) == y_true)).sum()
+        num_true += (y_pred.argmax(dim=1) == y_true).sum() - num_ignore
+        num_out += y_true.size(0) - num_ignore
+        acc = num_true / num_out
+        pbar.set_postfix_str(f"loss={avg_loss:.4f}, acc={acc:.4f}")
         i_pattern += 1
 
 
 def main():
     args = parse_args()
-    print("Loading dataset...")
-    dataset = torch.load(args.d, weights_only=True)
-    data, seeds, max_indels = dataset["data"], dataset["seeds"], dataset["max_indels"]
-    print(f"Number of patterns: {len(data)}")
-    print(f"Maximum indel length: {max_indels}")
-    print("Seeds:", *seeds, sep=os.linesep)
-    model = Model(len(seeds), max_indels)
+    print("Loading datasets...")
+    datasets, max_indels, num_seeds = load_data(args.d)
+    model = Model(num_seeds, max_indels, args.k, args.m)
     optimizer = torch.optim.AdamW(model.parameters())
     if os.path.isfile(args.o):
-        print("Loading model checkpoint")
         checkpoint = torch.load(args.o, weights_only=True)
         model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
     model.summary()
     torch.set_num_threads(args.t)
+    print("Model state loaded from checkpoint")
+    print(f"Maximum indel length: {max_indels}")
+    print(f"Number of seeds: {num_seeds}")
+    print(f"Number of samples: {sum(len(d['data']) for d in datasets)}")
     print(f"Using {torch.get_num_threads()} threads")
-    x_seeds = ext.encode_seeds(seeds)
-    x_seeds += ext.positional_encoding(len(seeds[0]), len(seeds))
     for i_epoch in range(args.n):
-        train(model, optimizer, data, x_seeds, i_epoch)
-        state_dict = {
-            "model_state_dict": model.state_dict(),
-            "optimizer_state_dict": optimizer.state_dict(),
-        }
+        train(model, optimizer, datasets, i_epoch)
+        state_dict = dict()
+        state_dict["model_state_dict"] = model.state_dict()
+        state_dict["optimizer_state_dict"] = optimizer.state_dict()
         torch.save(state_dict, args.o)
+    torch.jit.script(model).save(args.o + ".jit")
 
 
 if __name__ == "__main__":
