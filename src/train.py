@@ -1,9 +1,10 @@
 import argparse
+import json
 import os
 import random
 import typing
 
-import aiedit_torch_extensions as ext
+import aiedit_torch_extensions as ext  # type: ignore
 import torch
 import torchinfo
 import tqdm
@@ -49,11 +50,12 @@ def parse_args():
     default_t = torch.get_num_threads()
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", help="path to dataset", required=True, nargs="+")
+    parser.add_argument("-b", help="batch size", type=int, default=32)
     parser.add_argument("-n", help="number of epochs", type=int, default=1)
     parser.add_argument("-t", help="number of threads", type=int, default=default_t)
     parser.add_argument("-k", help="maximum kmer length", type=int, default=128)
-    parser.add_argument("-m", help="hidden dimension", type=int, default=128)
-    parser.add_argument("-o", help="path to model checkpoint file", required=True)
+    parser.add_argument("-m", help="hidden dimension", type=int, default=64)
+    parser.add_argument("-o", help="output files prefix", default="model")
     return parser.parse_args()
 
 
@@ -72,29 +74,36 @@ def weighted_ce_loss(logits, targets, reduction_factor=0.1):
     return ce_loss.sum()
 
 
-def train(model, optimizer, data, i_epoch):
+def train(model, optimizer, data, batch_size, i_epoch):
     x_seeds = [ext.encode_seeds(d["seeds"], model.max_k) for d in data]
     indices = [(i, j) for i, d in enumerate(data) for j in range(len(d["data"]))]
     random.shuffle(indices)
-    epoch_loss, num_true, num_out = 0, 0, 0
-    pbar = tqdm.tqdm(indices, ascii=" >=", desc=f"Epoch {i_epoch + 1}", ncols=100)
+    num_true, num_out = 0, 0
     i_pattern = 1
+    loss, epoch_loss = 0, 0
+    loss_history, acc_history = [], []
+    pbar = tqdm.tqdm(indices, ascii=" >=", desc=f"Epoch {i_epoch + 1}", ncols=100)
     for i_data, i_sample in pbar:
         x, y = data[i_data]["data"][i_sample]
-        optimizer.zero_grad()
         y_pred = model(x, x_seeds[i_data], y[:-1, :])
         y_true = y[1:, :].argmax(dim=1)
-        loss = weighted_ce_loss(y_pred, y_true)
-        loss.backward()
-        optimizer.step()
-        epoch_loss += loss.item()
-        avg_loss = epoch_loss / i_pattern
+        loss += weighted_ce_loss(y_pred, y_true)
+        if i_pattern % batch_size == 0:
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            epoch_loss += loss.item()
+            loss = 0
         num_ignore = ((y_true == 0) & (y_pred.argmax(dim=1) == y_true)).sum()
         num_true += (y_pred.argmax(dim=1) == y_true).sum() - num_ignore
         num_out += y_true.size(0) - num_ignore
-        acc = num_true / num_out
+        acc = (num_true / num_out).item()
+        acc_history.append(acc)
+        avg_loss = epoch_loss / i_pattern
+        loss_history.append(avg_loss)
         pbar.set_postfix_str(f"loss={avg_loss:.4f}, acc={acc:.4f}")
         i_pattern += 1
+    return loss_history, acc_history
 
 
 def main():
@@ -114,13 +123,19 @@ def main():
     print(f"Number of seeds: {num_seeds}")
     print(f"Number of samples: {sum(len(d['data']) for d in datasets)}")
     print(f"Using {torch.get_num_threads()} threads")
+    history = {"loss": [], "acc": []}
     for i_epoch in range(args.n):
-        train(model, optimizer, datasets, i_epoch)
+        loss, acc = train(model, optimizer, datasets, args.b, i_epoch)
+        history["loss"].extend(loss)
+        history["acc"].extend(acc)
         state_dict = dict()
         state_dict["model_state_dict"] = model.state_dict()
         state_dict["optimizer_state_dict"] = optimizer.state_dict()
-        torch.save(state_dict, args.o)
-    torch.jit.script(model).save(args.o + ".jit")
+        torch.save(state_dict, args.o + "_checkpoint.pt")
+        history_file = open(args.o + "_history.json", "w")
+        json.dump(history, history_file)
+        history_file.close()
+    torch.jit.script(model).save(args.o + "_jit.pt")
 
 
 if __name__ == "__main__":

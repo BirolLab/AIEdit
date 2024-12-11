@@ -1,9 +1,10 @@
 import argparse
 import os
+import random
 import re
 import warnings
 
-import aiedit_torch_extensions as ext
+import aiedit_torch_extensions as ext  # type: ignore
 import btllib
 import pandas as pd
 import torch
@@ -18,6 +19,8 @@ def parse_args():
     parser.add_argument("-m", help="path to histogram model file", required=True)
     parser.add_argument("-s", help="path to seeds file", required=True)
     parser.add_argument("-i", help="maximum indel length", type=int, default=10)
+    parser.add_argument("-p", help="subsample rate", type=float, default=1.0)
+    parser.add_argument("-n", help="number of samples", type=int)
     parser.add_argument("-o", help="path to store dataset", default="data.pt")
     return parser.parse_args()
 
@@ -87,11 +90,16 @@ def generate_data(
     hist: pd.DataFrame,
     seeds: list[str],
     max_indels: int,
+    sample_rate: float,
+    num_samples: int,
 ):
     data = []
     probs = hist["error"].tolist()
-    sr = btllib.SeqReader(reads_path, btllib.SeqReaderFlag.LONG_MODE)  # type: ignore
-    for record in tqdm.tqdm(sr, total=len(vars), unit="reads", desc="Generating data"):
+    pbar = tqdm.tqdm(total=num_samples, unit="samples", desc="Generating data")
+    num_reads = 0
+    for record in btllib.SeqReader(reads_path, btllib.SeqReaderFlag.LONG_MODE):  # type: ignore
+        if random.random() > sample_rate:
+            continue
         seq, k = record.seq, len(seeds[0])
         match = re.search(r"(F|R)_(\d+)_\d+_\d+", record.id)
         if not match:
@@ -114,10 +122,20 @@ def generate_data(
         for _, group in read_vars.groupby("group"):
             start = max(group.iloc[0]["Seq_pos"] - k + 1, 0) + pos_diff
             end = group.iloc[-1]["Seq_pos"] + group.iloc[-1]["error_length"] + pos_diff
+            indels = group["error_type"].isin(["ins", "del"])
+            num_ind = group.loc[indels, "error_length"].sum()
+            num_mis = group.loc[~indels, "error_length"].sum()
+            if len(seq) - start < 2 * k or num_ind > max_indels or num_mis > k:
+                continue
             x = ext.get_model_input(seq, start, end, seeds, max_indels, int(cbf), probs)
             y, pos_diff = get_targets(group, pos_diff)
             if validate_sample(x, y, len(seeds)):
                 data.append((x, y))
+                pbar.update()
+            if num_samples and len(data) > num_samples:
+                return data
+        num_reads += 1
+        pbar.set_postfix_str(f"num_reads={num_reads}")
     return data
 
 
@@ -133,8 +151,8 @@ def main():
     cbf = btllib.CountingBloomFilter8(args.b)  # type: ignore
     print(f"CBF FPR: {cbf.get_fpr()}")
     print("Seeds:", *seeds, sep=os.linesep)
-    data = generate_data(args.r, vars, cbf, hist, seeds, args.i)
-    print(f"Gathered {len(data)} patterns")
+    data = generate_data(args.r, vars, cbf, hist, seeds, args.i, args.p, args.n)
+    print(f"Generated {len(data)} patterns")
     print("Saving dataset...")
     torch.save({"seeds": seeds, "max_indels": args.i, "data": data}, args.o)
     print(f"Data available in {args.o}")

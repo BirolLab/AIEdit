@@ -1,0 +1,4 @@
+line_width = 80
+tab_size = 4
+max_pargs_hwrap = 2
+dangle_parens = True

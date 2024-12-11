@@ -1,12 +1,9 @@
-#pragma once
+#include "feature_extraction.hpp"
 
-#include <btllib/counting_bloom_filter.hpp>
-#include <cctype>
-#include <string>
+#include "extensions/delete_gap_hash.hpp"
+#include "extensions/insert_gap_hash.hpp"
+
 #include <torch/torch.h>
-#include <vector>
-
-#include "gap_hash.hpp"
 
 namespace aiedit {
 
@@ -26,15 +23,16 @@ torch::Tensor positional_encoding(unsigned max_length, unsigned dim)
         cos_values = cos_values.index({torch::indexing::Slice(), end_idx});
     }
     pos_enc.index_put_({torch::indexing::Slice(), odd_indices}, cos_values);
+
     return pos_enc;
 }
 
-torch::Tensor encode_seeds(const std::vector<std::string>& seeds)
+torch::Tensor encode_seeds(const std::vector<std::string>& seeds, unsigned max_k)
 {
-    auto x_seeds = torch::empty({(unsigned)seeds[0].size(), (unsigned)seeds.size()});
-    for (unsigned i = 0; i < x_seeds.size(0); i++) {
-        for (unsigned j = 0; j < x_seeds.size(1); j++) {
-            x_seeds[i][j] = static_cast<float>(seeds[j][i] - '0');
+    auto x_seeds = torch::zeros({(unsigned)seeds.size(), max_k});
+    for (unsigned i = 0; i < seeds.size(); i++) {
+        for (unsigned j = 0; j < seeds[i].size(); j++) {
+            x_seeds[i][j] = static_cast<float>(seeds[i][j] - '0');
         }
     }
     return x_seeds;
@@ -46,7 +44,7 @@ torch::Tensor get_model_input(const std::string& seq,
                               const std::vector<std::string>& seeds,
                               unsigned max_indels,
                               const btllib::CountingBloomFilter8& cbf,
-                              std::vector<float> probs)
+                              std::vector<double> probs)
 {
     const auto k = seeds[0].size();
     const auto num_hashes = cbf.get_hash_num();
@@ -58,7 +56,7 @@ torch::Tensor get_model_input(const std::string& seq,
             x[nh.get_pos() - start][i + 1] = probs[cbf.contains(hashes)];
         }
     }
-    aiedit::DeleteGapHash dh(seq, num_hashes, k, max_indels, start);
+    DeleteGapHash dh(seq, num_hashes, k, max_indels, start);
     char prev = 0;
     while (dh.roll() && dh.get_pos() < end) {
         char curr = std::toupper(seq[dh.get_pos() - start]);
@@ -69,7 +67,7 @@ torch::Tensor get_model_input(const std::string& seq,
             x[dh.get_pos() - start][i + seeds.size() + 1] = prob;
         }
     }
-    aiedit::InsertGapHash ih(seq, num_hashes, k, max_indels, start);
+    InsertGapHash ih(seq, num_hashes, k, max_indels, start);
     while (ih.roll() && ih.get_pos() < end) {
         for (unsigned i = 0; i < max_indels; i++) {
             const auto prob = probs[cbf.contains(ih.hashes()[i])];
@@ -85,7 +83,7 @@ torch::Tensor get_model_input_wrapper(const std::string& seq,
                                       const std::vector<std::string>& seeds,
                                       unsigned max_indels,
                                       uintptr_t cbf_ptr,
-                                      std::vector<float> probs)
+                                      std::vector<double> probs)
 {
     auto* cbf = reinterpret_cast<btllib::CountingBloomFilter8*>(cbf_ptr);
     if (!cbf) {
