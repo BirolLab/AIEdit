@@ -21,21 +21,27 @@ std::vector<std::string> read_seeds(const std::string& seeds_path)
     return {std::istream_iterator<std::string>(seeds_file), std::istream_iterator<std::string>()};
 }
 
-inline bool next(const std::string& seq,
-                 btllib::BlindNtHash& nh,
-                 size_t end,
-                 const aiedit::CountProbabilities& cprobs,
-                 double threshold,
-                 bool hit)
-{
-    while (nh.get_pos() <= end) {
-        nh.roll(seq[nh.get_pos() + nh.get_k()]);
-        if ((cprobs.get_prob(nh.hashes()) >= threshold) == hit) {
-            return true;
+struct SequenceIterator {
+    const std::string& seq;
+    btllib::BlindNtHash& nh;
+    size_t end;
+    const aiedit::CountProbabilities& cprobs;
+    double threshold;
+
+    bool next(bool hit)
+    {
+        while (nh.get_pos() <= end) {
+            nh.roll(seq[nh.get_pos() + nh.get_k()]);
+            if ((cprobs.get_prob(nh.hashes()) >= threshold) == hit) {
+                return true;
+            }
         }
+        return false;
     }
-    return false;
-}
+
+    bool next_hit() { return next(true); }
+    bool next_miss() { return next(false); }
+};
 
 struct SequenceChunk {
     const size_t start, end;
@@ -104,11 +110,12 @@ Results AIEdit::process_chunk(const std::string& seq, size_t start, size_t end)
     const auto kmer_size = model.seeds[0].size();
     const auto num_hashes = cprobs.cbf.get_hash_num();
     btllib::BlindNtHash hash_fn(seq, num_hashes, kmer_size, start);
+    SequenceIterator seq_iter{seq, hash_fn, end, cprobs, 0.5};
     EditFinder edit_finder(cprobs);
-    next(seq, hash_fn, end - kmer_size, cprobs, 0.5, true);
-    while (next(seq, hash_fn, end - kmer_size, cprobs, 0.5, false)) {
+    seq_iter.next_hit();
+    while (seq_iter.next_miss()) {
         const size_t miss_pos = hash_fn.get_pos();
-        if (!next(seq, hash_fn, end - kmer_size, cprobs, 0.5, true)) {
+        if (!seq_iter.next_hit()) {
             break;
         }
         // TODO
