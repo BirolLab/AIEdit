@@ -1,4 +1,6 @@
 #include <btllib/seq_reader.hpp>
+#include <btllib/seq_writer.hpp>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <omp.h>
@@ -25,12 +27,12 @@ int main(int argc, char** argv)
     std::cout << aiedit::LOGO << std::endl;
     std::cout << "Version " << aiedit::VERSION << std::endl << std::endl;
 
-    omp_set_num_threads(args.num_threads);
-    if (omp_get_num_threads() > 1) {
+    omp_set_max_active_levels(2);
+    if (args.num_threads > 1) {
         std::cout << "Multithreading: " << colorize::green("ON") << std::endl;
-        std::cout << "- Using " << omp_get_num_threads() << " threads" << std::endl;
+        std::cout << "- Using " << args.num_threads << " threads" << std::endl;
         const auto thread_mode = args.contig_mode ? "CONTIGS" : "SEQUENCE CHUNKS";
-        std::cout << "- Distributing " << thread_mode << " between threads" << std::endl;
+        std::cout << "- Distributing " << thread_mode << std::endl;
     } else {
         std::cout << "Multithreading: " << colorize::red("OFF") << std::endl;
     }
@@ -49,7 +51,8 @@ int main(int argc, char** argv)
         editor_ptr = std::make_unique<aiedit::AIEdit>(args.cbf_path,
                                                       args.probs_path,
                                                       args.seeds_path,
-                                                      args.model_path);
+                                                      args.model_path,
+                                                      args.contig_mode ? 1 : args.num_threads);
     } catch (const std::runtime_error& err) {
         std::cerr << colorize::red("Error: ");
         std::cerr << err.what() << std::endl;
@@ -63,12 +66,18 @@ int main(int argc, char** argv)
     std::cout << "- Maximum indel length: " << editor.get_max_indels() << std::endl;
     std::cout << std::endl;
 
+    const std::string prefix = args.out_path / std::filesystem::path(args.in_path).stem();
+    btllib::SeqWriter seq_writer(prefix + "_edited.fa", btllib::SeqWriter::FASTA);
+
     std::cout << "Finding edits in " << args.in_path << "..." << std::endl;
     btllib::SeqReader seq_reader(args.in_path, btllib::SeqReader::Flag::LONG_MODE);
-#pragma omp parallel
+#pragma omp parallel num_threads(args.contig_mode ? args.num_threads : 1)
     for (auto record : seq_reader) {
-        std::cout << record.id << std::endl;
-        editor.get_edits(record.seq, 0, record.seq.size());
+        const auto results = editor.get_edits(record.seq);
+        const auto edited = aiedit::apply_edits(record.seq, results.edits);
+        seq_writer.write(record.id, record.comment, edited);
+        std::cout << "[" << record.id << "] Applied " << results.edits.size() << " edits"
+                  << std::endl;
     }
 
     return EXIT_SUCCESS;

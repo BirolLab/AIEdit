@@ -5,6 +5,8 @@
 #include <torch/script.h>
 #include <vector>
 
+#include "edit.hpp"
+
 namespace aiedit {
 
 class PatternModel
@@ -16,11 +18,11 @@ class PatternModel
 
     PatternModel(const std::string& model_path, const std::vector<std::string>& seeds);
 
-    [[nodiscard]] std::string get_pattern(const std::string& seq,
-                                          size_t start,
-                                          size_t end,
-                                          const btllib::CountingBloomFilter8& cbf,
-                                          const std::vector<double>& probs);
+    [[nodiscard]] std::vector<Edit::Type> get_pattern(const std::string& seq,
+                                                      size_t start,
+                                                      size_t end,
+                                                      const btllib::CountingBloomFilter8& cbf,
+                                                      const std::vector<double>& probs);
 
   private:
 
@@ -29,4 +31,4 @@ class PatternModel
     at::Tensor x_seeds;
 };
 
-}  // namespace aiedit
+}

@@ -92,4 +92,4 @@ torch::Tensor get_model_input_wrapper(const std::string& seq,
     return get_model_input(seq, start, end, seeds, max_indels, *cbf, probs);
 }
 
-}  // namespace aiedit
+}

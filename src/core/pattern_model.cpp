@@ -1,11 +1,20 @@
 #include "pattern_model.hpp"
+#include "edit.hpp"
 #include "feature_extraction.hpp"
 
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace {
-const std::string edit_chars = ".MID|";
+
+const aiedit::Edit::Type edit_types[] = {
+  aiedit::Edit::Type::NO_EDIT,
+  aiedit::Edit::Type::SUBSTITUION,
+  aiedit::Edit::Type::DELETION,
+  aiedit::Edit::Type::INSERTION,
+};
+
 }
 
 namespace aiedit {
@@ -19,18 +28,19 @@ PatternModel::PatternModel(const std::string& model_path, const std::vector<std:
     const auto num_seeds = model.attr("num_seeds").toInt();
     const auto max_k = model.attr("max_k").toInt();
     if (seeds.size() != num_seeds) {
-        throw std::runtime_error("Model requires " + std::to_string(num_seeds) + " spaced seeds");
+        throw std::runtime_error("Model requires " + std::to_string(num_seeds) +
+                                 " spaced seeds (found " + std::to_string(seeds.size()) + ")");
     }
     if (seeds[0].size() > max_k) {
         throw std::runtime_error("Maximum k supported by model is " + std::to_string(max_k));
     }
 }
 
-std::string PatternModel::get_pattern(const std::string& seq,
-                                      size_t start,
-                                      size_t end,
-                                      const btllib::CountingBloomFilter8& cbf,
-                                      const std::vector<double>& probs)
+std::vector<Edit::Type> PatternModel::get_pattern(const std::string& seq,
+                                                  size_t start,
+                                                  size_t end,
+                                                  const btllib::CountingBloomFilter8& cbf,
+                                                  const std::vector<double>& probs)
 {
     torch::NoGradGuard no_grad;
     const auto max_indels = model.attr("max_indels").toInt();
@@ -44,11 +54,11 @@ std::string PatternModel::get_pattern(const std::string& seq,
         inputs[2] = torch::cat({torch::zeros({1, 5}), output}, 0);
         output = model.forward(inputs).toTensor();
     }
-    std::string pattern;
+    std::vector<Edit::Type> pattern;
     for (unsigned i = 0; i < output.size(0) - 1; i++) {
-        pattern.push_back(edit_chars[output[i].argmax().item<int>()]);
+        pattern.push_back(edit_types[output[i].argmax().item<int>()]);
     }
     return pattern;
 }
 
-}  // namespace aiedit
+}

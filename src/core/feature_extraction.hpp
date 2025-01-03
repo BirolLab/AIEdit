@@ -28,4 +28,4 @@ at::Tensor get_model_input_wrapper(const std::string& seq,
                                    uintptr_t cbf_ptr,
                                    std::vector<double> probs);
 
-}  // namespace aiedit
+}

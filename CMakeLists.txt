@@ -56,13 +56,22 @@ pybind11_add_module(
     src/extensions/delete_gap_hash.cpp
     src/extensions/insert_gap_hash.cpp
 )
-#
-# Tests find_package(Catch2)
-#
-# if (${Catch2_FOUND}) file(GLOB test_files "tests/test_*.cpp")
-# add_executable(aiedit_tests ${test_files})
-# target_include_directories(aiedit_tests PRIVATE "${PROJECT_SOURCE_DIR}/src")
-# target_link_libraries(aiedit_tests PRIVATE Catch2::Catch2WithMain)
-# include(Catch) catch_discover_tests(aiedit_tests) else (${Catch2_FOUND})
-# message(STATUS "Compiling tests requires Catch2 to be installed") endif
-# (${Catch2_FOUND})
+
+# Tests
+
+find_package(Catch2)
+
+if(${Catch2_FOUND})
+    file(
+        GLOB
+        test_files
+        "tests/test_*.cpp"
+    )
+    add_executable(aiedit_tests ${test_files} ${aiedit_sources})
+    target_include_directories(aiedit_tests PRIVATE "${PROJECT_SOURCE_DIR}/src")
+    target_link_libraries(aiedit_tests PRIVATE Catch2::Catch2WithMain)
+    include(Catch)
+    catch_discover_tests(aiedit_tests)
+else(${Catch2_FOUND})
+    message(STATUS "Compiling tests requires Catch2 to be installed")
+endif(${Catch2_FOUND})
