@@ -9,8 +9,44 @@
 #include "core/aiedit.hpp"
 #include "program/args.hpp"
 #include "program/colorize.hpp"
+#include "program/file_io.hpp"
 #include "program/str_utils.hpp"
 #include "program/timer.hpp"
+
+std::unique_ptr<aiedit::AIEdit> initialize(const ProgramArguments& args)
+{
+    try {
+        return std::make_unique<aiedit::AIEdit>(args.cbf_path,
+                                                args.probs_path,
+                                                args.seeds_path,
+                                                args.model_path,
+                                                args.contig_mode ? 1 : args.num_threads);
+    } catch (const std::runtime_error& err) {
+        std::cerr << colorize::red("Error: ");
+        std::cerr << err.what() << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+}
+
+void write_logs(const std::string& seq_id,
+                const aiedit::Results& results,
+                EditsListWriter& edits_writer,
+                IgnoredPatternsWriter& ignored_writer)
+{
+#pragma omp critical
+    {
+        std::cout << "[" << seq_id << "] Applied " << results.edits.size() << " edits, ";
+        std::cout << "ignored " << results.ignored.size() << " patterns" << std::endl;
+    }
+    for (const auto& edit : results.edits) {
+#pragma omp critical
+        edits_writer.write(seq_id, edit);
+    }
+    for (const auto& pattern : results.ignored) {
+#pragma omp critical
+        ignored_writer.write(seq_id, pattern);
+    }
+}
 
 int main(int argc, char** argv)
 {
@@ -41,24 +77,12 @@ int main(int argc, char** argv)
     Timer timer;
 
     std::cout << "Loading..." << std::endl;
-    std::cout << "- Spaced seeds list from " << args.seeds_path << std::endl;
-    std::cout << "- Histogram model from " << args.probs_path << std::endl;
-    std::cout << "- AIEdit model from " << args.model_path << std::endl;
-    std::cout << "- Bloom filter from " << args.cbf_path << std::endl;
+    std::cout << "- Spaced seeds list: " << args.seeds_path << std::endl;
+    std::cout << "- Histogram model: " << args.probs_path << std::endl;
+    std::cout << "- AIEdit model: " << args.model_path << std::endl;
+    std::cout << "- Bloom filter: " << args.cbf_path << std::endl;
     timer.start();
-    std::unique_ptr<aiedit::AIEdit> editor_ptr;
-    try {
-        editor_ptr = std::make_unique<aiedit::AIEdit>(args.cbf_path,
-                                                      args.probs_path,
-                                                      args.seeds_path,
-                                                      args.model_path,
-                                                      args.contig_mode ? 1 : args.num_threads);
-    } catch (const std::runtime_error& err) {
-        std::cerr << colorize::red("Error: ");
-        std::cerr << err.what() << std::endl;
-        return EXIT_FAILURE;
-    }
-    auto& editor = (*editor_ptr);
+    auto& editor = (*initialize(args));
     std::cout << "- " << colorize::green("Done in ", timer.stop(), "s") << std::endl;
     std::cout << "- CBF size: " << str_utils::human_readable(editor.get_cbf_size()) << std::endl;
     std::cout << "- Number of seeds: " << colorize::green(editor.get_num_seeds()) << std::endl;
@@ -68,6 +92,8 @@ int main(int argc, char** argv)
 
     const std::string prefix = args.out_path / std::filesystem::path(args.in_path).stem();
     btllib::SeqWriter seq_writer(prefix + "_edited.fa", btllib::SeqWriter::FASTA);
+    EditsListWriter edits_writer(prefix + "_edits.tsv");
+    IgnoredPatternsWriter ignored_writer(prefix + "_ignored.tsv");
 
     std::cout << "Finding edits in " << args.in_path << "..." << std::endl;
     btllib::SeqReader seq_reader(args.in_path, btllib::SeqReader::Flag::LONG_MODE);
@@ -76,8 +102,7 @@ int main(int argc, char** argv)
         const auto results = editor.get_edits(record.seq);
         const auto edited = aiedit::apply_edits(record.seq, results.edits);
         seq_writer.write(record.id, record.comment, edited);
-        std::cout << "[" << record.id << "] Applied " << results.edits.size() << " edits"
-                  << std::endl;
+        write_logs(record.id, results, edits_writer, ignored_writer);
     }
 
     return EXIT_SUCCESS;
