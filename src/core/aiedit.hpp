@@ -38,11 +38,11 @@ class AIEdit
            const std::string& model_path,
            unsigned num_threads);
 
-    [[nodiscard]] size_t get_cbf_size() const;
-    [[nodiscard]] unsigned get_max_indels() const;
-    [[nodiscard]] unsigned get_max_k() const;
-    [[nodiscard]] unsigned get_k() const;
-    [[nodiscard]] unsigned get_num_seeds() const;
+    size_t get_cbf_size() const;
+    size_t get_k() const;
+    int64_t get_max_indels() const;
+    int64_t get_max_k() const;
+    int64_t get_num_seeds() const;
 
     Results get_edits(const std::string& seq);
 

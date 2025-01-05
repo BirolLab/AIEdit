@@ -2,7 +2,6 @@ import argparse
 import json
 import os
 import random
-import typing
 
 import aiedit_torch_extensions as ext  # type: ignore
 import torch
@@ -12,13 +11,13 @@ import tqdm
 
 class Model(torch.nn.Module):
 
-    num_seeds: typing.Final[int]
-    max_indels: typing.Final[int]
-    max_k: typing.Final[int]
-
     def __init__(self, num_seeds: int, max_indels: int, max_k: int, dim: int):
         super(Model, self).__init__()
+        self.num_seeds = torch.jit.Attribute(num_seeds, int)
+        self.max_indels = torch.jit.Attribute(max_indels, int)
+        self.max_k = torch.jit.Attribute(max_k, int)
         probs_dim = num_seeds + 2 * max_indels + 1
+        self.input_sizes = [(100, probs_dim), (num_seeds, max_k), (max_indels, 5)]
         self.register_buffer("pos_enc", ext.positional_encoding(2000, dim))
         self.probs_proj = torch.nn.Linear(probs_dim, dim)
         self.seeds_proj = torch.nn.Linear(max_k, dim)
@@ -26,10 +25,6 @@ class Model(torch.nn.Module):
         self.seeds2probs = torch.nn.Transformer(dim, 4, 1, 1, dim, batch_first=True)
         self.probs2edits = torch.nn.Transformer(dim, 4, 1, 1, dim, batch_first=True)
         self.out = torch.nn.Linear(dim, 5)
-        self.num_seeds = num_seeds
-        self.max_indels = max_indels
-        self.max_k = max_k
-        self.input_sizes = [(100, probs_dim), (num_seeds, max_k), (max_indels, 5)]
 
     @torch.jit.ignore
     def summary(self):
@@ -75,7 +70,7 @@ def weighted_ce_loss(logits, targets, reduction_factor=0.1):
 
 
 def train(model, optimizer, data, batch_size, i_epoch):
-    x_seeds = [ext.encode_seeds(d["seeds"], model.max_k) for d in data]
+    x_seeds = [ext.encode_seeds(d["seeds"], model.max_k.value) for d in data]
     indices = [(i, j) for i, d in enumerate(data) for j in range(len(d["data"]))]
     random.shuffle(indices)
     num_true, num_out = 0, 0
@@ -116,9 +111,9 @@ def main():
         checkpoint = torch.load(args.o, weights_only=True)
         model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        print("Model state loaded from checkpoint")
     model.summary()
     torch.set_num_threads(args.t)
-    print("Model state loaded from checkpoint")
     print(f"Maximum indel length: {max_indels}")
     print(f"Number of seeds: {num_seeds}")
     print(f"Number of samples: {sum(len(d['data']) for d in datasets)}")

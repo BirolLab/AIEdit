@@ -1,25 +1,14 @@
 #include "aiedit.hpp"
 
 #include "edit_finder.hpp"
-#include "feature_extraction.hpp"
 
 #include <algorithm>
-#include <fstream>
 #include <queue>
 #include <stdexcept>
 
 namespace {
 
 constexpr size_t MIN_CHUNK_SIZE = 1000;
-
-std::vector<std::string> read_seeds(const std::string& seeds_path)
-{
-    std::ifstream seeds_file(seeds_path);
-    if (!seeds_file) {
-        throw std::runtime_error("Unable to open seeds file: " + seeds_path);
-    }
-    return {std::istream_iterator<std::string>(seeds_file), std::istream_iterator<std::string>()};
-}
 
 struct SequenceIterator {
     const std::string& seq;
@@ -81,18 +70,20 @@ AIEdit::AIEdit(const std::string& cbf_path,
                const std::string& seeds_path,
                const std::string& model_path,
                unsigned num_threads)
-  : model(model_path, read_seeds(seeds_path))
+  : model(model_path, seeds_path)
   , cprobs(hist_path, cbf_path)
   , num_threads(num_threads)
 {}
 
 size_t AIEdit::get_cbf_size() const { return cprobs.cbf.get_bytes(); }
 
-unsigned AIEdit::get_max_indels() const { return model.model.attr("max_indels").toInt(); }
+size_t AIEdit::get_k() const { return model.get_k(); }
 
-unsigned AIEdit::get_max_k() const { return model.model.attr("max_k").toInt(); }
+int64_t AIEdit::get_max_indels() const { return model.get_max_indels(); }
 
-unsigned AIEdit::get_num_seeds() const { return model.model.attr("num_seeds").toInt(); }
+int64_t AIEdit::get_max_k() const { return model.get_max_k(); }
+
+int64_t AIEdit::get_num_seeds() const { return model.get_num_seeds(); }
 
 Results AIEdit::get_edits(const std::string& seq)
 {
@@ -107,7 +98,7 @@ Results AIEdit::get_edits(const std::string& seq)
 Results AIEdit::process_chunk(const std::string& seq, size_t start, size_t end)
 {
     Results results;
-    const auto kmer_size = model.seeds[0].size();
+    const auto kmer_size = model.get_k();
     const auto num_hashes = cprobs.cbf.get_hash_num();
     btllib::BlindNtHash hash_fn(seq, num_hashes, kmer_size, start);
     SequenceIterator seq_iter{seq, hash_fn, end, cprobs, 0.5};
