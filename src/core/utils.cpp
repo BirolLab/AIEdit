@@ -38,7 +38,7 @@ std::string apply_edits(const std::string& seq, const std::vector<Edit>& edits)
 std::string pattern_to_string(const std::vector<Edit::Type>& pattern)
 {
     std::string pattern_str;
-    pattern_str.reserve(pattern.size());
+    pattern_str.resize(pattern.size());
     auto get_char = [](aiedit::Edit::Type t) { return static_cast<char>(t); };
     std::transform(pattern.begin(), pattern.end(), pattern_str.begin(), get_char);
     return pattern_str;

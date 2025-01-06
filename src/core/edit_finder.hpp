@@ -9,18 +9,17 @@ class EditFinder
 {
   public:
 
-    EditFinder(const CountProbabilities& cprobs);
+    EditFinder(const CountProbabilities& cprobs, unsigned kmer_size);
 
     bool get_edits(const std::string& seq,
                    size_t pos,
-                   unsigned k,
-                   unsigned num_hashes,
                    const std::vector<Edit::Type>& pattern,
                    std::vector<Edit>& out_edits) const;
 
   private:
 
     const CountProbabilities& cprobs;
+    unsigned kmer_size;
 };
 
 }

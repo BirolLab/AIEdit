@@ -49,7 +49,7 @@ rank_candidates(const std::string& unknown,
     while (!q.empty()) {
         auto score = std::get<0>(q.front());
         auto candidate = std::get<2>(q.front());
-        if (candidate.size() > 2 && score / candidate.size() < std::log(0.5)) {
+        if (candidate.size() > 2 && score / candidate.size() < -std::log(0.5)) {
             q.pop();
             continue;
         }
@@ -59,7 +59,7 @@ rank_candidates(const std::string& unknown,
             for (auto b : {'A', 'C', 'G', 'T'}) {
                 btllib::BlindNtHash hash_func = *std::get<1>(q.front()).get();
                 hash_func.roll(b);
-                auto b_prob = std::log(cprobs.get_prob(hash_func.hashes()) + 1e-9);
+                auto b_prob = -std::log(cprobs.get_prob(hash_func.hashes()) + 1e-9);
                 const auto h_ptr = std::make_shared<btllib::BlindNtHash>(base_hash);
                 q.emplace(score + b_prob, h_ptr, candidate + b);
             }
@@ -67,7 +67,7 @@ rank_candidates(const std::string& unknown,
             btllib::BlindNtHash hash_func = *std::get<1>(q.front()).get();
             hash_func.roll(unknown[candidate.size()]);
             const auto h_ptr = std::make_shared<btllib::BlindNtHash>(base_hash);
-            score += std::log(cprobs.get_prob(hash_func.hashes()) + 1e-9);
+            score += -std::log(cprobs.get_prob(hash_func.hashes()) + 1e-9);
             q.emplace(score, h_ptr, candidate + unknown[candidate.size()]);
         }
         q.pop();
@@ -79,19 +79,19 @@ rank_candidates(const std::string& unknown,
 
 namespace aiedit {
 
-EditFinder::EditFinder(const CountProbabilities& cprobs)
+EditFinder::EditFinder(const CountProbabilities& cprobs, unsigned kmer_size)
   : cprobs(cprobs)
+  , kmer_size(kmer_size)
 {}
 
 bool EditFinder::get_edits(const std::string& seq,
                            size_t pos,
-                           unsigned k,
-                           unsigned num_hashes,
                            const std::vector<Edit::Type>& pattern,
                            std::vector<Edit>& out_edits) const
 {
-    const auto unknown = generate_unknown(seq.substr(pos + k, pattern.size() + k), pattern);
-    btllib::BlindNtHash base_hash(seq, num_hashes, k, pos - 1);
+    const auto sub_seq = seq.substr(pos + kmer_size, pattern.size() + kmer_size);
+    const auto unknown = generate_unknown(sub_seq, pattern);
+    btllib::BlindNtHash base_hash(seq, cprobs.get_num_hashes(), kmer_size, pos - 1);
     const auto results = rank_candidates(unknown, base_hash, cprobs);
     if (results.empty() || results.top().first <= score(base_hash, results.top().second, cprobs)) {
         return false;
@@ -103,7 +103,7 @@ bool EditFinder::get_edits(const std::string& seq,
         }
     }
     for (size_t i = 0; i < pattern.size(); i++) {
-        const auto base_pos = pos + k + i;
+        const auto base_pos = pos + kmer_size + i;
         if (pattern[i] == Edit::Type::SUBSTITUION) {
             out_edits.emplace_back(Edit::substitution(base_pos, seq[base_pos], afters.front()));
             afters.pop();

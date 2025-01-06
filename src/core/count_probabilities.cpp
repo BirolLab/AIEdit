@@ -41,4 +41,6 @@ double CountProbabilities::get_prob(const uint64_t* hashes) const
     return probs[cbf.contains(hashes)];
 }
 
+unsigned CountProbabilities::get_num_hashes() const { return cbf.get_hash_num(); }
+
 }

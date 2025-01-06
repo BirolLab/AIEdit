@@ -15,7 +15,8 @@ class CountProbabilities
     CountProbabilities(const std::string& hist_path,
                        const std::string& cbf_path);
 
-    [[nodiscard]] double get_prob(const uint64_t* hashes) const;
+    double get_prob(const uint64_t* hashes) const;
+    unsigned get_num_hashes() const;
 
   private:
 
