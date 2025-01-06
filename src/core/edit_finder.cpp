@@ -35,7 +35,7 @@ std::string generate_unknown(const std::string& subseq,
             edits.emplace_back(aiedit::Edit::insertion(i, UNKNOWN_BASE));
         }
     }
-    return aiedit::apply_edits(subseq, edits);
+    return aiedit::utils::apply_edits(subseq, edits);
 }
 
 std::priority_queue<std::pair<double, std::string>>

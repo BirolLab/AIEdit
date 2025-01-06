@@ -101,7 +101,7 @@ int main(int argc, char** argv)
 #pragma omp parallel num_threads(args.contig_mode ? args.num_threads : 1)
     for (auto record : seq_reader) {
         const auto results = editor.get_edits(record.seq);
-        const auto edited = aiedit::apply_edits(record.seq, results.edits);
+        const auto edited = aiedit::utils::apply_edits(record.seq, results.edits);
         seq_writer.write(record.id, record.comment, edited);
         write_logs(record.id, results, edits_writer, ignored_writer);
     }
