@@ -36,6 +36,4 @@ class Edit
     Edit(size_t pos, char before, char after);
 };
 
-std::string apply_edits(const std::string& seq, const std::vector<Edit>& edits);
-
 }

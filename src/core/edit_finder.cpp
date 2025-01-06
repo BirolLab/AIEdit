@@ -1,5 +1,7 @@
 #include "edit_finder.hpp"
 
+#include "utils.hpp"
+
 #include <btllib/nthash.hpp>
 #include <cmath>
 #include <queue>

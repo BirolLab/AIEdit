@@ -20,14 +20,14 @@ namespace aiedit {
 
 PatternModel::PatternModel(const std::string& model_path, const std::string& seeds_path)
 {
-    model = torch::jit::load(model_path);
-    model.eval();
     try {
+        model = torch::jit::load(model_path);
+        model.eval();
         num_seeds = model.attr("num_seeds").toInt();
         max_indels = model.attr("max_indels").toInt();
         max_k = model.attr("max_k").toInt();
     } catch (const c10::Error& e) {
-        throw std::runtime_error("Failed to retrieve model attributes: " + std::string(e.what()));
+        throw std::runtime_error("Failed to load pattern model: " + std::string(e.what()));
     }
     std::ifstream seeds_file(seeds_path);
     if (!seeds_file) {

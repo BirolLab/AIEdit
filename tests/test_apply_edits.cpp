@@ -4,9 +4,9 @@
 #include <string>
 #include <vector>
 
-#include "core/edit.hpp"
+#include "core/utils.hpp"
 
-TEST_CASE("Test applying substitutions", "[core] [edit.hpp]")
+TEST_CASE("Test applying substitutions", "[apply_edits]")
 {
     std::string before = "ACAGCAGTAGATG";
     std::string edited = "CCACCAGTAGATG";
@@ -15,7 +15,7 @@ TEST_CASE("Test applying substitutions", "[core] [edit.hpp]")
     REQUIRE(aiedit::apply_edits(before, edits) == edited);
 }
 
-TEST_CASE("Test applying insertions", "[core] [edit.hpp]")
+TEST_CASE("Test applying insertions", "[apply_edits]")
 {
     std::string before = "ACAGCAGTAGATG";
     std::string edited = "ACATGGCAGTAGATG";
@@ -24,7 +24,7 @@ TEST_CASE("Test applying insertions", "[core] [edit.hpp]")
     REQUIRE(aiedit::apply_edits(before, edits) == edited);
 }
 
-TEST_CASE("Test applying deletions", "[core] [edit.hpp]")
+TEST_CASE("Test applying deletions", "[apply_edits]")
 {
     std::string before = "ACAGCAGTAGATG";
     std::string edited = "AGCAGTAGATG";
@@ -33,7 +33,7 @@ TEST_CASE("Test applying deletions", "[core] [edit.hpp]")
     REQUIRE(aiedit::apply_edits(before, edits) == edited);
 }
 
-TEST_CASE("Test applying multiple edits", "[core] [edit.hpp]")
+TEST_CASE("Test applying multiple edits", "[apply_edits]")
 {
     std::string before = "ACAGCAGTAGATG";
     std::string edited = "ATCGAGTAGATG";

@@ -7,6 +7,7 @@
 #include <string>
 
 #include "core/aiedit.hpp"
+#include "core/utils.hpp"
 #include "program/args.hpp"
 #include "program/colorize.hpp"
 #include "program/file_io.hpp"
