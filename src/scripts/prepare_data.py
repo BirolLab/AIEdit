@@ -97,22 +97,25 @@ def generate_data(
     probs = hist["error"].tolist()
     pbar = tqdm.tqdm(total=num_samples, unit="samples", desc="Generating data")
     num_reads = 0
-    for record in btllib.SeqReader(reads_path, btllib.SeqReaderFlag.LONG_MODE):  # type: ignore
+    sr = btllib.SeqReader(reads_path, btllib.SeqReaderFlag.LONG_MODE)  # type: ignore
+    for record in sr:
+        pbar.set_postfix_str(f"num_reads={num_reads}, num_samples={len(data)}")
+        num_reads += 1
         if random.random() > sample_rate:
             continue
         seq, k = record.seq, len(seeds[0])
         match = re.search(r"(F|R)_(\d+)_\d+_\d+", record.id)
         if not match:
-            warnings.warn(f"invalid read id: {record.id}")
+            pbar.write(f"invalid read id: {record.id}")
             continue
         if match.group(1) == "R":
             continue
         if record.id not in vars:
-            warnings.warn(f"read has no errors: {record.id}")
+            pbar.write(f"read has no errors: {record.id}")
             continue
         head = int(match.group(2))
         if len(seq) - head < 3 * k:
-            warnings.warn(f"read is too short ({len(seq)}): {record.id}")
+            pbar.write(f"read is too short ({len(seq)}): {record.id}")
             continue
         read_vars = vars[record.id].sort_values("Seq_pos")
         read_vars["Seq_pos"] += head
@@ -132,10 +135,8 @@ def generate_data(
             if validate_sample(x, y, len(seeds)):
                 data.append((x, y))
                 pbar.update()
-            if num_samples and len(data) > num_samples:
+            if num_samples is not None and len(data) >= num_samples:
                 return data
-        num_reads += 1
-        pbar.set_postfix_str(f"num_reads={num_reads}")
     return data
 
 
