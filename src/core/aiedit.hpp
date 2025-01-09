@@ -41,7 +41,6 @@ class AIEdit
     size_t get_cbf_size() const;
     size_t get_k() const;
     int64_t get_max_indels() const;
-    int64_t get_max_k() const;
     int64_t get_num_seeds() const;
 
     Results get_edits(const std::string& seq);

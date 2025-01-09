@@ -25,11 +25,11 @@ class PatternModel
 
     size_t get_k() const;
     int64_t get_max_indels() const;
-    int64_t get_max_k() const;
     int64_t get_num_seeds() const;
 
   private:
 
+    torch::Tensor h_seeds;
     torch::jit::Module model;
     std::vector<std::string> seeds;
     int64_t num_seeds, max_k, max_indels;

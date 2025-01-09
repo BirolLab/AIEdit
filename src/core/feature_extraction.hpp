@@ -10,7 +10,7 @@ namespace aiedit {
 
 at::Tensor positional_encoding(unsigned max_length, unsigned dim);
 
-at::Tensor encode_seeds(const std::vector<std::string>& seeds, unsigned max_k);
+at::Tensor encode_seeds(const std::vector<std::string>& seeds);
 
 at::Tensor get_model_input(const std::string& seq,
                            unsigned start,

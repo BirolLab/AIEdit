@@ -27,12 +27,12 @@ torch::Tensor positional_encoding(unsigned max_length, unsigned dim)
     return pos_enc;
 }
 
-torch::Tensor encode_seeds(const std::vector<std::string>& seeds, unsigned max_k)
+torch::Tensor encode_seeds(const std::vector<std::string>& seeds)
 {
-    auto x_seeds = torch::zeros({(unsigned)seeds.size(), max_k});
+    auto x_seeds = torch::empty({(unsigned)seeds[0].size(), (unsigned)seeds.size()});
     for (unsigned i = 0; i < seeds.size(); i++) {
         for (unsigned j = 0; j < seeds[i].size(); j++) {
-            x_seeds[i][j] = static_cast<float>(seeds[i][j] - '0');
+            x_seeds[j][i] = static_cast<float>(seeds[i][j] - '0');
         }
     }
     return x_seeds;

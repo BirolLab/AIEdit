@@ -1,6 +1,7 @@
 #include "aiedit.hpp"
 
 #include "edit_finder.hpp"
+#include "utils.hpp"
 
 #include <algorithm>
 #include <queue>
@@ -81,8 +82,6 @@ size_t AIEdit::get_k() const { return model.get_k(); }
 
 int64_t AIEdit::get_max_indels() const { return model.get_max_indels(); }
 
-int64_t AIEdit::get_max_k() const { return model.get_max_k(); }
-
 int64_t AIEdit::get_num_seeds() const { return model.get_num_seeds(); }
 
 Results AIEdit::get_edits(const std::string& seq)
@@ -102,7 +101,7 @@ Results AIEdit::process_chunk(const std::string& seq, size_t start, size_t end)
     const auto num_hashes = cprobs.cbf.get_hash_num();
     btllib::BlindNtHash hash_fn(seq, num_hashes, kmer_size, start);
     SequenceIterator seq_iter{seq, hash_fn, end, cprobs, 0.5};
-    EditFinder edit_finder(cprobs);
+    EditFinder edit_finder(cprobs, kmer_size);
     seq_iter.next_hit();
     while (seq_iter.next_miss()) {
         const size_t miss_pos = hash_fn.get_pos();
@@ -113,16 +112,18 @@ Results AIEdit::process_chunk(const std::string& seq, size_t start, size_t end)
         if (hash_fn.get_pos() - miss_pos > 1000) {
             continue;
         }
+        std::cout << miss_pos << " " << hash_fn.get_pos() << std::endl;
         auto pattern =
           model.get_pattern(seq, miss_pos, hash_fn.get_pos(), cprobs.cbf, cprobs.probs);
+        std::cout << aiedit::utils::pattern_to_string(pattern) << std::endl;
         if (pattern.size() > get_max_indels()) {
             continue;
         }
-        auto found =
-          edit_finder.get_edits(seq, miss_pos, kmer_size, num_hashes, pattern, results.edits);
+        auto found = edit_finder.get_edits(seq, miss_pos, pattern, results.edits);
         if (!found) {
             results.ignored.emplace_back(IgnoredPattern{miss_pos, pattern});
         }
+        std::cout << found << std::endl;
     }
     return results;
 }

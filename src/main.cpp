@@ -88,7 +88,6 @@ int main(int argc, char** argv)
     std::cout << "- Number of seeds: " << editor.get_num_seeds() << std::endl;
     std::cout << "- Maximum indel length: " << editor.get_max_indels() << std::endl;
     std::cout << "- K-mer length: " << editor.get_k() << std::endl;
-    std::cout << "- Maximum k-mer length: " << editor.get_max_k() << std::endl;
     std::cout << std::endl;
 
     const std::string prefix = args.out_path / std::filesystem::path(args.in_path).stem();

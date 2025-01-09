@@ -9,46 +9,66 @@ import torchinfo
 import tqdm
 
 
+class SeedsEncoder(torch.nn.Module):
+
+    def __init__(self, num_seeds: int, hiden_size: int):
+        super(SeedsEncoder, self).__init__()
+        self._gru = torch.nn.GRU(num_seeds, hiden_size, batch_first=True)
+
+    def forward(self, x_seeds):
+        return self._gru(x_seeds)[1]
+
+
+class ProbsEncoder(torch.nn.Module):
+
+    def __init__(self, probs_dim: int, hidden_size: int):
+        super(ProbsEncoder, self).__init__()
+        self._gru = torch.nn.GRU(probs_dim, hidden_size, batch_first=True)
+
+    def forward(self, x_probs, h_seeds):
+        return self._gru(x_probs, h_seeds)[1]
+
+
+class Decoder(torch.nn.Module):
+
+    def __init__(self, hidden_size: int):
+        super(Decoder, self).__init__()
+        self._gru = torch.nn.GRU(5, hidden_size, batch_first=True)
+        self._out = torch.nn.Linear(hidden_size, 5)
+
+    def forward(self, x_edits, h_probs):
+        return self._out(self._gru(x_edits, h_probs)[0])
+
+
 class Model(torch.nn.Module):
 
-    def __init__(self, num_seeds: int, max_indels: int, max_k: int, dim: int):
+    def __init__(self, num_seeds: int, max_indels: int, hidden_size: int):
         super(Model, self).__init__()
+        probs_dim = num_seeds + 2 * max_indels + 1
+        self._input_dims = [(35, num_seeds), (40, probs_dim), (3, 5)]
         self.num_seeds = torch.jit.Attribute(num_seeds, int)
         self.max_indels = torch.jit.Attribute(max_indels, int)
-        self.max_k = torch.jit.Attribute(max_k, int)
-        probs_dim = num_seeds + 2 * max_indels + 1
-        self.input_sizes = [(100, probs_dim), (num_seeds, max_k), (max_indels, 5)]
-        self.register_buffer("pos_enc", ext.positional_encoding(2000, dim))
-        self.probs_proj = torch.nn.Linear(probs_dim, dim)
-        self.seeds_proj = torch.nn.Linear(max_k, dim)
-        self.edits_proj = torch.nn.Linear(5, dim)
-        self.seeds2probs = torch.nn.Transformer(dim, 4, 1, 1, dim, batch_first=True)
-        self.probs2edits = torch.nn.Transformer(dim, 4, 1, 1, dim, batch_first=True)
-        self.out = torch.nn.Linear(dim, 5)
+        self.seeds_encoder = SeedsEncoder(num_seeds, hidden_size)
+        self.probs_encoder = ProbsEncoder(probs_dim, hidden_size)
+        self.decoder = Decoder(hidden_size)
 
     @torch.jit.ignore
     def summary(self):
-        torchinfo.summary(self, input_size=self.input_sizes)
+        torchinfo.summary(self, self._input_dims)
 
-    def forward(self, x_probs, x_seeds, x_edits):
-        x_probs = self.probs_proj(x_probs) + self.pos_enc[: x_probs.size(0), :]
-        x_seeds = self.seeds_proj(x_seeds)
-        x_edits = self.edits_proj(x_edits) + self.pos_enc[: x_edits.size(0), :]
-        x_probs = self.seeds2probs(x_seeds, x_probs)
-        mask = torch.ones(x_edits.size(0), x_edits.size(0))
-        mask = torch.triu(mask * float("-inf"), diagonal=1)
-        y = self.probs2edits(x_probs, x_edits, tgt_mask=mask, tgt_is_causal=True)
-        return self.out(y)
+    def forward(self, x_seeds, x_probs, x_edits):
+        h_seeds = self.seeds_encoder(x_seeds)
+        h_probs = self.probs_encoder(x_probs, h_seeds)
+        return self.decoder(x_edits, h_probs)
 
 
 def parse_args():
     default_t = torch.get_num_threads()
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", help="path to dataset", required=True, nargs="+")
-    parser.add_argument("-b", help="batch size", type=int, default=32)
-    parser.add_argument("-n", help="number of epochs", type=int, default=1)
+    parser.add_argument("-d", help="path to dataset(s)", required=True, nargs="+")
+    parser.add_argument("-b", help="batch size", type=int, default=1)
+    parser.add_argument("-e", help="number of epochs", type=int, default=1)
     parser.add_argument("-t", help="number of threads", type=int, default=default_t)
-    parser.add_argument("-k", help="maximum kmer length", type=int, default=128)
     parser.add_argument("-m", help="hidden dimension", type=int, default=64)
     parser.add_argument("-o", help="output files prefix", default="model")
     return parser.parse_args()
@@ -66,37 +86,44 @@ def load_data(paths: list[str]):
 def weighted_ce_loss(logits, targets, reduction_factor=0.1):
     ce_loss = torch.nn.functional.cross_entropy(logits, targets, reduction="none")
     ce_loss[(logits.argmax(dim=1) == targets) & (targets == 0)] *= reduction_factor
-    return ce_loss.sum()
+    return ce_loss
+
+
+def update_accuracy(y_pred, y_true, num_true, num_out):
+    num_ignore = ((y_true == 0) & (y_pred.argmax(dim=1) == y_true)).sum()
+    num_true += (y_pred.argmax(dim=1) == y_true).sum() - num_ignore
+    num_out += y_true.size(0) - num_ignore
+    return num_true, num_out
 
 
 def train(model, optimizer, data, batch_size, i_epoch):
-    x_seeds = [ext.encode_seeds(d["seeds"], model.max_k.value) for d in data]
+    x_seeds = [ext.encode_seeds(d["seeds"]) for d in data]
     indices = [(i, j) for i, d in enumerate(data) for j in range(len(d["data"]))]
     random.shuffle(indices)
     num_true, num_out = 0, 0
     i_pattern = 1
-    loss, epoch_loss = 0, 0
+    loss = []
     loss_history, acc_history = [], []
-    pbar = tqdm.tqdm(indices, ascii=" >=", desc=f"Epoch {i_epoch + 1}", ncols=100)
+    pbar = tqdm.tqdm(indices, desc=f"Epoch {i_epoch + 1}", ncols=0)
     for i_data, i_sample in pbar:
-        x, y = data[i_data]["data"][i_sample]
-        y_pred = model(x, x_seeds[i_data], y[:-1, :])
+        x_probs, y = data[i_data]["data"][i_sample]
+        kmer_size = len(data[i_data]["seeds"][0])
+        if x_probs.size(0) > 3 * kmer_size or y.size(0) > data[i_data]["max_indels"]:
+            continue
+        y_pred = model(x_seeds[i_data], x_probs, y[:-1, :])
         y_true = y[1:, :].argmax(dim=1)
-        loss += weighted_ce_loss(y_pred, y_true)
+        loss.append(weighted_ce_loss(y_pred, y_true))
+        num_true, num_out = update_accuracy(y_pred, y_true, num_true, num_out)
         if i_pattern % batch_size == 0:
+            loss = torch.cat(loss).mean()
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            epoch_loss += loss.item()
-            loss = 0
-        num_ignore = ((y_true == 0) & (y_pred.argmax(dim=1) == y_true)).sum()
-        num_true += (y_pred.argmax(dim=1) == y_true).sum() - num_ignore
-        num_out += y_true.size(0) - num_ignore
-        acc = (num_true / num_out).item()
-        acc_history.append(acc)
-        avg_loss = epoch_loss / i_pattern
-        loss_history.append(avg_loss)
-        pbar.set_postfix_str(f"loss={avg_loss:.4f}, acc={acc:.4f}")
+            acc = (num_true / num_out).item()
+            pbar.set_postfix_str(f"loss={loss.item():.4f}, acc={acc:.4f}")
+            loss_history.append(loss.item())
+            acc_history.append(acc)
+            loss = []
         i_pattern += 1
     return loss_history, acc_history
 
@@ -105,10 +132,11 @@ def main():
     args = parse_args()
     print("Loading datasets...")
     datasets, max_indels, num_seeds = load_data(args.d)
-    model = Model(num_seeds, max_indels, args.k, args.m)
+    model = Model(num_seeds, max_indels, args.m)
     optimizer = torch.optim.AdamW(model.parameters())
-    if os.path.isfile(args.o):
-        checkpoint = torch.load(args.o, weights_only=True)
+    checkpoint_path = args.o + "_checkpoint.pt"
+    if os.path.isfile(checkpoint_path):
+        checkpoint = torch.load(checkpoint_path, weights_only=True)
         model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         print("Model state loaded from checkpoint")
@@ -119,18 +147,18 @@ def main():
     print(f"Number of samples: {sum(len(d['data']) for d in datasets)}")
     print(f"Using {torch.get_num_threads()} threads")
     history = {"loss": [], "acc": []}
-    for i_epoch in range(args.n):
+    for i_epoch in range(args.e):
         loss, acc = train(model, optimizer, datasets, args.b, i_epoch)
         history["loss"].extend(loss)
         history["acc"].extend(acc)
         state_dict = dict()
         state_dict["model_state_dict"] = model.state_dict()
         state_dict["optimizer_state_dict"] = optimizer.state_dict()
-        torch.save(state_dict, args.o + "_checkpoint.pt")
+        torch.save(state_dict, checkpoint_path)
         history_file = open(args.o + "_history.json", "w")
         json.dump(history, history_file)
         history_file.close()
-    torch.jit.script(model).save(args.o + "_jit.pt")
+    torch.jit.script(model).save(args.o + "_script.pt")
 
 
 if __name__ == "__main__":
