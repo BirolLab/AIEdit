@@ -14,7 +14,7 @@ class SeedsEncoder(torch.nn.Module):
 
     def __init__(self, num_seeds: int, hidden_size: int):
         super(SeedsEncoder, self).__init__()
-        self._gru = torch.nn.GRU(num_seeds, hidden_size)
+        self._gru = torch.nn.GRU(num_seeds, hidden_size, bidirectional=True)
 
     def forward(self, x_seeds):
         return self._gru(x_seeds)[1]
@@ -24,7 +24,7 @@ class ProbsEncoder(torch.nn.Module):
 
     def __init__(self, probs_dim: int, hidden_size: int):
         super(ProbsEncoder, self).__init__()
-        self._gru = torch.nn.GRU(probs_dim, hidden_size)
+        self._gru = torch.nn.GRU(probs_dim, hidden_size, bidirectional=True)
 
     def forward(self, x_probs, h_seeds):
         return self._gru(x_probs, h_seeds)[1]
@@ -34,8 +34,8 @@ class Decoder(torch.nn.Module):
 
     def __init__(self, hidden_size: int):
         super(Decoder, self).__init__()
-        self._gru = torch.nn.GRU(5, hidden_size)
-        self._out = torch.nn.Linear(hidden_size, 5)
+        self._gru = torch.nn.GRU(5, hidden_size, bidirectional=True)
+        self._out = torch.nn.Linear(hidden_size * 2, 5)
 
     def forward(self, x_edits, h_probs):
         return self._out(self._gru(x_edits, h_probs)[0])
