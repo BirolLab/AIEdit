@@ -4,6 +4,7 @@ import os
 import random
 
 import aiedit_torch_extensions as ext  # type: ignore
+import numpy as np
 import torch
 import torchinfo
 import tqdm
@@ -11,9 +12,9 @@ import tqdm
 
 class SeedsEncoder(torch.nn.Module):
 
-    def __init__(self, num_seeds: int, hiden_size: int):
+    def __init__(self, num_seeds: int, hidden_size: int):
         super(SeedsEncoder, self).__init__()
-        self._gru = torch.nn.GRU(num_seeds, hiden_size, batch_first=True)
+        self._gru = torch.nn.GRU(num_seeds, hidden_size)
 
     def forward(self, x_seeds):
         return self._gru(x_seeds)[1]
@@ -23,7 +24,7 @@ class ProbsEncoder(torch.nn.Module):
 
     def __init__(self, probs_dim: int, hidden_size: int):
         super(ProbsEncoder, self).__init__()
-        self._gru = torch.nn.GRU(probs_dim, hidden_size, batch_first=True)
+        self._gru = torch.nn.GRU(probs_dim, hidden_size)
 
     def forward(self, x_probs, h_seeds):
         return self._gru(x_probs, h_seeds)[1]
@@ -33,7 +34,7 @@ class Decoder(torch.nn.Module):
 
     def __init__(self, hidden_size: int):
         super(Decoder, self).__init__()
-        self._gru = torch.nn.GRU(5, hidden_size, batch_first=True)
+        self._gru = torch.nn.GRU(5, hidden_size)
         self._out = torch.nn.Linear(hidden_size, 5)
 
     def forward(self, x_edits, h_probs):
@@ -70,7 +71,7 @@ def parse_args():
     parser.add_argument("-b", help="batch size", type=int, default=1)
     parser.add_argument("-e", help="number of epochs", type=int, default=1)
     parser.add_argument("-t", help="number of threads", type=int, default=default_t)
-    parser.add_argument("-h", help="hidden dimension", type=int, default=64)
+    parser.add_argument("-h", help="hidden dimension", type=int, default=32)
     parser.add_argument("-o", help="output files prefix", default="model")
     return parser.parse_args()
 
@@ -126,8 +127,6 @@ def train(model, optimizer, data, batch_size, i_epoch, val_data):
             acc_history.append(acc)
             loss = []
         i_pattern += 1
-        if i_pattern == 100:
-            break
     if val_data is None:
         return loss_history, acc_history, (None, None)
     val_loss, val_true, val_out = [], 0, 0
@@ -150,7 +149,7 @@ def main():
     datasets, max_indels, num_seeds = load_data(args.d)
     val_data = torch.load(args.v, weights_only=True) if args.v else None
     model = Model(num_seeds, max_indels, args.h)
-    optimizer = torch.optim.AdamW(model.parameters())
+    optimizer = torch.optim.AdamW(model.parameters(), 0.01)
     checkpoint_path = args.o + "_checkpoint.pt"
     if os.path.isfile(checkpoint_path):
         checkpoint = torch.load(checkpoint_path, weights_only=True)

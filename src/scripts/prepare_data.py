@@ -120,7 +120,7 @@ def generate_data(
         read_vars = vars[record.id].sort_values("Seq_pos")
         read_vars["Seq_pos"] += head
         pos_ends = (read_vars["Seq_pos"] + read_vars["error_length"]).shift().fillna(0)
-        read_vars["group"] = (read_vars["Seq_pos"] - pos_ends > 2 * k).cumsum()
+        read_vars["group"] = (read_vars["Seq_pos"] - pos_ends > k).cumsum()
         pos_diff = 0
         for _, group in read_vars.groupby("group"):
             start = max(group.iloc[0]["Seq_pos"] - k + 1, 0) + pos_diff
