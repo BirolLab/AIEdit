@@ -64,12 +64,13 @@ class Model(torch.nn.Module):
 
 def parse_args():
     default_t = torch.get_num_threads()
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("-d", help="path to dataset(s)", required=True, nargs="+")
+    parser.add_argument("-v", help="path to validation data")
     parser.add_argument("-b", help="batch size", type=int, default=1)
     parser.add_argument("-e", help="number of epochs", type=int, default=1)
     parser.add_argument("-t", help="number of threads", type=int, default=default_t)
-    parser.add_argument("-m", help="hidden dimension", type=int, default=64)
+    parser.add_argument("-h", help="hidden dimension", type=int, default=64)
     parser.add_argument("-o", help="output files prefix", default="model")
     return parser.parse_args()
 
@@ -96,7 +97,7 @@ def update_accuracy(y_pred, y_true, num_true, num_out):
     return num_true, num_out
 
 
-def train(model, optimizer, data, batch_size, i_epoch):
+def train(model, optimizer, data, batch_size, i_epoch, val_data):
     x_seeds = [ext.encode_seeds(d["seeds"]) for d in data]
     indices = [(i, j) for i, d in enumerate(data) for j in range(len(d["data"]))]
     random.shuffle(indices)
@@ -125,14 +126,30 @@ def train(model, optimizer, data, batch_size, i_epoch):
             acc_history.append(acc)
             loss = []
         i_pattern += 1
-    return loss_history, acc_history
+        if i_pattern == 100:
+            break
+    if val_data is None:
+        return loss_history, acc_history, (None, None)
+    val_loss, val_true, val_out = [], 0, 0
+    val_seeds = ext.encode_seeds(val_data["seeds"])
+    with torch.no_grad():
+        for x, y_val in val_data["data"]:
+            y_pred = model(val_seeds, x, y_val[:-1, :])
+            y_true = y_val[1:, :].argmax(dim=1)
+            val_loss.append(weighted_ce_loss(y_pred, y_true))
+            val_true, val_out = update_accuracy(y_pred, y_true, val_true, val_out)
+    val_loss = torch.cat(val_loss).mean().item()
+    val_acc = (val_true / val_out).item()
+    print(f"Validation loss = {val_loss:.4f}; accuracy = {val_acc:.4f}")
+    return loss_history, acc_history, (val_loss, val_acc)
 
 
 def main():
     args = parse_args()
     print("Loading datasets...")
     datasets, max_indels, num_seeds = load_data(args.d)
-    model = Model(num_seeds, max_indels, args.m)
+    val_data = torch.load(args.v, weights_only=True) if args.v else None
+    model = Model(num_seeds, max_indels, args.h)
     optimizer = torch.optim.AdamW(model.parameters())
     checkpoint_path = args.o + "_checkpoint.pt"
     if os.path.isfile(checkpoint_path):
@@ -144,13 +161,19 @@ def main():
     torch.set_num_threads(args.t)
     print(f"Maximum indel length: {max_indels}")
     print(f"Number of seeds: {num_seeds}")
-    print(f"Number of samples: {sum(len(d['data']) for d in datasets)}")
+    print(f"Number of training samples: {sum(len(d['data']) for d in datasets)}")
+    print(f"Number of validation samples: {len(val_data['data']) if val_data else 0}")
     print(f"Using {torch.get_num_threads()} threads")
     history = {"loss": [], "acc": []}
+    if val_data:
+        history.update({"val_loss": [], "val_acc": []})
     for i_epoch in range(args.e):
-        loss, acc = train(model, optimizer, datasets, args.b, i_epoch)
+        loss, acc, val = train(model, optimizer, datasets, args.b, i_epoch, val_data)
         history["loss"].extend(loss)
         history["acc"].extend(acc)
+        if val_data:
+            history["val_loss"].append(val[0])
+            history["val_acc"].append(val[1])
         state_dict = dict()
         state_dict["model_state_dict"] = model.state_dict()
         state_dict["optimizer_state_dict"] = optimizer.state_dict()
