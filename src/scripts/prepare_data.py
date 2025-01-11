@@ -20,6 +20,7 @@ def parse_args():
     parser.add_argument("-s", help="path to seeds file", required=True)
     parser.add_argument("-i", help="maximum indel length", type=int, default=10)
     parser.add_argument("-p", help="subsample rate", type=float, default=1.0)
+    parser.add_argument("-d", help="maximum error rate", type=float, default=0.02)
     parser.add_argument("-n", help="number of samples", type=int)
     parser.add_argument("-o", help="path to store dataset", default="data.pt")
     return parser.parse_args()
@@ -91,6 +92,7 @@ def generate_data(
     seeds: list[str],
     max_indels: int,
     sample_rate: float,
+    max_err_rate: float,
     num_samples: int,
 ):
     data = []
@@ -118,6 +120,11 @@ def generate_data(
             pbar.write(f"read is too short ({len(seq)}): {record.id}")
             continue
         read_vars = vars[record.id].sort_values("Seq_pos")
+        pos_first = read_vars.iloc[0]["Seq_pos"]
+        pos_last = read_vars.iloc[-1]["Seq_pos"] + read_vars.iloc[-1]["error_length"]
+        total_errs = read_vars["error_length"].sum()
+        if total_errs / (pos_last - pos_first) > max_err_rate:
+            continue
         read_vars["Seq_pos"] += head
         pos_ends = (read_vars["Seq_pos"] + read_vars["error_length"]).shift().fillna(0)
         read_vars["group"] = (read_vars["Seq_pos"] - pos_ends > k).cumsum()
@@ -152,7 +159,7 @@ def main():
     cbf = btllib.CountingBloomFilter8(args.b)  # type: ignore
     print(f"CBF FPR: {cbf.get_fpr()}")
     print("Seeds:", *seeds, sep=os.linesep)
-    data = generate_data(args.r, vars, cbf, hist, seeds, args.i, args.p, args.n)
+    data = generate_data(args.r, vars, cbf, hist, seeds, args.i, args.p, args.d, args.n)
     print(f"Generated {len(data)} patterns")
     print("Saving dataset...")
     torch.save({"seeds": seeds, "max_indels": args.i, "data": data}, args.o)

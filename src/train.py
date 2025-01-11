@@ -1,10 +1,10 @@
 import argparse
 import json
+import math
 import os
 import random
 
 import aiedit_torch_extensions as ext  # type: ignore
-import numpy as np
 import torch
 import torchinfo
 import tqdm
@@ -26,41 +26,70 @@ class ProbsEncoder(torch.nn.Module):
         super(ProbsEncoder, self).__init__()
         self._gru = torch.nn.GRU(probs_dim, hidden_size, bidirectional=True)
 
-    def forward(self, x_probs, h_seeds):
-        return self._gru(x_probs, h_seeds)[1]
+    def forward(self, x_probs):
+        return self._gru(x_probs)[1]
 
 
 class Decoder(torch.nn.Module):
 
-    def __init__(self, hidden_size: int):
+    def __init__(self, hidden_size: int, max_outs: int):
         super(Decoder, self).__init__()
-        self._gru = torch.nn.GRU(5, hidden_size, bidirectional=True)
-        self._out = torch.nn.Linear(hidden_size * 2, 5)
+        self._max_outs = max_outs
+        self._teacher_forcing = 0.0
+        self._gru = torch.nn.GRU(5, hidden_size)
+        self._out = torch.nn.Linear(hidden_size, 5)
 
-    def forward(self, x_edits, h_probs):
-        return self._out(self._gru(x_edits, h_probs)[0])
+    @torch.jit.ignore
+    def set_teacher_forcing(self, factor: float):
+        self._teacher_forcing = factor
+
+    def forward(self, x_edits, h0):
+        x_step, h_step = torch.zeros(1, 5), h0
+        outputs = []
+        max_outs = self._max_outs if x_edits is None else x_edits.size(0)
+        while True:
+            y_step, h_step = self._gru(x_step, h_step)
+            y_step = self._out(y_step)
+            outputs.append(y_step)
+            if len(outputs) >= max_outs:
+                break
+            if x_edits is None and y_step.argmax(dim=1) == 4:
+                break
+            if x_edits is not None and torch.rand(1).item() < self._teacher_forcing:
+                x_step = x_edits[len(outputs), :].unsqueeze(0)
+            else:
+                x_step = torch.nn.functional.softmax(y_step.detach(), dim=-1)
+        return torch.cat(outputs)
 
 
 class Model(torch.nn.Module):
 
-    def __init__(self, num_seeds: int, max_indels: int, hidden_size: int):
+    def __init__(
+        self,
+        num_seeds: int,
+        max_indels: int,
+        hidden_size: int,
+        max_outs: int,
+    ):
         super(Model, self).__init__()
         probs_dim = num_seeds + 2 * max_indels + 1
         self._input_dims = [(35, num_seeds), (40, probs_dim), (3, 5)]
         self.num_seeds = torch.jit.Attribute(num_seeds, int)
         self.max_indels = torch.jit.Attribute(max_indels, int)
+        self.max_outs = torch.jit.Attribute(max_outs, int)
         self.seeds_encoder = SeedsEncoder(num_seeds, hidden_size)
         self.probs_encoder = ProbsEncoder(probs_dim, hidden_size)
-        self.decoder = Decoder(hidden_size)
+        self.decoder = Decoder(2 * hidden_size, max_outs)
 
     @torch.jit.ignore
     def summary(self):
-        torchinfo.summary(self, self._input_dims)
+        torchinfo.summary(self, self._input_dims, depth=1)
 
     def forward(self, x_seeds, x_probs, x_edits):
-        h_seeds = self.seeds_encoder(x_seeds)
-        h_probs = self.probs_encoder(x_probs, h_seeds)
-        return self.decoder(x_edits, h_probs)
+        h_seeds = self.seeds_encoder(x_seeds).view(1, -1)
+        h_probs = self.probs_encoder(x_probs).view(1, -1)
+        h_state = h_seeds + h_probs
+        return self.decoder(x_edits, h_state)
 
 
 def parse_args():
@@ -72,6 +101,7 @@ def parse_args():
     parser.add_argument("-e", help="number of epochs", type=int, default=1)
     parser.add_argument("-t", help="number of threads", type=int, default=default_t)
     parser.add_argument("-h", help="hidden dimension", type=int, default=32)
+    parser.add_argument("-y", help="Maximum output edits", type=int, default=20)
     parser.add_argument("-o", help="output files prefix", default="model")
     return parser.parse_args()
 
@@ -87,7 +117,7 @@ def load_data(paths: list[str]):
 
 def weighted_ce_loss(logits, targets, reduction_factor=0.1):
     ce_loss = torch.nn.functional.cross_entropy(logits, targets, reduction="none")
-    ce_loss[(logits.argmax(dim=1) == targets) & (targets == 0)] *= reduction_factor
+    # ce_loss[(logits.argmax(dim=1) == targets) & (targets == 0)] *= reduction_factor
     return ce_loss
 
 
@@ -107,6 +137,7 @@ def train(model, optimizer, data, batch_size, i_epoch, val_data):
     loss = []
     loss_history, acc_history = [], []
     pbar = tqdm.tqdm(indices, desc=f"Epoch {i_epoch + 1}", ncols=0)
+    model.decoder.set_teacher_forcing(math.exp(-0.25 * i_epoch))
     for i_data, i_sample in pbar:
         x_probs, y = data[i_data]["data"][i_sample]
         kmer_size = len(data[i_data]["seeds"][0])
@@ -114,8 +145,10 @@ def train(model, optimizer, data, batch_size, i_epoch, val_data):
             continue
         y_pred = model(x_seeds[i_data], x_probs, y[:-1, :])
         y_true = y[1:, :].argmax(dim=1)
+        # tqdm.tqdm.write(f"{y_pred.argmax(dim=1)} {y_true}")
         loss.append(weighted_ce_loss(y_pred, y_true))
-        num_true, num_out = update_accuracy(y_pred, y_true, num_true, num_out)
+        num_true += (y_pred.argmax(dim=1) == y_true).sum()
+        num_out += y_pred.size(0)
         if i_pattern % batch_size == 0:
             loss = torch.cat(loss).mean()
             optimizer.zero_grad()
@@ -148,7 +181,8 @@ def main():
     print("Loading datasets...")
     datasets, max_indels, num_seeds = load_data(args.d)
     val_data = torch.load(args.v, weights_only=True) if args.v else None
-    model = Model(num_seeds, max_indels, args.h)
+    model = Model(num_seeds, max_indels, args.h, args.y)
+    model.summary()
     optimizer = torch.optim.AdamW(model.parameters(), 0.01)
     checkpoint_path = args.o + "_checkpoint.pt"
     if os.path.isfile(checkpoint_path):
@@ -156,7 +190,6 @@ def main():
         model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         print("Model state loaded from checkpoint")
-    model.summary()
     torch.set_num_threads(args.t)
     print(f"Maximum indel length: {max_indels}")
     print(f"Number of seeds: {num_seeds}")
