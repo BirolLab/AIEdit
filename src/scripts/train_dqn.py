@@ -37,6 +37,10 @@ class Model(torch.nn.Module):
         return self.q_out(torch.cat([h_seeds, h_probs, h_state], dim=-1))
 
 
+def apply_edit(seq, pos, edit):
+    return seq, pos
+
+
 class ModelTrainer:
 
     def __init__(
@@ -68,16 +72,40 @@ class ModelTrainer:
         diffs = torch.diff(mask.to(torch.int8), prepend=torch.tensor([0]))
         starts = (diffs == 1).nonzero(as_tuple=True)[0]
         ends = (diffs == -1).nonzero(as_tuple=True)[0]
-        for i, j in zip(starts, ends):
-            rewards = self._simulate_edits(seq[i:j], x_probs[i:j, :])
-            yield sum(rewards)
+        pairs = zip(starts, ends)
+        filtered_pairs = filter(lambda i, j: (j - i).item() < self._max_edits, pairs)
+        for i, j in filtered_pairs:
+
+            sum_rewards, total_loss = self._simulate_edits(seq[i:j], x_probs)
 
     def _simulate_edits(self, seq: str, x_probs: torch.Tensor):
-        rewards = []
+        sum_rewards, total_loss = 0, 0
         x_steps = torch.zeros(1, 4)
+        k = len(self._seeds[0])
         for _ in range(self._max_edits):
             y_model = self._model(self._x_seeds, x_probs, x_steps)
-        return rewards
+            action = y_model.argmax(dim=-1)
+            if action == 1:
+                pass
+            elif action == 2:
+                pass
+            elif action == 3:
+                pass
+            elif action == 4:
+                pass
+            step = torch.zeros(4)
+            step[action] = 1.0
+            x_steps = torch.cat([x_steps, step])
+            new_probs = ext.get_model_input(seq, 0, len(seq) - k, *self._probs_args)
+            rewards = new_probs - x_probs
+            rewards[:, len(self._seeds) + 1 :] *= -1.0
+            reward = rewards.mean()
+            sum_rewards += reward
+            next_q = self._model(self._x_seeds, new_probs, x_steps).max(dim=-1).detach()
+            q_target = reward + self._gamma * next_q
+            total_loss += torch.nn.functional.huber_loss(y_model[action], q_target)
+        num_edits = x_steps.size(0) - 1
+        return sum_rewards / num_edits, total_loss / num_edits
 
 
 def parse_args():
@@ -132,11 +160,15 @@ def main():
     postfix = {"num_reads": 0, "reward": 0}
     sr = btllib.SeqReader(args.r, btllib.SeqReaderFlag.LONG_MODE)  # type: ignore
     for record in sr:
+        print(record.id)
         match = re.search(r"[FR]_(\d+)_\d+_(\d+)", record.id)
         if not match:
             pbar.write(f"invalid read id: {record.id}")
             continue
         head, tail = int(match.group(1)), int(match.group(2)) - len(seeds[0])
+        while trainer.train(record.seq, head, len(record.seq) - tail):
+            continue
+        return
         for reward in trainer.train(record.seq, head, tail):
             postfix["reward"] = reward
             pbar.set_postfix(postfix)
