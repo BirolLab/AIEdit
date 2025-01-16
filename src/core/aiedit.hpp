@@ -1,11 +1,10 @@
 #pragma once
 
+#include <btllib/counting_bloom_filter.hpp>
 #include <string>
 #include <vector>
 
-#include "count_probabilities.hpp"
-#include "edit.hpp"
-#include "pattern_model.hpp"
+#include "internal/editor.hpp"
 
 namespace aiedit {
 
@@ -18,14 +17,17 @@ constexpr auto LOGO = "           _____ ______    _ _ _            \n"
 
 constexpr auto VERSION = "1.0.0";
 
-struct IgnoredPattern {
-    size_t pos;
-    std::vector<Edit::Type> model_output;
+struct Edit {
+    const size_t pos;
+    const std::string before;
+    const int indel;
+    const std::string subs;
+    const double score;
 };
 
-struct Results {
-    std::vector<Edit> edits;
-    std::vector<IgnoredPattern> ignored;
+struct TrainingStep {
+    const double loss;
+    const double reward;
 };
 
 class AIEdit
@@ -36,22 +38,19 @@ class AIEdit
            const std::string& hist_path,
            const std::string& seeds_path,
            const std::string& model_path,
-           unsigned num_threads);
+           unsigned max_edits);
 
-    size_t get_cbf_size() const;
-    size_t get_k() const;
-    int64_t get_max_indels() const;
-    int64_t get_num_seeds() const;
+    std::vector<TrainingStep> train(const std::string& seq);
 
-    Results get_edits(const std::string& seq);
+    std::vector<Edit> get_edits(const std::string& seq, size_t start, size_t end);
 
   private:
 
-    PatternModel model;
-    const CountProbabilities cprobs;
-    const unsigned num_threads;
-
-    Results process_chunk(const std::string& seq, size_t start, size_t end);
+    const btllib::CountingBloomFilter8 cbf;
+    const std::vector<double> probs;
+    const std::vector<std::string> seeds;
+    internal::Editor editor;
+    unsigned max_edits;
 };
 
 }

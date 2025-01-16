@@ -18,12 +18,12 @@ class Model(torch.nn.Module):
     def __init__(self, num_seeds: int, max_indels: int, hidden_size: int):
         super().__init__()
         probs_dim = num_seeds + 2 * max_indels + 1
-        self._input_dims = [(35, num_seeds), (40, probs_dim), (3, 4)]
+        self._input_dims = [(35, num_seeds), (40, probs_dim), (3, 5)]
         self.num_seeds = torch.jit.Attribute(num_seeds, int)
         self.max_indels = torch.jit.Attribute(max_indels, int)
         self.seeds_encoder = torch.nn.GRU(num_seeds, hidden_size)
         self.probs_encoder = torch.nn.GRU(probs_dim, hidden_size)
-        self.state_encoder = torch.nn.GRU(4, hidden_size)
+        self.state_encoder = torch.nn.GRU(5, hidden_size)
         self.q_out = torch.nn.Linear(3 * hidden_size, 5)
 
     @torch.jit.ignore
@@ -37,8 +37,48 @@ class Model(torch.nn.Module):
         return self.q_out(torch.cat([h_seeds, h_probs, h_state], dim=-1))
 
 
-def apply_edit(seq, pos, edit):
-    return seq, pos
+class SequenceEditor:
+
+    def __init__(self, seq: str, k: int, probs_args):
+        self._seq = seq
+        self._k = k
+        self._probs_args = probs_args
+        self._edited = seq[: k - 1]
+        self._i = k
+
+    def edit(self, model_argmax: int):
+        if model_argmax == 0 and self._i < len(self._seq):
+            self._edited += self._seq[self._i]
+            self._i += 1
+        elif model_argmax == 1:
+            self._edited += "?"
+            self._i += 1
+        elif model_argmax == 2:
+            self._i += 1
+        elif model_argmax == 3:
+            self._edited += "?"
+        elif model_argmax == 4:
+            self._edited += self._seq[self._i :]
+
+    def _get_candidates(self, seq):
+        if "?" not in seq:
+            return [seq]
+        index = seq.index("?")
+        results = []
+        for replacement in "ACGT":
+            new_string = seq[:index] + replacement + seq[index + 1 :]
+            results.extend(self._get_candidates(new_string))
+        return results
+
+    def get_reward(self, x_probs):
+        rewards = []
+        print(self._seq, self._edited)
+        for seq in self._get_candidates(self._edited):
+            probs = ext.get_model_input(seq, 0, len(seq) - self._k, *self._probs_args)
+            diff = probs - x_probs
+            diff[:, len(self._seeds) + 1 :] *= -1.0
+            rewards.append(diff.mean())
+        return torch.tensor([max(rewards)])
 
 
 class ModelTrainer:
@@ -68,44 +108,44 @@ class ModelTrainer:
 
     def train(self, seq: str, start: int, end: int):
         x_probs = ext.get_model_input(seq, start, end, *self._probs_args)
-        mask = x_probs[:, 1] < self._threshold
+        mask = x_probs[:, 1] >= self._threshold
         diffs = torch.diff(mask.to(torch.int8), prepend=torch.tensor([0]))
-        starts = (diffs == 1).nonzero(as_tuple=True)[0]
-        ends = (diffs == -1).nonzero(as_tuple=True)[0]
+        starts = start + (diffs == 1).nonzero(as_tuple=True)[0]
+        ends = start + (diffs == -1).nonzero(as_tuple=True)[0]
         pairs = zip(starts, ends)
-        filtered_pairs = filter(lambda i, j: (j - i).item() < self._max_edits, pairs)
+        filtered_pairs = filter(lambda p: (p[1] - p[0]).item() < self._max_edits, pairs)
+        k = len(self._seeds[0])
         for i, j in filtered_pairs:
-
-            sum_rewards, total_loss = self._simulate_edits(seq[i:j], x_probs)
+            print(i, j)
+            reward, total_loss = self._simulate_edits(seq[i : j + k + 1], x_probs[i:j])
+            self._optim.zero_grad()
+            total_loss.backward()
+            torch.nn.utils.clip_grad_value_(self._model.parameters(), 100)
+            self._optim.step()
+            yield reward.item()
 
     def _simulate_edits(self, seq: str, x_probs: torch.Tensor):
-        sum_rewards, total_loss = 0, 0
-        x_steps = torch.zeros(1, 4)
-        k = len(self._seeds[0])
+        reward, total_loss = 0, 0
+        x_steps = torch.zeros(1, 5)
+        seq_editor = SequenceEditor(seq, len(self._seeds[0]), self._probs_args)
         for _ in range(self._max_edits):
             y_model = self._model(self._x_seeds, x_probs, x_steps)
-            action = y_model.argmax(dim=-1)
-            if action == 1:
-                pass
-            elif action == 2:
-                pass
-            elif action == 3:
-                pass
-            elif action == 4:
-                pass
-            step = torch.zeros(4)
-            step[action] = 1.0
+            action = y_model.argmax(dim=-1) if x_steps.size(0) < self._max_edits else 4
+            seq_editor.edit(action)
+            step = torch.zeros(1, 5)
+            step[0, action] = 1.0
             x_steps = torch.cat([x_steps, step])
-            new_probs = ext.get_model_input(seq, 0, len(seq) - k, *self._probs_args)
-            rewards = new_probs - x_probs
-            rewards[:, len(self._seeds) + 1 :] *= -1.0
-            reward = rewards.mean()
-            sum_rewards += reward
-            next_q = self._model(self._x_seeds, new_probs, x_steps).max(dim=-1).detach()
-            q_target = reward + self._gamma * next_q
-            total_loss += torch.nn.functional.huber_loss(y_model[action], q_target)
+            if action == 4:
+                print(x_steps.argmax(dim=-1))
+                reward = q_target = seq_editor.get_reward(x_probs)
+            else:
+                next_q = self._model(self._x_seeds, x_probs, x_steps).max().detach()
+                q_target = self._gamma * next_q
+            total_loss += torch.nn.functional.huber_loss(y_model[:, action], q_target)
+            if action == 4:
+                break
         num_edits = x_steps.size(0) - 1
-        return sum_rewards / num_edits, total_loss / num_edits
+        return reward / num_edits, total_loss / num_edits
 
 
 def parse_args():
@@ -117,7 +157,7 @@ def parse_args():
     parser.add_argument("-s", help="path to seeds file", required=True)
     parser.add_argument("-i", help="maximum indel length", type=int, default=10)
     parser.add_argument("-d", help="hidden states size", type=int, default=32)
-    parser.add_argument("-y", help="maximum output edits", type=int, default=20)
+    parser.add_argument("-y", help="maximum output edits", type=int, default=10)
     parser.add_argument("-p", help="probability threshold", type=float, default=0.5)
     parser.add_argument("-g", help="training gamma", type=float, default=0.9)
     parser.add_argument("-t", help="number of threads", type=int, default=default_t)
@@ -138,7 +178,7 @@ def read_histogram(path: str) -> pd.DataFrame:
     norm_cols = ["error", "heterozygous", "homozygous"]
     row_sum = hist[norm_cols].sum(axis=1)
     hist[norm_cols] = hist[norm_cols].div(row_sum, axis=0)
-    return hist["error"].tolist()
+    return hist["error"].tolist()[:256]
 
 
 def main():
@@ -160,22 +200,20 @@ def main():
     postfix = {"num_reads": 0, "reward": 0}
     sr = btllib.SeqReader(args.r, btllib.SeqReaderFlag.LONG_MODE)  # type: ignore
     for record in sr:
-        print(record.id)
         match = re.search(r"[FR]_(\d+)_\d+_(\d+)", record.id)
         if not match:
             pbar.write(f"invalid read id: {record.id}")
             continue
-        head, tail = int(match.group(1)), int(match.group(2)) - len(seeds[0])
-        while trainer.train(record.seq, head, len(record.seq) - tail):
-            continue
-        return
-        for reward in trainer.train(record.seq, head, tail):
+        head, tail = int(match.group(1)), int(match.group(2))
+        for reward in trainer.train(
+            record.seq, head, len(record.seq) - tail - len(seeds[0])
+        ):
             postfix["reward"] = reward
             pbar.set_postfix(postfix)
             pbar.update()
         postfix["num_reads"] += 1
         pbar.set_postfix(postfix)
-        break
+    torch.jit.script(model).save(args.o + ".pt")
 
 
 if __name__ == "__main__":

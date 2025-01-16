@@ -17,6 +17,7 @@ class ProgramArguments
     unsigned num_threads;
     bool contig_mode;
     bool no_apply;
+    bool train;
     bool verbose;
 
     void parse(int argc, char** argv)
@@ -56,6 +57,11 @@ class ProgramArguments
           .default_value(false)
           .implicit_value(true);
 
+        parser.add_argument("--train")
+          .help("train model instead of finding edits")
+          .default_value(false)
+          .implicit_value(true);
+
         parser.add_argument("--verbose")
           .help("print more details to stdout and log ignored patterns to ignored.tsv")
           .default_value(false)
@@ -73,6 +79,7 @@ class ProgramArguments
         num_threads = parser.get<unsigned>("-t");
         contig_mode = parser.get<bool>("--contig-mode");
         no_apply = parser.get<bool>("--no-apply");
+        train = parser.get<bool>("--train");
         verbose = parser.get<bool>("--verbose");
     }
 

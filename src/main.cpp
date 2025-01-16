@@ -7,32 +7,10 @@
 #include <string>
 
 #include "core/aiedit.hpp"
-#include "core/utils.hpp"
 #include "program/args.hpp"
 #include "program/colorize.hpp"
-#include "program/file_io.hpp"
 #include "program/str_utils.hpp"
 #include "program/timer.hpp"
-
-void write_logs(const std::string& seq_id,
-                const aiedit::Results& results,
-                EditsListWriter& edits_writer,
-                IgnoredPatternsWriter& ignored_writer)
-{
-#pragma omp critical
-    {
-        std::cout << "[" << seq_id << "] Applied " << results.edits.size() << " edits, ";
-        std::cout << "ignored " << results.ignored.size() << " patterns" << std::endl;
-    }
-    for (const auto& edit : results.edits) {
-#pragma omp critical
-        edits_writer.write(seq_id, edit);
-    }
-    for (const auto& pattern : results.ignored) {
-#pragma omp critical
-        ignored_writer.write(seq_id, pattern);
-    }
-}
 
 int main(int argc, char** argv)
 {
@@ -49,17 +27,6 @@ int main(int argc, char** argv)
     std::cout << aiedit::LOGO << std::endl;
     std::cout << "Version " << aiedit::VERSION << std::endl << std::endl;
 
-    omp_set_max_active_levels(2);
-    if (args.num_threads > 1) {
-        std::cout << "Multithreading: " << colorize::green("ON") << std::endl;
-        std::cout << "- Using " << args.num_threads << " threads" << std::endl;
-        const auto thread_mode = args.contig_mode ? "CONTIGS" : "SEQUENCE CHUNKS";
-        std::cout << "- Distributing " << thread_mode << std::endl;
-    } else {
-        std::cout << "Multithreading: " << colorize::red("OFF") << std::endl;
-    }
-    std::cout << std::endl;
-
     Timer timer;
 
     std::cout << "- Spaced seeds list: " << args.seeds_path << std::endl;
@@ -67,7 +34,7 @@ int main(int argc, char** argv)
     std::cout << "- AIEdit model: " << args.model_path << std::endl;
     std::cout << "- Bloom filter: " << args.cbf_path << std::endl;
     std::cout << std::endl;
-    
+
     std::cout << "Loading..." << std::endl;
     timer.start();
     std::unique_ptr<aiedit::AIEdit> editor_ptr;
@@ -76,7 +43,7 @@ int main(int argc, char** argv)
                                                       args.probs_path,
                                                       args.seeds_path,
                                                       args.model_path,
-                                                      args.contig_mode ? 1 : args.num_threads);
+                                                      10);
     } catch (const std::runtime_error& err) {
         std::cerr << colorize::red("Error: ");
         std::cerr << err.what() << std::endl;
@@ -84,25 +51,11 @@ int main(int argc, char** argv)
     }
     auto& editor = *editor_ptr;
     std::cout << "- " << colorize::green("Done in ", timer.stop(), "s") << std::endl;
-    std::cout << "- CBF size: " << str_utils::human_readable(editor.get_cbf_size()) << std::endl;
-    std::cout << "- Number of seeds: " << editor.get_num_seeds() << std::endl;
-    std::cout << "- Maximum indel length: " << editor.get_max_indels() << std::endl;
-    std::cout << "- K-mer length: " << editor.get_k() << std::endl;
-    std::cout << std::endl;
 
-    const std::string prefix = args.out_path / std::filesystem::path(args.in_path).stem();
-    btllib::SeqWriter seq_writer(prefix + "_edited.fa", btllib::SeqWriter::FASTA);
-    EditsListWriter edits_writer(prefix + "_edits.tsv");
-    IgnoredPatternsWriter ignored_writer(prefix + "_ignored.tsv");
-
-    std::cout << "Finding edits in " << args.in_path << "..." << std::endl;
     btllib::SeqReader seq_reader(args.in_path, btllib::SeqReader::Flag::LONG_MODE);
-#pragma omp parallel num_threads(args.contig_mode ? args.num_threads : 1)
+
     for (auto record : seq_reader) {
-        const auto results = editor.get_edits(record.seq);
-        const auto edited = aiedit::utils::apply_edits(record.seq, results.edits);
-        seq_writer.write(record.id, record.comment, edited);
-        write_logs(record.id, results, edits_writer, ignored_writer);
+        const auto results = editor.train(record.seq);
     }
 
     return EXIT_SUCCESS;

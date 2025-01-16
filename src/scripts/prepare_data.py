@@ -10,6 +10,15 @@ import pandas as pd
 import torch
 import tqdm
 
+TARGET_TENSORS = {
+    "bos": torch.tensor([0.0, 0.0, 0.0, 0.0, 0.0]),
+    "pad": torch.tensor([1.0, 0.0, 0.0, 0.0, 0.0]),
+    "mis": torch.tensor([0.0, 1.0, 0.0, 0.0, 0.0]),
+    "ins": torch.tensor([0.0, 0.0, 1.0, 0.0, 0.0]),
+    "del": torch.tensor([0.0, 0.0, 0.0, 1.0, 0.0]),
+    "eos": torch.tensor([0.0, 0.0, 0.0, 0.0, 1.0]),
+}
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -49,25 +58,18 @@ def read_histogram(path: str) -> pd.DataFrame:
     return hist
 
 
-def get_targets(vars: pd.DataFrame, pos_diff: int):
-    end_pos = vars.iloc[-1]["Seq_pos"] + vars.iloc[-1]["error_length"]
-    num_edits = end_pos - vars.iloc[0]["Seq_pos"]
-    targets = torch.zeros(num_edits + 2, 5)
-    targets[-1, 4] = 1.0
+def get_targets(vars: pd.DataFrame):
+    targets = [TARGET_TENSORS["bos"].clone()]
+    prev = vars.iloc[0]["Seq_pos"]
     for _, row in vars.iterrows():
-        i = row["Seq_pos"] - vars.iloc[0]["Seq_pos"] + 1
-        if row["error_type"] == "mis":
-            targets[i : i + row["error_length"], 0] = 0.0
-            targets[i : i + row["error_length"], 1] = 1.0
-        elif row["error_type"] == "ins":
-            targets[i : i + row["error_length"], 0] = 0.0
-            targets[i : i + row["error_length"], 2] = 1.0
-            pos_diff += row["error_length"]
-        elif row["error_type"] == "del":
-            targets[i : i + row["error_length"], 0] = 0.0
-            targets[i : i + row["error_length"], 3] = 1.0
-            pos_diff -= row["error_length"]
-    return targets, pos_diff
+        num_pad = row["Seq_pos"] - prev
+        targets.extend([TARGET_TENSORS["pad"].clone() for _ in range(num_pad)])
+        num_err = row["error_length"]
+        errs = [TARGET_TENSORS[row["error_type"]].clone() for _ in range(num_err)]
+        targets.extend(errs)
+        prev = row["Seq_pos"] + num_err
+    targets.append(TARGET_TENSORS["eos"].clone())
+    return torch.stack(targets, dim=0)
 
 
 def validate_sample(x, y, num_seeds: int) -> bool:
@@ -80,6 +82,8 @@ def validate_sample(x, y, num_seeds: int) -> bool:
     if y[:, 2].any() and not (x_ins < 0.5).any():
         return False
     if y[:, 3].any() and not (x_del < 0.5).any():
+        return False
+    if y.size(0) > max_indels * 2:
         return False
     return True
 
@@ -106,7 +110,7 @@ def generate_data(
         if random.random() > sample_rate:
             continue
         seq, k = record.seq, len(seeds[0])
-        match = re.search(r"(F|R)_(\d+)_\d+_\d+", record.id)
+        match = re.search(r"(F|R)_(\d+)_\d+_(\d+)", record.id)
         if not match:
             pbar.write(f"invalid read id: {record.id}")
             continue
@@ -115,7 +119,7 @@ def generate_data(
         if record.id not in vars:
             pbar.write(f"read has no errors: {record.id}")
             continue
-        head = int(match.group(2))
+        head, tail = int(match.group(2)), int(match.group(3))
         if len(seq) - head < 3 * k:
             pbar.write(f"read is too short ({len(seq)}): {record.id}")
             continue
@@ -132,13 +136,14 @@ def generate_data(
         for _, group in read_vars.groupby("group"):
             start = max(group.iloc[0]["Seq_pos"] - k + 1, 0) + pos_diff
             end = group.iloc[-1]["Seq_pos"] + group.iloc[-1]["error_length"] + pos_diff
-            indels = group["error_type"].isin(["ins", "del"])
-            num_ind = group.loc[indels, "error_length"].sum()
-            num_mis = group.loc[~indels, "error_length"].sum()
-            if len(seq) - start < 2 * k or num_ind > max_indels or num_mis > k:
+            num_ins = group.loc[group["error_type"] == "ins", "error_length"].sum()
+            num_del = group.loc[group["error_type"] == "del", "error_length"].sum()
+            num_mis = group.loc[group["error_type"] == "mis", "error_length"].sum()
+            pos_diff += num_ins - num_del
+            if end >= len(seq) - tail or num_ins + num_del > max_indels or num_mis > k:
                 continue
             x = ext.get_model_input(seq, start, end, seeds, max_indels, int(cbf), probs)
-            y, pos_diff = get_targets(group, pos_diff)
+            y = get_targets(group)
             if validate_sample(x, y, len(seeds)):
                 data.append((x, y))
                 pbar.update()
