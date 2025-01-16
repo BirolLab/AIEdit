@@ -14,6 +14,7 @@ class ProgramArguments
     std::string seeds_path;
     std::string model_path;
     std::string out_path;
+    double threshold;
     unsigned num_threads;
     bool contig_mode;
     bool no_apply;
@@ -26,23 +27,24 @@ class ProgramArguments
 
         parser.add_argument("input_file").help("path to input file");
 
-        parser.add_argument("--bloom-filter", "-b")
-          .help("path to ntHits counting Bloom filter file")
-          .required();
+        parser.add_argument("-b").help("path to ntHits counting Bloom filter file").required();
 
-        parser.add_argument("--model", "-m").help("path to pattern detector model").required();
+        parser.add_argument("-m").help("path to pattern detector model").required();
 
-        parser.add_argument("--probabilities", "-p")
-          .help("path to count probabilities file")
-          .required();
+        parser.add_argument("-p").help("path to count probabilities file").required();
 
-        parser.add_argument("--seeds", "-s").help("path to spaced seeds file").required();
+        parser.add_argument("-s").help("path to spaced seeds file").required();
 
-        parser.add_argument("--out-path", "-o")
+        parser.add_argument("-o")
           .help("output directory for storing results")
           .default_value(std::string(1, '.'));
 
-        parser.add_argument("--num-threads", "-t")
+        parser.add_argument("-x")
+          .help("input probabilities threshold")
+          .default_value(0.5)
+          .scan<'g', double>();
+
+        parser.add_argument("-t")
           .help("number of threads to run in parallel")
           .default_value((unsigned)1)
           .scan<'u', unsigned>();
@@ -76,6 +78,7 @@ class ProgramArguments
         seeds_path = parser.get("-s");
         model_path = parser.get("-m");
         out_path = parser.get("-o");
+        threshold = parser.get<double>("-x");
         num_threads = parser.get<unsigned>("-t");
         contig_mode = parser.get<bool>("--contig-mode");
         no_apply = parser.get<bool>("--no-apply");

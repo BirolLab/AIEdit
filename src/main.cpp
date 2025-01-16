@@ -43,7 +43,8 @@ int main(int argc, char** argv)
                                                       args.probs_path,
                                                       args.seeds_path,
                                                       args.model_path,
-                                                      10);
+                                                      10,
+                                                      args.threshold);
     } catch (const std::runtime_error& err) {
         std::cerr << colorize::red("Error: ");
         std::cerr << err.what() << std::endl;

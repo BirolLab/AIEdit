@@ -38,7 +38,8 @@ class AIEdit
            const std::string& hist_path,
            const std::string& seeds_path,
            const std::string& model_path,
-           unsigned max_edits);
+           unsigned max_edits,
+           double threshold);
 
     std::vector<TrainingStep> train(const std::string& seq);
 
@@ -51,6 +52,7 @@ class AIEdit
     const std::vector<std::string> seeds;
     internal::Editor editor;
     unsigned max_edits;
+    double threshold;
 };
 
 }
