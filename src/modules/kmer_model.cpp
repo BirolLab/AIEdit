@@ -1,6 +1,8 @@
 #include "kmer_model.hpp"
 
-#include <pybind11/pybind11.h>
+#include <fstream>
+#include <iterator>
+#include <sstream>
 
 namespace {
 
@@ -63,13 +65,4 @@ unsigned KmerModel::get_kmer_size() const { return seeds[0].size(); }
 
 double KmerModel::score(const uint64_t* hashes) { return probs[cbf.contains(hashes)]; }
 
-}
-
-void bind_kmer_model(pybind11::module_& m)
-{
-    pybind11::class_<aiedit::KmerModel, std::shared_ptr<aiedit::KmerModel>>(m, "KmerModel")
-      .def(pybind11::init<const std::string&, const std::string&, const std::string&>())
-      .def("get_num_hashes", &aiedit::KmerModel::get_num_hashes)
-      .def("get_kmer_size", &aiedit::KmerModel::get_kmer_size)
-      .def("score", &aiedit::KmerModel::score);
 }

@@ -24,6 +24,8 @@ link_libraries(
     ${TORCH_PYTHON_LIBRARY}
 )
 
+include_directories(src)
+
 pybind11_add_module(
     aiedit
     src/bind.cpp

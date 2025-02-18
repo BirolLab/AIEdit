@@ -1,8 +1,5 @@
 #include "editor.hpp"
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
 namespace {
 
 inline bool next(btllib::NtHash& hash_fn,
@@ -42,11 +39,4 @@ std::optional<std::pair<size_t, size_t>> Editor::get_next_region()
     return std::make_pair(start_pos, end_pos);
 }
 
-}
-
-void bind_editor(pybind11::module_& m)
-{
-    pybind11::class_<aiedit::Editor>(m, "Editor")
-      .def(pybind11::init<const std::string&, std::shared_ptr<aiedit::KmerModel>>())
-      .def("get_next_region", &aiedit::Editor::get_next_region);
 }

@@ -1,6 +1,5 @@
 #include "environment.hpp"
 
-#include <pybind11/pybind11.h>
 #include <stdexcept>
 
 namespace aiedit {
@@ -79,18 +78,3 @@ float Environment::get_value()
 
 }
 
-void bind_environment(pybind11::module_& m)
-{
-    pybind11::class_<aiedit::Environment, std::shared_ptr<aiedit::Environment>>(m, "Environment")
-      .def(pybind11::init<const std::string&, size_t, size_t, std::shared_ptr<aiedit::KmerModel>>())
-      .def("act", &aiedit::Environment::act)
-      .def("get_state", &aiedit::Environment::get_state);
-}
-
-void bind_state(pybind11::module_& m)
-{
-    pybind11::class_<aiedit::Environment::State, std::shared_ptr<aiedit::Environment::State>>(
-      m,
-      "EnvironmentState")
-      .def_readonly("signature", &aiedit::Environment::State::signature);
-}
