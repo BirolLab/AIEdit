@@ -2,7 +2,7 @@
 
 namespace aiedit {
 
-EditRegionFinder::EditRegionFinder(std::string_view seq,
+EditRegionFinder::EditRegionFinder(const std::string_view seq,
                                    const std::shared_ptr<KmerModel>& kmer_model)
   : hash_fn(seq.data(), seq.size(), kmer_model->get_num_hashes(), kmer_model->get_kmer_size())
   , kmer_model(kmer_model)

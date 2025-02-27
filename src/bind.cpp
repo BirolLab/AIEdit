@@ -6,6 +6,7 @@
 #include "modules/edit_region_finder.hpp"
 #include "modules/environment.hpp"
 #include "modules/kmer_model.hpp"
+#include "modules/region_editor.hpp"
 #include "modules/signature.hpp"
 
 PYBIND11_MODULE(aiedit, m)
@@ -35,21 +36,23 @@ PYBIND11_MODULE(aiedit, m)
     pybind11::class_<aiedit::EditRegionFinder, std::shared_ptr<aiedit::EditRegionFinder>>(
       m,
       "EditRegionFinder")
-      .def(pybind11::init<std::string_view, const std::shared_ptr<aiedit::KmerModel>&>())
+      .def(pybind11::init<const std::string_view, const std::shared_ptr<aiedit::KmerModel>&>())
       .def("get_next_region", &aiedit::EditRegionFinder::get_next_region);
 
-    pybind11::class_<aiedit::Environment, std::shared_ptr<aiedit::Environment>>(m, "Environment")
+    pybind11::class_<aiedit::RegionEditor>(m, "RegionEditor")
+      .def(pybind11::init<const std::string_view, size_t, size_t>())
+      .def("substitute", &aiedit::RegionEditor::substitute)
+      .def("insert", &aiedit::RegionEditor::insert)
+      .def("delete_base", &aiedit::RegionEditor::delete_base)
+      .def("skip", &aiedit::RegionEditor::skip)
+      .def_property_readonly("size", &aiedit::RegionEditor::get_size)
+      .def_property_readonly("position", &aiedit::RegionEditor::get_position)
       .def(
-        pybind11::
-          init<const std::string&, size_t, size_t, unsigned, std::shared_ptr<aiedit::KmerModel>>())
-      .def("act", &aiedit::Environment::act)
-      .def("get_state", &aiedit::Environment::get_state);
-
-    pybind11::class_<aiedit::Environment::State, std::shared_ptr<aiedit::Environment::State>>(
-      m,
-      "EnvironmentState")
-      .def_readonly("signature", &aiedit::Environment::State::signature)
-      .def_readonly("next_probs", &aiedit::Environment::State::next_probs);
+        "__iter__",
+        [](const aiedit::RegionEditor& container) {
+            return pybind11::make_iterator(container.begin(), container.end());
+        },
+        pybind11::keep_alive<0, 1>());
 
     pybind11::class_<aiedit::Signature, std::shared_ptr<aiedit::Signature>>(
       m,
@@ -75,4 +78,16 @@ PYBIND11_MODULE(aiedit, m)
                                        {signature.get_length(), signature.get_num_seeds()},
                                        {sizeof(float) * signature.get_num_seeds(), sizeof(float)});
       });
+
+    pybind11::class_<aiedit::Environment, std::shared_ptr<aiedit::Environment>>(m, "Environment")
+      .def(pybind11::init<const std::string_view,
+                          size_t,
+                          size_t,
+                          unsigned,
+                          const std::shared_ptr<aiedit::KmerModel>&>())
+      .def("act", &aiedit::Environment::act)
+      .def("get_next_probs", &aiedit::Environment::get_next_probs)
+      .def("get_signature", &aiedit::Environment::get_signature)
+      .def("terminate", &aiedit::Environment::terminate)
+      .def_property_readonly("is_terminated", &aiedit::Environment::is_terminated);
 }

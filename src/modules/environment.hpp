@@ -3,11 +3,14 @@
 #include <array>
 #include <btllib/nthash.hpp>
 #include <cstddef>
+#include <deque>
 #include <memory>
 #include <string>
+#include <tuple>
 
 #include "edit.hpp"
 #include "kmer_model.hpp"
+#include "region_editor.hpp"
 #include "signature.hpp"
 
 namespace aiedit {
@@ -17,22 +20,16 @@ class Environment
 
   public:
 
-    struct State {
-        Signature signature;
-        std::array<float, 4> next_probs;
-
-        State(unsigned signature_length, unsigned num_seeds);
-    };
-
-    Environment(const std::string& seq,
+    Environment(const std::string_view seq,
                 size_t start,
                 size_t end,
                 unsigned max_edits,
                 std::shared_ptr<KmerModel> kmer_model);
 
-    float act(Edit::Type edit_type, char new_base);
+    void act(Edit::Type edit_type, char new_base);
 
-    std::shared_ptr<State> get_state() const;
+    Signature get_signature();
+    std::array<float, 4> get_next_probs();
 
     void terminate();
 
@@ -40,18 +37,11 @@ class Environment
 
   private:
 
-    const std::string& seq;
-    const size_t start, end;
-    const unsigned max_edits;
+    const std::string prefix;
+    RegionEditor editor;
+    unsigned max_edits;
     std::shared_ptr<KmerModel> kmer_model;
-    btllib::BlindSeedNtHash hash_fn;
-    std::shared_ptr<State> state;
-    std::vector<Edit> edit_history;
-    size_t pos;
-    float initial_value;
-
-    void update_state();
-    float get_value();
+    std::vector<Edit> edits;
 };
 
 }

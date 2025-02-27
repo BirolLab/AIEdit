@@ -4,98 +4,79 @@
 
 namespace aiedit {
 
-Environment::State::State(unsigned signature_length, unsigned num_seeds)
-  : signature(signature_length, num_seeds)
-{}
-
-Environment::Environment(const std::string& seq,
+Environment::Environment(const std::string_view seq,
                          size_t start,
                          size_t end,
                          unsigned max_edits,
-                         std::shared_ptr<KmerModel> km)
-  : seq(seq)
-  , start(start)
-  , end(end)
+                         std::shared_ptr<KmerModel> kmer_model)
+  : prefix(seq.substr(start - 1, kmer_model->get_kmer_size()))
+  , editor(seq, start + kmer_model->get_kmer_size() - 1, end + kmer_model->get_kmer_size() - 1)
   , max_edits(max_edits)
-  , kmer_model(km)
-  , hash_fn(seq.data(), km->seeds, km->get_num_hashes(), km->get_kmer_size(), start - 1)
-  , state(std::make_shared<Environment::State>(end - start, km->seeds.size()))
-  , pos(start + km->get_kmer_size())
-{
-    update_state();
-    initial_value = get_value();
-}
+  , kmer_model(kmer_model)
+{}
 
-float Environment::act(Edit::Type edit_type, char new_base)
+void Environment::act(Edit::Type edit_type, char new_base)
 {
     if (is_terminated()) {
         throw std::runtime_error("Environment has been terminated");
     }
     if (edit_type == Edit::Type::SUBSTITUTE) {
-        edit_history.emplace_back(Edit::substitution(pos, new_base));
-        hash_fn.roll(new_base);
-        ++pos;
+        edits.emplace_back(Edit::substitution(editor.get_position(), new_base));
+        editor.substitute(new_base);
     } else if (edit_type == Edit::Type::INSERT) {
-        edit_history.emplace_back(Edit::insertion(pos, new_base));
-        hash_fn.roll(new_base);
+        edits.emplace_back(Edit::insertion(editor.get_position(), new_base));
+        editor.insert(new_base);
     } else if (edit_type == Edit::Type::DELETE) {
-        edit_history.emplace_back(Edit::deletion(pos));
-        ++pos;
+        edits.emplace_back(Edit::deletion(editor.get_position()));
+        editor.delete_base();
     } else {
-        hash_fn.roll(seq[pos]);
-        ++pos;
+        editor.skip();
     }
-    update_state();
-    return is_terminated() ? 0 : get_value() - initial_value;
 }
 
-std::shared_ptr<Environment::State> Environment::get_state() const { return state; }
+void Environment::terminate() { max_edits = 0; }
 
-void Environment::terminate() { pos = end; }
-
-bool Environment::is_terminated() const { return pos >= end || edit_history.size() >= max_edits; }
-
-void Environment::update_state()
+bool Environment::is_terminated() const
 {
-    btllib::BlindSeedNtHash hash_fn(this->hash_fn);
-    // next base probability vector
+    return edits.size() >= max_edits || editor.get_size() == 0;
+}
+
+std::array<float, 4> Environment::get_next_probs()
+{
+    btllib::BlindNtHash hash_fn(prefix, kmer_model->get_num_hashes(), kmer_model->get_kmer_size());
+    for (const auto base : editor.get_consumed()) {
+        hash_fn.roll(base);
+    }
+    std::array<float, 4> next_probs;
     constexpr char NEXT_BASE[] = "ACGT";
     for (unsigned i = 0; i < 4; i++) {
-        if (seq[edit_history.size()] == NEXT_BASE[i]) {
-            state->next_probs[i] = -1.0;  // current base
+        if (editor.get_current() == NEXT_BASE[i]) {
+            next_probs[i] = -1.0;
         } else {
-            const char kmer_start = seq[edit_history.size() - kmer_model->get_kmer_size()];
+            const char kmer_start = prefix[hash_fn.get_pos()];
             hash_fn.roll(NEXT_BASE[i]);
-            state->next_probs[i] = kmer_model->score(hash_fn.hashes());
+            next_probs[i] = kmer_model->score(hash_fn.hashes());
             hash_fn.roll_back(kmer_start);
         }
     }
-    // k-mer/spaced seed probabilities
-    bool all_hits = true;
-    for (size_t pos = edit_history.size(); pos < end - start; pos++) {
-        hash_fn.roll(seq[start + pos]);
-        for (size_t seed = 0; seed < kmer_model->seeds.size(); seed++) {
-            if (seed == 0) {
-                all_hits = all_hits && kmer_model->is_hit(hash_fn.hashes());
-            }
-            const uint64_t* hashes = hash_fn.hashes() + (seed * kmer_model->get_num_hashes());
-            const auto prob = kmer_model->score(hashes);
-            state->signature.set(pos, seed, prob);
-        }
-    }
-    if (all_hits) {
-        terminate();
-    }
+    return next_probs;
 }
 
-float Environment::get_value()
+Signature Environment::get_signature()
 {
-    float value = 0;
-    const auto signature_size = state->signature.get_length() * state->signature.get_num_seeds();
-    for (size_t i = 0; i < signature_size; i++) {
-        value += state->signature.data()[i];
+    Signature signature(editor.get_size(), kmer_model->seeds.size());
+    btllib::BlindSeedNtHash hash_fn(prefix.data(),
+                                    kmer_model->seeds,
+                                    kmer_model->get_num_hashes(),
+                                    kmer_model->get_kmer_size());
+    for (const auto base : editor) {
+        hash_fn.roll(base);
+        for (size_t seed = 0; seed < kmer_model->seeds.size(); seed++) {
+            const uint64_t* hashes = hash_fn.hashes() + (seed * kmer_model->get_num_hashes());
+            signature.set(hash_fn.get_pos() - 1, seed, kmer_model->score(hashes));
+        }
     }
-    return value / signature_size;
+    return signature;
 }
 
 }
