@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <btllib/nthash.hpp>
 #include <cstddef>
 #include <memory>
@@ -18,11 +19,16 @@ class Environment
 
     struct State {
         Signature signature;
+        std::array<float, 4> next_probs;
 
         State(unsigned signature_length, unsigned num_seeds);
     };
 
-    Environment(const std::string& seq, size_t start, size_t end, std::shared_ptr<KmerModel> kmer_model);
+    Environment(const std::string& seq,
+                size_t start,
+                size_t end,
+                unsigned max_edits,
+                std::shared_ptr<KmerModel> kmer_model);
 
     float act(Edit::Type edit_type, char new_base);
 
@@ -36,6 +42,7 @@ class Environment
 
     const std::string& seq;
     const size_t start, end;
+    const unsigned max_edits;
     std::shared_ptr<KmerModel> kmer_model;
     btllib::BlindSeedNtHash hash_fn;
     std::shared_ptr<State> state;

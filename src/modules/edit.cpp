@@ -2,26 +2,25 @@
 
 namespace aiedit {
 
-Edit::Edit(size_t position, Type type, char before, char after)
+Edit::Edit(size_t position, Type type, char new_base)
   : position(position)
   , type(type)
-  , before(before)
-  , after(after)
+  , new_base(new_base)
 {}
 
-Edit Edit::substitution(size_t position, char before, char after)
+Edit Edit::substitution(size_t position, char new_base)
 {
-    return Edit(position, Edit::Type::SUBSTITUTE, before, after);
+    return Edit(position, Edit::Type::SUBSTITUTE, new_base);
 }
 
 Edit Edit::insertion(size_t position, char base)
 {
-    return Edit(position, Edit::Type::INSERT, Edit::NO_BASE, base);
+    return Edit(position, Edit::Type::INSERT, base);
 }
 
-Edit Edit::deletion(size_t position, char base)
+Edit Edit::deletion(size_t position)
 {
-    return Edit(position, Edit::Type::DELETE, base, Edit::NO_BASE);
+    return Edit(position, Edit::Type::DELETE, Edit::NO_BASE);
 }
 
 }

@@ -30,7 +30,7 @@ pybind11_add_module(
     aiedit
     src/bind.cpp
     src/modules/edit.cpp
-    src/modules/editor.cpp
+    src/modules/edit_region_finder.cpp
     src/modules/environment.cpp
     src/modules/kmer_model.cpp
     src/modules/signature.cpp

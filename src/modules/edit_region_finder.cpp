@@ -1,0 +1,36 @@
+#include "edit_region_finder.hpp"
+
+namespace aiedit {
+
+EditRegionFinder::EditRegionFinder(std::string_view seq,
+                                   const std::shared_ptr<KmerModel>& kmer_model)
+  : hash_fn(seq.data(), seq.size(), kmer_model->get_num_hashes(), kmer_model->get_kmer_size())
+  , kmer_model(kmer_model)
+{
+    next(true);
+}
+
+std::optional<std::pair<size_t, size_t>> EditRegionFinder::get_next_region()
+{
+    if (!next(false)) {
+        return {};
+    }
+    size_t start_pos = hash_fn.get_pos();
+    if (!next(true)) {
+        return {};
+    }
+    size_t end_pos = hash_fn.get_pos();
+    return std::make_pair(start_pos, end_pos);
+}
+
+bool EditRegionFinder::next(bool hit)
+{
+    while (hash_fn.roll()) {
+        if (kmer_model->is_hit(hash_fn.hashes()) == hit) {
+            return true;
+        }
+    }
+    return false;
+}
+
+}

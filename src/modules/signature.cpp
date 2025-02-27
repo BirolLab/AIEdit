@@ -15,7 +15,7 @@ void Signature::set(size_t position, size_t i_seed, float value)
 
 float Signature::get(size_t position, size_t i_seed) const
 {
-    return data_ptr[position * length + i_seed];
+    return data_ptr[position * num_seeds + i_seed];
 }
 
 float* Signature::data() const { return data_ptr.get(); }

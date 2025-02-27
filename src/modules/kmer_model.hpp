@@ -15,7 +15,8 @@ class KmerModel
 
     KmerModel(const std::string& cbf_path,
               const std::string& hist_path,
-              const std::string& seeds_path);
+              const std::string& seeds_path,
+              float hit_threshold = 0.5);
 
     unsigned get_num_hashes() const;
 
@@ -23,10 +24,13 @@ class KmerModel
 
     double score(const uint64_t* hashes);
 
+    bool is_hit(const uint64_t* hashes);
+
   private:
 
     const btllib::CountingBloomFilter8 cbf;
     const std::vector<double> probs;
+    const float hit_threshold;
 };
 
 }
