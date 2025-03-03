@@ -6,26 +6,27 @@
 
 namespace aiedit {
 
-class RegionEditor
+class Editor
 {
 
   public:
 
     class Iterator;
 
-    RegionEditor(const std::string_view seq, size_t start, size_t end);
+    Editor(const std::string_view seq, size_t start_base_position, size_t end_base_position);
 
     void substitute(char new_base);
     void insert(char base);
     void delete_base();
     void skip();
 
+    size_t get_num_remaining() const;
     size_t get_position() const;
     char get_current() const;
     size_t get_size() const;
 
-    RegionEditor::Iterator begin() const;
-    RegionEditor::Iterator end() const;
+    Editor::Iterator begin() const;
+    Editor::Iterator end() const;
 
     const std::vector<char>& get_consumed() const;
 
@@ -36,7 +37,7 @@ class RegionEditor
     std::deque<char> nexts;
 };
 
-class RegionEditor::Iterator
+class Editor::Iterator
 {
 
   public:
@@ -48,12 +49,12 @@ class RegionEditor::Iterator
 
   private:
 
-    const RegionEditor& editor;
+    const Editor& editor;
     size_t index;
 
-    Iterator(const RegionEditor& editor, size_t index);
+    Iterator(const Editor& editor, size_t index);
 
-    friend class RegionEditor;
+    friend class Editor;
 };
 
 }

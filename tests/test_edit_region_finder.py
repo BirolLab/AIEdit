@@ -35,7 +35,5 @@ class TestEditRegionFinder(unittest.TestCase):
         expected_regions = set(zip(start_positions, end_positions))
 
         erf = aiedit.EditRegionFinder(self.__class__.seq, self.__class__.kmer_model)
-        region = erf.get_next_region()
-        while region:
+        for region in erf:
             self.assertIn(region, expected_regions)
-            region = erf.get_next_region()

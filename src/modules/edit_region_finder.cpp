@@ -33,4 +33,42 @@ bool EditRegionFinder::next(bool hit)
     return false;
 }
 
+EditRegionFinder::Iterator EditRegionFinder::begin()
+{
+    return EditRegionFinder::Iterator(*this, false);
+}
+
+EditRegionFinder::Iterator EditRegionFinder::end()
+{
+    return EditRegionFinder::Iterator(*this, true);
+}
+
+EditRegionFinder::Iterator::Iterator(EditRegionFinder& erf, bool done)
+  : erf(erf)
+{
+    if (done) {
+        current = std::make_pair<size_t, size_t>(0, 0);
+    } else {
+        current = erf.get_next_region().value_or(std::make_pair<size_t, size_t>(0, 0));
+    }
+}
+
+std::pair<size_t, size_t> EditRegionFinder::Iterator::operator*() const { return current; }
+
+EditRegionFinder::Iterator& EditRegionFinder::Iterator::operator++()
+{
+    current = erf.get_next_region().value_or(std::make_pair<size_t, size_t>(0, 0));
+    return *this;
+}
+
+bool EditRegionFinder::Iterator::operator==(const EditRegionFinder::Iterator& other) const
+{
+    return current == other.current;
+}
+
+bool EditRegionFinder::Iterator::operator!=(const EditRegionFinder::Iterator& other) const
+{
+    return current != other.current;
+}
+
 }

@@ -29,10 +29,20 @@ include_directories(src)
 pybind11_add_module(
     aiedit
     src/bind.cpp
+    src/modules/buffer2d.cpp
     src/modules/edit_region_finder.cpp
     src/modules/edit.cpp
-    src/modules/environment.cpp
+    src/modules/editor.cpp
     src/modules/kmer_model.cpp
-    src/modules/region_editor.cpp
-    src/modules/signature.cpp
+    src/modules/model_interface.cpp
 )
+
+add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/aiedit.pyi
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_BINARY_DIR} pybind11-stubgen --output-dir
+            ${CMAKE_BINARY_DIR} aiedit
+    DEPENDS aiedit
+    COMMENT "Generating Python stubs for aiedit"
+)
+
+add_custom_target(generate_stubs DEPENDS ${CMAKE_BINARY_DIR}/aiedit.pyi)

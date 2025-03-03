@@ -1,14 +1,13 @@
-import os
 import unittest
 
 import aiedit
 
 
-class TestRegionEditor(unittest.TestCase):
+class TestEditor(unittest.TestCase):
 
     def setUp(self):
         self.seq = "GTCGCTAGACTGATAG"
-        self.editor = aiedit.RegionEditor(self.seq, 0, len(self.seq))
+        self.editor = aiedit.Editor(self.seq, 0, len(self.seq))
 
     def test_size(self):
         self.assertEqual(self.editor.size, len(self.seq))
@@ -37,3 +36,16 @@ class TestRegionEditor(unittest.TestCase):
         self.assertEqual("".join(c for c in self.editor), "TTGACTAGACTGATAG")
         self.assertEqual(self.editor.position, 4)
         self.assertEqual(self.editor.size, len(self.seq))
+
+    def test_full_deletion(self):
+        for _ in range(len(self.seq)):
+            self.editor.delete_base()
+        self.assertEqual(self.editor.size, 0)
+        self.assertRaises(RuntimeError, self.editor.skip)
+        self.assertRaises(RuntimeError, self.editor.delete_base)
+        self.assertRaises(RuntimeError, self.editor.substitute, "G")
+        self.editor.insert("A")
+        self.editor.insert("C")
+        self.editor.insert("G")
+        self.editor.insert("T")
+        self.assertEqual("".join(c for c in self.editor), "ACGT")

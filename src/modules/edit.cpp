@@ -18,9 +18,6 @@ Edit Edit::insertion(size_t position, char base)
     return Edit(position, Edit::Type::INSERT, base);
 }
 
-Edit Edit::deletion(size_t position)
-{
-    return Edit(position, Edit::Type::DELETE, Edit::NO_BASE);
-}
+Edit Edit::deletion(size_t position) { return Edit(position, Edit::Type::DELETE, Edit::NO_BASE); }
 
 }

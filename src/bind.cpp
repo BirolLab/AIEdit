@@ -2,12 +2,12 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "modules/buffer2d.hpp"
 #include "modules/edit.hpp"
 #include "modules/edit_region_finder.hpp"
-#include "modules/environment.hpp"
+#include "modules/editor.hpp"
 #include "modules/kmer_model.hpp"
-#include "modules/region_editor.hpp"
-#include "modules/signature.hpp"
+#include "modules/model_interface.hpp"
 
 PYBIND11_MODULE(aiedit, m)
 {
@@ -37,57 +37,68 @@ PYBIND11_MODULE(aiedit, m)
       m,
       "EditRegionFinder")
       .def(pybind11::init<const std::string_view, const std::shared_ptr<aiedit::KmerModel>&>())
-      .def("get_next_region", &aiedit::EditRegionFinder::get_next_region);
-
-    pybind11::class_<aiedit::RegionEditor>(m, "RegionEditor")
-      .def(pybind11::init<const std::string_view, size_t, size_t>())
-      .def("substitute", &aiedit::RegionEditor::substitute)
-      .def("insert", &aiedit::RegionEditor::insert)
-      .def("delete_base", &aiedit::RegionEditor::delete_base)
-      .def("skip", &aiedit::RegionEditor::skip)
-      .def_property_readonly("size", &aiedit::RegionEditor::get_size)
-      .def_property_readonly("position", &aiedit::RegionEditor::get_position)
       .def(
         "__iter__",
-        [](const aiedit::RegionEditor& container) {
+        [](aiedit::EditRegionFinder& container) {
             return pybind11::make_iterator(container.begin(), container.end());
         },
         pybind11::keep_alive<0, 1>());
 
-    pybind11::class_<aiedit::Signature, std::shared_ptr<aiedit::Signature>>(
+    pybind11::class_<aiedit::Editor>(m, "Editor")
+      .def(pybind11::init<const std::string_view, size_t, size_t>())
+      .def("substitute", &aiedit::Editor::substitute)
+      .def("insert", &aiedit::Editor::insert)
+      .def("delete_base", &aiedit::Editor::delete_base)
+      .def("skip", &aiedit::Editor::skip)
+      .def_property_readonly("size", &aiedit::Editor::get_size)
+      .def_property_readonly("position", &aiedit::Editor::get_position)
+      .def(
+        "__iter__",
+        [](const aiedit::Editor& container) {
+            return pybind11::make_iterator(container.begin(), container.end());
+        },
+        pybind11::keep_alive<0, 1>());
+
+    pybind11::class_<aiedit::Buffer2D, std::shared_ptr<aiedit::Buffer2D>>(
       m,
-      "Signature",
+      "Buffer2D",
       pybind11::buffer_protocol())
       .def(pybind11::init<size_t, size_t>())
-      .def_property_readonly("length", &aiedit::Signature::get_length)
-      .def_property_readonly("num_seeds", &aiedit::Signature::get_num_seeds)
+      .def_property_readonly("num_rows", &aiedit::Buffer2D::get_num_rows)
+      .def_property_readonly("num_cols", &aiedit::Buffer2D::get_num_cols)
       .def("__setitem__",
-           [](aiedit::Signature& self, std::pair<size_t, size_t> index, float value) {
+           [](aiedit::Buffer2D& self, std::pair<size_t, size_t> index, float value) {
                self.set(index.first, index.second, value);
            })
       .def("__getitem__",
-           [](const aiedit::Signature& self, std::pair<size_t, size_t> index) {
+           [](const aiedit::Buffer2D& self, std::pair<size_t, size_t> index) {
                return self.get(index.first, index.second);
            })
-      .def(pybind11::init<size_t, size_t>())
-      .def_buffer([](aiedit::Signature& signature) -> pybind11::buffer_info {
+      .def_buffer([](aiedit::Buffer2D& signature) -> pybind11::buffer_info {
           return pybind11::buffer_info(signature.data(),
                                        sizeof(float),
                                        pybind11::format_descriptor<float>::format(),
                                        2,
-                                       {signature.get_length(), signature.get_num_seeds()},
-                                       {sizeof(float) * signature.get_num_seeds(), sizeof(float)});
+                                       {signature.get_num_rows(), signature.get_num_cols()},
+                                       {sizeof(float) * signature.get_num_cols(), sizeof(float)});
       });
 
-    pybind11::class_<aiedit::Environment, std::shared_ptr<aiedit::Environment>>(m, "Environment")
+    pybind11::class_<aiedit::ModelInterface, std::shared_ptr<aiedit::ModelInterface>>(
+      m,
+      "ModelInterface")
       .def(pybind11::init<const std::string_view,
                           size_t,
                           size_t,
                           unsigned,
                           const std::shared_ptr<aiedit::KmerModel>&>())
-      .def("act", &aiedit::Environment::act)
-      .def("get_next_probs", &aiedit::Environment::get_next_probs)
-      .def("get_signature", &aiedit::Environment::get_signature)
-      .def("terminate", &aiedit::Environment::terminate)
-      .def_property_readonly("is_terminated", &aiedit::Environment::is_terminated);
+      .def_property_readonly_static(
+        "NUM_OUTPUTS",
+        [](pybind11::object) { return aiedit::ModelInterface::NUM_OUTPUTS; })
+      .def("__call__",
+           [](aiedit::ModelInterface& self, unsigned output_index) { return self(output_index); })
+      .def("terminate", &aiedit::ModelInterface::terminate)
+      .def("is_terminated", &aiedit::ModelInterface::is_terminated)
+      .def_property_readonly("num_edits_left", &aiedit::ModelInterface::get_num_edits_left)
+      .def("get_next_probs", &aiedit::ModelInterface::get_next_probs)
+      .def("get_signature", &aiedit::ModelInterface::get_signature);
 }
