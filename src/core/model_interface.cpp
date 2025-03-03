@@ -104,4 +104,15 @@ Buffer2D ModelInterface::get_signature()
     return signature;
 }
 
+Buffer2D ModelInterface::encode_seeds(const std::vector<std::string>& seeds)
+{
+    Buffer2D x_seeds(seeds[0].size(), seeds.size());
+    for (size_t i = 0; i < x_seeds.get_num_rows(); i++) {
+        for (size_t j = 0; j < x_seeds.get_num_cols(); j++) {
+            x_seeds.set(i, j, seeds[j][i] == '1' ? 1.0f : 0.0f);
+        }
+    }
+    return x_seeds;
+}
+
 }

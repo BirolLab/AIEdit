@@ -29,20 +29,30 @@ include_directories(src)
 pybind11_add_module(
     aiedit
     src/bind.cpp
-    src/modules/buffer2d.cpp
-    src/modules/edit_region_finder.cpp
-    src/modules/edit.cpp
-    src/modules/editor.cpp
-    src/modules/kmer_model.cpp
-    src/modules/model_interface.cpp
+    src/core/buffer2d.cpp
+    src/core/edit_region_finder.cpp
+    src/core/edit.cpp
+    src/core/editor.cpp
+    src/core/kmer_model.cpp
+    src/core/model_interface.cpp
 )
+
+file(GLOB PY_FILES "src/core/*.py")
+
+# Add a custom command to copy each .py file to the output directory
+foreach(PY_FILE ${PY_FILES})
+    add_custom_command(
+        TARGET aiedit
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PY_FILE} ${CMAKE_BINARY_DIR}
+        COMMENT "Copying ${PY_FILE} to ${CMAKE_BINARY_DIR}"
+    )
+endforeach()
 
 add_custom_command(
-    OUTPUT ${CMAKE_BINARY_DIR}/aiedit.pyi
+    TARGET aiedit
+    POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_BINARY_DIR} pybind11-stubgen --output-dir
-            ${CMAKE_BINARY_DIR} aiedit
-    DEPENDS aiedit
-    COMMENT "Generating Python stubs for aiedit"
+            ${CMAKE_BINARY_DIR} aiedit DEPENDS aiedit
+    COMMENT "Generating Python stubs"
 )
-
-add_custom_target(generate_stubs DEPENDS ${CMAKE_BINARY_DIR}/aiedit.pyi)

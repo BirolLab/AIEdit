@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "buffer2d.hpp"
 #include "edit.hpp"
@@ -29,6 +30,7 @@ class ModelInterface
 
     std::optional<Edit> operator()(unsigned output_index);
 
+    static Buffer2D encode_seeds(const std::vector<std::string>& seeds);
     Buffer2D get_signature();
     std::array<float, 4> get_next_probs();
 

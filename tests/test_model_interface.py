@@ -36,11 +36,7 @@ class TestModelInterface(unittest.TestCase):
         seq = seq[:k] + subs[seq[k]] + seq[k + 1 :]
         env = aiedit.ModelInterface(seq, 1, k + 1, 5, self.__class__.kmer_model)
 
-        seeds = self.__class__.kmer_model.seeds
-        x_seeds = np.empty(shape=(len(seeds[0]), len(seeds)))
-        indices = itertools.product(range(x_seeds.shape[0]), range(x_seeds.shape[1]))
-        for i, j in indices:
-            x_seeds[i][j] = float(seeds[j][i])
+        x_seeds = aiedit.ModelInterface.encode_seeds(self.__class__.kmer_model.seeds)
         signature = np.array(env.get_signature(), copy=False)
         self.assertTrue(np.array_equal(signature[:, 1:], x_seeds))
 

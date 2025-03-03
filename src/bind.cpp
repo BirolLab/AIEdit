@@ -2,12 +2,12 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "modules/buffer2d.hpp"
-#include "modules/edit.hpp"
-#include "modules/edit_region_finder.hpp"
-#include "modules/editor.hpp"
-#include "modules/kmer_model.hpp"
-#include "modules/model_interface.hpp"
+#include "core/buffer2d.hpp"
+#include "core/edit.hpp"
+#include "core/edit_region_finder.hpp"
+#include "core/editor.hpp"
+#include "core/kmer_model.hpp"
+#include "core/model_interface.hpp"
 
 PYBIND11_MODULE(aiedit, m)
 {
@@ -100,5 +100,6 @@ PYBIND11_MODULE(aiedit, m)
       .def("is_terminated", &aiedit::ModelInterface::is_terminated)
       .def_property_readonly("num_edits_left", &aiedit::ModelInterface::get_num_edits_left)
       .def("get_next_probs", &aiedit::ModelInterface::get_next_probs)
+      .def_static("encode_seeds", &aiedit::ModelInterface::encode_seeds)
       .def("get_signature", &aiedit::ModelInterface::get_signature);
 }
