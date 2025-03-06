@@ -20,7 +20,7 @@ class ModelInterface
 
   public:
 
-    static constexpr unsigned NUM_OUTPUTS = 11;
+    static constexpr unsigned NUM_OUTPUTS = 10;
 
     ModelInterface(const std::string_view seq,
                    size_t start_kmer_position,
@@ -28,11 +28,12 @@ class ModelInterface
                    unsigned max_edits,
                    const std::shared_ptr<KmerModel>& kmer_model);
 
-    std::optional<Edit> operator()(unsigned output_index);
+    std::optional<Edit> update(unsigned output_index);
 
     static Buffer2D encode_seeds(const std::vector<std::string>& seeds);
     Buffer2D get_signature();
     std::array<float, 4> get_next_probs();
+    std::vector<float> get_kmer_probs();
 
     void terminate();
     bool is_terminated() const;

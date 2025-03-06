@@ -7,7 +7,7 @@ class TestEditor(unittest.TestCase):
 
     def setUp(self):
         self.seq = "GTCGCTAGACTGATAG"
-        self.editor = aiedit.Editor(self.seq, 0, len(self.seq))
+        self.editor = aiedit.core.Editor(self.seq, 0, len(self.seq))
 
     def test_size(self):
         self.assertEqual(self.editor.size, len(self.seq))

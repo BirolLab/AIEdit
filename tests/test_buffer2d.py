@@ -9,7 +9,7 @@ class TestBuffer2D(unittest.TestCase):
 
     def setUp(self):
         self.raw_data = [[0.4, 0.2], [0.1, 0.7], [0.4, 0.1], [0.3, 0.8], [0.9, 0.2]]
-        self.buffer = aiedit.Buffer2D(len(self.raw_data), len(self.raw_data[0]))
+        self.buffer = aiedit.core.Buffer2D(len(self.raw_data), len(self.raw_data[0]))
         for i in range(self.buffer.num_rows):
             for j in range(self.buffer.num_cols):
                 self.buffer[i, j] = self.raw_data[i][j]

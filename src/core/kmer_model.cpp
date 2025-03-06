@@ -53,12 +53,10 @@ namespace aiedit {
 
 KmerModel::KmerModel(const std::string& cbf_path,
                      const std::string& hist_path,
-                     const std::string& seeds_path,
-                     float hit_threshold)
+                     const std::string& seeds_path)
   : cbf(cbf_path)
   , probs(read_probs(hist_path))
   , seeds(read_seeds(seeds_path))
-  , hit_threshold(hit_threshold)
 {}
 
 unsigned KmerModel::get_num_hashes() const { return cbf.get_hash_num(); }
@@ -66,7 +64,5 @@ unsigned KmerModel::get_num_hashes() const { return cbf.get_hash_num(); }
 unsigned KmerModel::get_kmer_size() const { return seeds[0].size(); }
 
 double KmerModel::score(const uint64_t* hashes) { return probs[cbf.contains(hashes)]; }
-
-bool KmerModel::is_hit(const uint64_t* hashes) { return score(hashes) < hit_threshold; }
 
 }

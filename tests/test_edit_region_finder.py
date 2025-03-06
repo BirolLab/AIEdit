@@ -14,7 +14,7 @@ class TestEditRegionFinder(unittest.TestCase):
         cbf_path = os.path.join(data_path, "counts.cbf")
         hist_path = os.path.join(data_path, "probs.tsv")
         seeds_path = os.path.join(data_path, "seeds.txt")
-        cls.kmer_model = aiedit.KmerModel(cbf_path, hist_path, seeds_path, 0.5)
+        cls.kmer_model = aiedit.core.KmerModel(cbf_path, hist_path, seeds_path)
         assembly_path = os.path.join(data_path, "assembly.fa")
         sr = btllib.SeqReader(assembly_path, btllib.SeqReaderFlag.LONG_MODE)
         cls.seq = next(iter(sr)).seq
@@ -28,12 +28,12 @@ class TestEditRegionFinder(unittest.TestCase):
         )
         while hash_fn.roll():
             hashes = np.array(hash_fn.hashes(), dtype=np.uint64)
-            hits.append(self.__class__.kmer_model.is_hit(hashes))
+            hits.append(self.__class__.kmer_model.score(hashes) < 0.5)
         diffs = np.diff(np.array(hits).astype(int))
         start_positions = np.where(diffs == -1)[0] + 1
         end_positions = np.where(diffs == 1)[0] + 1
         expected_regions = set(zip(start_positions, end_positions))
 
-        erf = aiedit.EditRegionFinder(self.__class__.seq, self.__class__.kmer_model)
+        erf = aiedit.core.EditRegionFinder(self.__class__.seq, self.__class__.kmer_model, 0.5)
         for region in erf:
             self.assertIn(region, expected_regions)

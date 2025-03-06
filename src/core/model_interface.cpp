@@ -21,7 +21,7 @@ ModelInterface::ModelInterface(const std::string_view seq,
   , kmer_model(kmer_model)
 {}
 
-std::optional<Edit> ModelInterface::operator()(unsigned output_index)
+std::optional<Edit> ModelInterface::update(unsigned output_index)
 {
     if (is_terminated()) {
         throw std::runtime_error("[aiedit::ModelInterface] Interface has been terminated");
@@ -42,9 +42,6 @@ std::optional<Edit> ModelInterface::operator()(unsigned output_index)
     } else if (output_index == 9) {
         editor.delete_base();
         return Edit::deletion(pos);
-    } else if (output_index == 10) {
-        terminate();
-        return {};
     } else {
         const std::string idx_str = std::to_string(output_index);
         throw std::runtime_error("[aiedit::ModelInterface] Invalid model output: " + idx_str);
@@ -102,6 +99,19 @@ Buffer2D ModelInterface::get_signature()
         }
     }
     return signature;
+}
+
+std::vector<float> ModelInterface::get_kmer_probs()
+{
+    std::vector<float> probs;
+    btllib::BlindNtHash hash_fn(prefix_kmer,
+                                kmer_model->get_num_hashes(),
+                                kmer_model->get_kmer_size());
+    for (const auto base : editor) {
+        hash_fn.roll(base);
+        probs.push_back(kmer_model->score(hash_fn.hashes()));
+    }
+    return probs;
 }
 
 Buffer2D ModelInterface::encode_seeds(const std::vector<std::string>& seeds)
