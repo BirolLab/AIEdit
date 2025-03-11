@@ -68,9 +68,7 @@ class ModelTrainer:
         y_tgt = self._target_net(self._x_seeds, signature, x_edits, x_probs)
         return y_tgt.amax(dim=-1)
 
-    def _train_on_region(
-        self, seq: str, region: tuple[int], num_regions_done: int
-    ) -> tuple[float, float]:
+    def _train_on_region(self, seq: str, region: tuple[int]) -> tuple[float, float]:
         losses, reward = [], 0
         interface = core.ModelInterface(seq, *region, self._max_edits, self._kmer_model)
         signature = interface.get_signature()
@@ -78,6 +76,7 @@ class ModelTrainer:
         x_edits = torch.zeros(self._max_edits, 4)
         fixed = False
         while not interface.is_terminated() and not fixed:
+            self._model.exploration_factor = 0
             x_probs = torch.tensor(interface.get_next_probs()).unsqueeze(0)
             q_vals = self._model(self._x_seeds, x_sig, x_edits.clone(), x_probs)
             edit = self._model.select_edits(q_vals).item()
@@ -94,7 +93,7 @@ class ModelTrainer:
             loss.backward()
             self._optimizer.step()
             self._num_steps += 1
-        self._update_target_net(1 - math.exp(-num_regions_done))
+        self._update_target_net(1 - math.exp(-0.0001 * self._num_steps))
         final_loss = sum(losses) / len(losses) if len(losses) > 0 else 0
         return final_loss, reward
 
@@ -112,11 +111,11 @@ class ModelTrainer:
     ):
         edit_finder = core.EditRegionFinder(seq, self._kmer_model, self._hit_threshold)
         valid_regions = filter(self._region_is_valid, edit_finder)
-        for num_done, region in enumerate(valid_regions):
+        for region in valid_regions:
             epsilon = self._model.exploration_factor
-            loss1, _ = self._train_on_region(seq, region, num_done)
+            loss1, _ = self._train_on_region(seq, region)
             self._model.exploration_factor = 0.0
-            loss2, reward = self._train_on_region(seq, region, num_done)
+            loss2, reward = self._train_on_region(seq, region)
             self._model.exploration_factor = epsilon
             loss = (loss1 + loss2) / 2
             log_callback(region, loss, reward, self._num_steps)

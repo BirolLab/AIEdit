@@ -45,11 +45,12 @@ class ProgressManager:
         self._pbar.set_postfix_str(postfix, refresh=False)
 
     def stop(self) -> None:
-        postfix = self._pbar.postfix
         self._pbar.update(self._seq_len - self._pbar.n)
         self._pbar.close()
         timestamp = datetime.datetime.now().isoformat()
-        tqdm.tqdm.write(f"[{timestamp}] {postfix}")
+        postfix = self._pbar.postfix
+        if postfix:
+            tqdm.tqdm.write(f"[{timestamp}] {postfix}")
 
 
 class CheckpointSaver:
@@ -67,6 +68,8 @@ class CheckpointSaver:
             "model_dim": torch.tensor(self._model._model_dim, dtype=torch.int),
         }
         torch.save(checkpoint, self._path)
+        if len(loss_history) == 0:
+            return
         history_file = self._path.replace(".pt", "") + "_history.csv"
         rows_iter = zip(loss_history, reward_history)
         with open(history_file, "a") as fp:
