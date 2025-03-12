@@ -25,12 +25,28 @@ PYBIND11_MODULE(core, m)
       .def_static("insertion", &aiedit::Edit::insertion)
       .def_static("deletion", &aiedit::Edit::deletion);
 
-    pybind11::class_<aiedit::KmerModel, std::shared_ptr<aiedit::KmerModel>>(m, "KmerModel")
-      .def(pybind11::init<const std::string&, const std::string&, const std::string&>())
-      .def_readonly("seeds", &aiedit::KmerModel::seeds)
-      .def_property_readonly("num_hashes", &aiedit::KmerModel::get_num_hashes)
-      .def_property_readonly("kmer_size", &aiedit::KmerModel::get_kmer_size)
-      .def("score", [](aiedit::KmerModel& self, const pybind11::array_t<uint64_t>& hashes) {
+    pybind11::class_<aiedit::KmerModel, std::shared_ptr<aiedit::KmerModel>> kmer_model(m,
+                                                                                       "KmerModel");
+
+    pybind11::class_<aiedit::BFKmerModel, std::shared_ptr<aiedit::BFKmerModel>>(m,
+                                                                                "BFKmerModel",
+                                                                                kmer_model)
+      .def(pybind11::init<const std::string&>())
+      .def("get_seeds", &aiedit::BFKmerModel::get_seeds)
+      .def("get_num_hashes", &aiedit::BFKmerModel::get_num_hashes)
+      .def("get_kmer_size", &aiedit::BFKmerModel::get_kmer_size)
+      .def("score", [](aiedit::BFKmerModel& self, const pybind11::array_t<uint64_t>& hashes) {
+          return self.score(static_cast<uint64_t*>(hashes.request().ptr));
+      });
+
+    pybind11::class_<aiedit::CBFKmerModel, std::shared_ptr<aiedit::CBFKmerModel>>(m,
+                                                                                  "CBFKmerModel",
+                                                                                  kmer_model)
+      .def(pybind11::init<const std::string&, const std::vector<std::string>>())
+      .def("get_seeds", &aiedit::CBFKmerModel::get_seeds)
+      .def("get_num_hashes", &aiedit::CBFKmerModel::get_num_hashes)
+      .def("get_kmer_size", &aiedit::CBFKmerModel::get_kmer_size)
+      .def("score", [](aiedit::CBFKmerModel& self, const pybind11::array_t<uint64_t>& hashes) {
           return self.score(static_cast<uint64_t*>(hashes.request().ptr));
       });
 
@@ -88,21 +104,9 @@ PYBIND11_MODULE(core, m)
     pybind11::class_<aiedit::ModelInterface, std::shared_ptr<aiedit::ModelInterface>>(
       m,
       "ModelInterface")
-      .def(pybind11::init<const std::string_view,
-                          size_t,
-                          size_t,
-                          unsigned,
-                          const std::shared_ptr<aiedit::KmerModel>&>())
-      .def_property_readonly_static(
-        "NUM_OUTPUTS",
-        [](pybind11::object) { return aiedit::ModelInterface::NUM_OUTPUTS; })
-      .def("update", &aiedit::ModelInterface::update)
-      .def("terminate", &aiedit::ModelInterface::terminate)
-      .def("is_terminated", &aiedit::ModelInterface::is_terminated)
-      .def_property_readonly("num_edits_left", &aiedit::ModelInterface::get_num_edits_left)
-      .def("get_next_probs", &aiedit::ModelInterface::get_next_probs)
-      .def("get_kmer_probs", &aiedit::ModelInterface::get_kmer_probs)
-      .def_static("encode_seeds", &aiedit::ModelInterface::encode_seeds)
+      .def(
+        pybind11::
+          init<const std::string_view, size_t, size_t, const std::shared_ptr<aiedit::KmerModel>&>())
       .def("get_signature", &aiedit::ModelInterface::get_signature);
 
     m.def("apply_edits", &aiedit::apply_edits);

@@ -1,6 +1,8 @@
 #pragma once
 
+#include <btllib/bloom_filter.hpp>
 #include <btllib/counting_bloom_filter.hpp>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -11,22 +13,48 @@ class KmerModel
 
   public:
 
-    const std::vector<std::string> seeds;
+    virtual float score(const uint64_t* hashes) const = 0;
 
-    KmerModel(const std::string& cbf_path,
-              const std::string& hist_path,
-              const std::string& seeds_path);
+    virtual unsigned get_num_hashes() const = 0;
+    virtual unsigned get_kmer_size() const = 0;
+    virtual const std::vector<std::string>& get_seeds() const = 0;
+};
+
+class BFKmerModel : public KmerModel
+{
+
+  public:
+
+    BFKmerModel(const std::string& bf_path);
+
+    float score(const uint64_t* hashes) const;
 
     unsigned get_num_hashes() const;
-
     unsigned get_kmer_size() const;
-
-    double score(const uint64_t* hashes);
+    const std::vector<std::string>& get_seeds() const;
 
   private:
 
-    const btllib::CountingBloomFilter8 cbf;
-    const std::vector<double> probs;
+    const std::shared_ptr<btllib::SeedBloomFilter> bf;
+};
+
+class CBFKmerModel : public KmerModel
+{
+
+  public:
+
+    CBFKmerModel(const std::string& cbf_path, const std::vector<std::string> seeds);
+
+    float score(const uint64_t* hashes) const;
+
+    unsigned get_num_hashes() const override;
+    unsigned get_kmer_size() const override;
+    const std::vector<std::string>& get_seeds() const;
+
+  private:
+
+    const std::vector<std::string> seeds;
+    const std::shared_ptr<btllib::CountingBloomFilter8> cbf;
 };
 
 }

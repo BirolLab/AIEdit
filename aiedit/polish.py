@@ -8,7 +8,7 @@ import btllib
 import torch
 
 from aiedit import core
-from aiedit.edit_model import EditModel
+from aiedit.model import Model
 from aiedit.sequence_polisher import SequencePolisher
 
 

@@ -8,7 +8,7 @@ import torch
 import torch.multiprocessing as mp
 
 from aiedit import core, utils
-from aiedit.edit_model import EditModel
+from model import EditModel
 
 EDITS = ["sub", "ins", "del"]
 
