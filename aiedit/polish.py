@@ -7,48 +7,52 @@ import time
 import btllib
 import torch
 
-from aiedit import core
+from aiedit import core, utils
 from aiedit.model import Model
-from aiedit.sequence_polisher import SequencePolisher
+from aiedit.polisher import Polisher
 
 
 def add_subparser(subparsers: argparse._SubParsersAction) -> None:
     parser: argparse.ArgumentParser = subparsers.add_parser("polish")
     parser.add_argument("input_file", help="path to assembly file")
-    parser.add_argument("-c", help="path to counting bloom filter", required=True)
-    parser.add_argument("-k", help="path to k-mer histogram model", required=True)
-    parser.add_argument("-s", help="path to spaced seeds file", required=True)
+    parser.add_argument("-b", help="path to bf/cbf", required=True)
+    parser.add_argument("-k", help="path to k-mer histogram model (if using cbf)")
+    parser.add_argument("-s", help="path to spaced seeds file (if using cbf)")
     parser.add_argument("-m", help="path to pretrained model", required=True)
     parser.add_argument("-p", help="hit probability threshold", type=float, default=0.5)
-    parser.add_argument("-y", help="maximum number of edits", type=int, default=5)
     parser.add_argument("-t", help="number of threads", type=int, default=1)
-    parser.add_argument("--contigs", action="store_true", help="polishing contigs")
     parser.add_argument("-o", help="output directory path", default=".")
     parser.set_defaults(func=main)
 
 
+def polish_chunk(seq: str, start_pos: int, end_pos: int, model: Model):
+    pass
+
+
 def main(args):
     signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+    print("Loading bloom filter... ", end="", flush=True)
     start_time = time.perf_counter()
-    print("Loading k-mer model... ", end="", flush=True)
-    kmer_model = core.KmerModel(args.c, args.k, args.s)
+    kmer_model = core.CBFKmerModel(args.b, utils.load_seeds(args.s))
     end_time = time.perf_counter()
     print(f"DONE ({end_time - start_time:.1f}s)")
+
     print("Loading edit model... ", end="", flush=True)
     start_time = time.perf_counter()
-    checkpoint = torch.load(args.m, weights_only=True)
-    model = EditModel(checkpoint["num_seeds"].item(), checkpoint["model_dim"].item(), 0)
-    model.load_state_dict(checkpoint["model"])
+    model, _ = utils.load_checkpoint(args.m)
     model.eval()
+    model.share_memory()
     end_time = time.perf_counter()
     print(f"DONE ({end_time - start_time:.1f}s)")
+
     file_name = pathlib.Path(args.input_file).stem
     out_prefix = os.path.join(args.o, file_name) + "_"
     print(f"Output prefix: {out_prefix}")
-    polisher = SequencePolisher(
-        kmer_model, model, args.p, args.y, args.t, args.contigs, out_prefix
-    )
+
+    polisher = Polisher(model, kmer_model, args.t)
+
     seq_reader = btllib.SeqReader(args.input_file, btllib.SeqReaderFlag.LONG_MODE)
     for record in seq_reader:
-        polisher.queue_sequence(record.id, record.seq, record.comment)
-    polisher.close()
+        print(f"Polishing {record.id}")
+        edits = polisher.polish(record.seq)

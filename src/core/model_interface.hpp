@@ -23,6 +23,7 @@ class ModelInterface
     ModelInterface(const std::string_view seq,
                    size_t start_pos,
                    size_t end_pos,
+                   unsigned max_edits,
                    const std::shared_ptr<KmerModel>& kmer_model);
 
     Buffer2D get_signature();
@@ -31,6 +32,7 @@ class ModelInterface
 
     const std::string prefix_kmer;
     Editor editor;
+    const unsigned max_edits;
     std::shared_ptr<KmerModel> kmer_model;
 };
 

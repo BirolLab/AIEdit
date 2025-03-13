@@ -1,6 +1,6 @@
 import argparse
 
-from aiedit import train
+from aiedit import generate_seeds, polish, train
 
 AIEDIT_LOGO = """
            _____ ______    _ _ _            
@@ -18,7 +18,9 @@ print()
 parser = argparse.ArgumentParser("aiedit")
 subparsers = parser.add_subparsers(help="subcommand help", required=True)
 
+polish.add_subparser(subparsers)
 train.add_subparser(subparsers)
+generate_seeds.add_subparser(subparsers)
 
 args = parser.parse_args()
 args.func(args)

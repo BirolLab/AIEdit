@@ -26,7 +26,7 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
         "-v",
         "--val-seeds",
         help="path to spaced seed files for validation",
-        nargs="?",
+        nargs="+",
         default=[],
     )
     parser.add_argument(
@@ -34,9 +34,6 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
     )
     parser.add_argument(
         "-d", "--model-dim", help="model dimensionality", type=int, default=32
-    )
-    parser.add_argument(
-        "-b", "--batch-size", help="training batch size", type=int, default=4
     )
     parser.add_argument(
         "-n", "--num-epochs", help="number of training epochs", type=int, default=10
@@ -47,16 +44,6 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
     parser.set_defaults(func=main)
 
 
-def load_checkpoint(path: str) -> tuple[Model, torch.optim.Optimizer]:
-    checkpoint = torch.load(path, weights_only=True)
-    args = (checkpoint[k].item() for k in ["num_seeds", "max_edits", "model_dim"])
-    model = Model(*args)
-    model.load_state_dict(checkpoint["model"])
-    optimizer = torch.optim.AdamW(model.parameters())
-    optimizer.load_state_dict(checkpoint["optimizer"])
-    return model, optimizer
-
-
 def train_epoch(model, optimizer, train_data) -> float:
     total_loss = 0
     bce_loss = torch.nn.BCEWithLogitsLoss()
@@ -65,7 +52,7 @@ def train_epoch(model, optimizer, train_data) -> float:
         y_pred = model(*x)
         loss = bce_loss(y_pred[0], y_true[0])
         if y_true[1] is not None:
-            loss += cat_loss(y_pred[1], y_true[1])
+            loss += bce_loss(y_pred[1], y_true[1])
         else:
             loss += cat_loss(y_pred[2], y_true[2])
         optimizer.zero_grad()
@@ -82,21 +69,22 @@ def validate(model, val_data) -> tuple[float, float]:
     cat_loss = torch.nn.CrossEntropyLoss()
     for x, y_true in val_data:
         y_pred = model(*x)
-        loss = bce_loss(y_pred[0], y_true[0])
+        loss += bce_loss(y_pred[0], y_true[0])
         if y_true[1] is not None:
-            loss += cat_loss(y_pred[1], y_true[1])
+            loss += bce_loss(y_pred[1], y_true[1])
         else:
             loss += cat_loss(y_pred[2], y_true[2])
-        if y_true[1] is not None and y_pred[0].item() <= 0.5:
-            print(y_true[1], y_pred[1])
-        elif y_true[2] is not None and y_pred[0].item() > 0.5:
-            print(y_true[2], y_pred[2])
+        if y_true[1] is not None and y_pred[0].item() <= 0:
+            acc += int(((y_pred[1] >= 0) == y_true[1]).all())
+        elif y_true[2] is not None and y_pred[0].item() > 0:
+            acc += int(y_true[2].argmax() == y_pred[2].argmax())
     return loss / len(val_data), acc / len(val_data)
 
 
 def main(args):
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
+    print("Loading spaced seed files...")
     train_seed_paths = [p for w in args.seeds for p in glob.glob(w, recursive=True)]
     val_seed_paths = [p for w in args.val_seeds for p in glob.glob(w, recursive=True)]
     seeds = [utils.load_seeds(path) for path in train_seed_paths]
@@ -104,18 +92,18 @@ def main(args):
     seed_lengths = set(map(len, seeds)) | set(map(len, val_seeds))
     assert len(seed_lengths) == 1, "All files must have the same number of seeds"
     num_seeds = next(iter(seed_lengths))
+    print(f"Loaded {len(seeds)} spaced seed sets for training")
+    print(f"Loaded {len(val_seeds)} spaced seed sets for validation")
+    print(f"Number of spaced seeds per set: {num_seeds}")
 
     if os.path.exists(args.out_path):
-        model, optimizer = load_checkpoint(args.out_path)
+        model, optimizer = utils.load_checkpoint(args.out_path)
         print("Training state loaded from checkpoint")
     else:
         model = Model(len(seeds[0]), args.max_edits, args.model_dim)
         optimizer = torch.optim.AdamW(model.parameters())
-        torchinfo.summary(model, [(30, num_seeds), (32, num_seeds + 1)], col_width=15)
-
-    print(f"Loaded {len(seeds)} spaced seed sets for training")
-    print(f"Loaded {len(val_seeds)} spaced seed sets for validation")
-    print(f"Number of spaced seeds per set: {num_seeds}")
+        input_shape = [(30, num_seeds), (32, num_seeds * (args.max_edits + 1) + 1)]
+        torchinfo.summary(model, input_shape, col_width=15)
 
     print("Generating data...")
     train_data = [x for s in seeds for x in data.generate_dataset(s, args.max_edits)]

@@ -123,7 +123,7 @@ class Editor:
 class KmerModel:
     pass
 class ModelInterface:
-    def __init__(self, arg0: str, arg1: int, arg2: int, arg3: KmerModel) -> None:
+    def __init__(self, arg0: str, arg1: int, arg2: int, arg3: int, arg4: KmerModel) -> None:
         ...
     def get_signature(self) -> Buffer2D:
         ...

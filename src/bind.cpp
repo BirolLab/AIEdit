@@ -104,9 +104,11 @@ PYBIND11_MODULE(core, m)
     pybind11::class_<aiedit::ModelInterface, std::shared_ptr<aiedit::ModelInterface>>(
       m,
       "ModelInterface")
-      .def(
-        pybind11::
-          init<const std::string_view, size_t, size_t, const std::shared_ptr<aiedit::KmerModel>&>())
+      .def(pybind11::init<const std::string_view,
+                          size_t,
+                          size_t,
+                          unsigned,
+                          const std::shared_ptr<aiedit::KmerModel>&>())
       .def("get_signature", &aiedit::ModelInterface::get_signature);
 
     m.def("apply_edits", &aiedit::apply_edits);
