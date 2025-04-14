@@ -44,6 +44,109 @@ inline void fill_seed_row(aiedit::Buffer2D& signature,
     }
 }
 
+inline float get_score(const std::string& prefix_kmer,
+                       aiedit::Editor& editor,
+                       const std::shared_ptr<aiedit::KmerModel>& kmer_model)
+{
+    float score = 0;
+    btllib::BlindNtHash hash_fn(prefix_kmer,
+                                kmer_model->get_num_hashes(),
+                                kmer_model->get_kmer_size());
+    for (const auto c : editor) {
+        hash_fn.roll(c);
+        score += kmer_model->score(hash_fn.hashes());
+    }
+    return score;
+}
+
+inline std::optional<std::string>
+find_insertions(const std::string& prefix_kmer,
+                aiedit::Editor& editor,
+                const std::shared_ptr<aiedit::KmerModel>& kmer_model,
+                unsigned num_ins)
+{
+    const auto score = get_score(prefix_kmer, editor, kmer_model);
+    btllib::BlindNtHash hash_fn(prefix_kmer,
+                                kmer_model->get_num_hashes(),
+                                kmer_model->get_kmer_size());
+    std::string result;
+    result.reserve(2 * num_ins);
+    while (num_ins--) {
+        for (unsigned i = 0; i < 4; i++) {
+            hash_fn.peek(BASES[i]);
+            if (kmer_model->score(hash_fn.hashes()) > 0.5) {
+                editor.insert(BASES[i]);
+                hash_fn.roll(BASES[i]);
+                result.push_back('+');
+                result.push_back(BASES[i]);
+                break;
+            }
+        }
+    }
+    if (get_score(prefix_kmer, editor, kmer_model) < score) {
+        return {};
+    } else {
+        return result;
+    }
+}
+
+inline std::optional<std::string>
+find_deletions(const std::string& prefix_kmer,
+               aiedit::Editor& editor,
+               const std::shared_ptr<aiedit::KmerModel>& kmer_model,
+               unsigned num_del)
+{
+    const auto score = get_score(prefix_kmer, editor, kmer_model);
+    std::string result;
+    result.reserve(num_del);
+    while (num_del-- && editor.get_num_remaining() > 0) {
+        editor.delete_base();
+        result.push_back('-');
+    }
+    if (get_score(prefix_kmer, editor, kmer_model) < score) {
+        return {};
+    } else {
+        return result;
+    }
+}
+
+inline std::optional<std::string>
+find_mismatches(const std::string& prefix_kmer,
+                aiedit::Editor& editor,
+                const std::shared_ptr<aiedit::KmerModel>& kmer_model,
+                float* pattern,
+                unsigned max_edits)
+{
+    const auto score = get_score(prefix_kmer, editor, kmer_model);
+    btllib::BlindNtHash hash_fn(prefix_kmer,
+                                kmer_model->get_num_hashes(),
+                                kmer_model->get_kmer_size());
+    std::string result;
+    result.reserve(max_edits);
+    for (unsigned pos = 0; pos < max_edits && editor.get_num_remaining() > 0; pos++) {
+        if (pattern[pos] < 0) {
+            hash_fn.roll(editor.get_current());
+            result.push_back('*');
+            editor.skip();
+            continue;
+        }
+        for (unsigned i = 0; i < 4; i++) {
+            hash_fn.peek(BASES[i]);
+            if (kmer_model->score(hash_fn.hashes()) > 0.5) {
+                editor.substitute(BASES[i]);
+                hash_fn.roll(BASES[i]);
+                result.push_back(BASES[i]);
+                break;
+            }
+        }
+    }
+    if (get_score(prefix_kmer, editor, kmer_model) < score) {
+        return {};
+    } else {
+        return result;
+    }
+}
+
 }
 
 namespace aiedit {
@@ -68,6 +171,18 @@ Buffer2D ModelInterface::get_signature()
         fill_seed_row(signature, i, prefix_kmer, editor, kmer_model, max_edits);
     }
     return signature;
+}
+
+std::optional<std::string>
+ModelInterface::update(float indel_prob, float* mismatches, unsigned indels)
+{
+    if (indel_prob > 0 && indels < max_edits) {
+        return find_insertions(prefix_kmer, editor, kmer_model, indels + 1);
+    } else if (indel_prob > 0) {
+        return find_deletions(prefix_kmer, editor, kmer_model, indels - max_edits + 1);
+    } else {
+        return find_mismatches(prefix_kmer, editor, kmer_model, mismatches, max_edits);
+    }
 }
 
 }

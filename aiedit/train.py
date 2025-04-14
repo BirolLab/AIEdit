@@ -50,11 +50,13 @@ def train_epoch(model, optimizer, train_data) -> float:
     cat_loss = torch.nn.CrossEntropyLoss()
     for x, y_true in train_data:
         y_pred = model(*x)
-        loss = bce_loss(y_pred[0], y_true[0])
         if y_true[1] is not None:
-            loss += bce_loss(y_pred[1], y_true[1])
+            loss = bce_loss(y_pred[1], y_true[1])
+            mis_rate = 1 / 2 ** y_pred[1].size(-1)
         else:
-            loss += cat_loss(y_pred[2], y_true[2])
+            loss = cat_loss(y_pred[2], y_true[2])
+            mis_rate = 1
+        loss += bce_loss(y_pred[0], y_true[0]) * mis_rate
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -69,11 +71,13 @@ def validate(model, val_data) -> tuple[float, float]:
     cat_loss = torch.nn.CrossEntropyLoss()
     for x, y_true in val_data:
         y_pred = model(*x)
-        loss += bce_loss(y_pred[0], y_true[0])
         if y_true[1] is not None:
             loss += bce_loss(y_pred[1], y_true[1])
+            mis_rate = 1 / 2 ** y_pred[1].size(-1)
         else:
             loss += cat_loss(y_pred[2], y_true[2])
+            mis_rate = 1
+        loss += bce_loss(y_pred[0], y_true[0]) * mis_rate
         if y_true[1] is not None and y_pred[0].item() <= 0:
             acc += int(((y_pred[1] >= 0) == y_true[1]).all())
         elif y_true[2] is not None and y_pred[0].item() > 0:

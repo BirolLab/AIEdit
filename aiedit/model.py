@@ -5,6 +5,7 @@ class Model(torch.nn.Module):
 
     def __init__(self, num_seeds: int, max_edits: int, model_dim: int):
         super().__init__()
+        self._max_edits = max_edits
         self.seeds_encoder = torch.nn.GRU(num_seeds, model_dim)
         self.signature_encoder = torch.nn.GRU(
             num_seeds * (max_edits + 1) + 1, model_dim
@@ -12,6 +13,10 @@ class Model(torch.nn.Module):
         self.indel_prob = torch.nn.Linear(2 * model_dim, 1)
         self.mismatches = torch.nn.Linear(2 * model_dim, max_edits)
         self.indels = torch.nn.Linear(2 * model_dim, 2 * max_edits)
+
+    @property
+    def max_edits(self):
+        return self._max_edits
 
     def forward(self, x_seeds, x_signature):
         _, h_seeds = self.seeds_encoder(x_seeds)

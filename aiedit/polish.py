@@ -25,10 +25,6 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
     parser.set_defaults(func=main)
 
 
-def polish_chunk(seq: str, start_pos: int, end_pos: int, model: Model):
-    pass
-
-
 def main(args):
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 

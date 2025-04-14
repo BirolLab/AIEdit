@@ -28,7 +28,7 @@ std::optional<std::pair<size_t, size_t>> EditRegionFinder::get_next_region()
 bool EditRegionFinder::next(bool hit)
 {
     while (hash_fn.roll()) {
-        if ((kmer_model->score(hash_fn.hashes()) < hit_threshold) == hit) {
+        if ((kmer_model->score(hash_fn.hashes()) >= hit_threshold) == hit) {
             return true;
         }
     }

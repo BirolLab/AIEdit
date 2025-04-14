@@ -109,7 +109,8 @@ PYBIND11_MODULE(core, m)
                           size_t,
                           unsigned,
                           const std::shared_ptr<aiedit::KmerModel>&>())
-      .def("get_signature", &aiedit::ModelInterface::get_signature);
+      .def("get_signature", &aiedit::ModelInterface::get_signature)
+      .def("update", &aiedit::ModelInterface::update);
 
     m.def("apply_edits", &aiedit::apply_edits);
 }

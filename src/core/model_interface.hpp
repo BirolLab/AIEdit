@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "buffer2d.hpp"
-#include "edit.hpp"
 #include "editor.hpp"
 #include "kmer_model.hpp"
 
@@ -27,6 +26,8 @@ class ModelInterface
                    const std::shared_ptr<KmerModel>& kmer_model);
 
     Buffer2D get_signature();
+
+    std::optional<std::string> update(float indel_prob, float* mismatches, unsigned indels);
 
   private:
 
