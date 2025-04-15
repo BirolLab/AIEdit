@@ -114,17 +114,16 @@ inline std::optional<std::string>
 find_mismatches(const std::string& prefix_kmer,
                 aiedit::Editor& editor,
                 const std::shared_ptr<aiedit::KmerModel>& kmer_model,
-                float* pattern,
-                unsigned max_edits)
+                std::vector<float> mismatches)
 {
     const auto score = get_score(prefix_kmer, editor, kmer_model);
     btllib::BlindNtHash hash_fn(prefix_kmer,
                                 kmer_model->get_num_hashes(),
                                 kmer_model->get_kmer_size());
     std::string result;
-    result.reserve(max_edits);
-    for (unsigned pos = 0; pos < max_edits && editor.get_num_remaining() > 0; pos++) {
-        if (pattern[pos] < 0) {
+    result.reserve(mismatches.size());
+    for (unsigned pos = 0; pos < mismatches.size() && editor.get_num_remaining() > 0; pos++) {
+        if (mismatches[pos] < 0) {
             hash_fn.roll(editor.get_current());
             result.push_back('*');
             editor.skip();
@@ -154,34 +153,34 @@ namespace aiedit {
 ModelInterface::ModelInterface(const std::string_view seq,
                                size_t start,
                                size_t end,
-                               unsigned max_edits,
+                               unsigned max_indels,
                                const std::shared_ptr<KmerModel>& kmer_model)
   : prefix_kmer(seq.substr(start - 1, kmer_model->get_kmer_size()))
   , editor(seq, start + kmer_model->get_kmer_size() - 1, end + kmer_model->get_kmer_size() - 1)
-  , max_edits(max_edits)
+  , max_indels(max_indels)
   , kmer_model(kmer_model)
 {}
 
 Buffer2D ModelInterface::get_signature()
 {
-    const auto num_features = kmer_model->get_seeds().size() * (max_edits + 1) + 1;
+    const auto num_features = kmer_model->get_seeds().size() * (max_indels + 1) + 1;
     Buffer2D signature(editor.get_size(), num_features);
     fill_repeats_row(signature, prefix_kmer, editor);
     for (unsigned i = 0; i < kmer_model->get_seeds().size(); i++) {
-        fill_seed_row(signature, i, prefix_kmer, editor, kmer_model, max_edits);
+        fill_seed_row(signature, i, prefix_kmer, editor, kmer_model, max_indels);
     }
     return signature;
 }
 
 std::optional<std::string>
-ModelInterface::update(float indel_prob, float* mismatches, unsigned indels)
+ModelInterface::update(float indel_prob, std::vector<float> mismatches, unsigned indels)
 {
-    if (indel_prob > 0 && indels < max_edits) {
+    if (indel_prob > 0 && indels < max_indels) {
         return find_insertions(prefix_kmer, editor, kmer_model, indels + 1);
     } else if (indel_prob > 0) {
-        return find_deletions(prefix_kmer, editor, kmer_model, indels - max_edits + 1);
+        return find_deletions(prefix_kmer, editor, kmer_model, indels - max_indels + 1);
     } else {
-        return find_mismatches(prefix_kmer, editor, kmer_model, mismatches, max_edits);
+        return find_mismatches(prefix_kmer, editor, kmer_model, mismatches);
     }
 }
 

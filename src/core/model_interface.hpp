@@ -22,18 +22,19 @@ class ModelInterface
     ModelInterface(const std::string_view seq,
                    size_t start_pos,
                    size_t end_pos,
-                   unsigned max_edits,
+                   unsigned max_indels,
                    const std::shared_ptr<KmerModel>& kmer_model);
 
     Buffer2D get_signature();
 
-    std::optional<std::string> update(float indel_prob, float* mismatches, unsigned indels);
+    std::optional<std::string>
+    update(float indel_prob, std::vector<float> mismatches, unsigned indels);
 
   private:
 
     const std::string prefix_kmer;
     Editor editor;
-    const unsigned max_edits;
+    const unsigned max_indels;
     std::shared_ptr<KmerModel> kmer_model;
 };
 

@@ -123,11 +123,11 @@ class Editor:
 class KmerModel:
     pass
 class ModelInterface:
-    def __init__(self, arg0: str, arg1: int, arg2: int, arg3: int, arg4: KmerModel) -> None:
+    def __init__(self, arg0: str, arg1: int, arg2: int, arg3: int, arg4: ...) -> None:
         ...
-    def get_signature(self) -> Buffer2D:
+    def get_signature(self) -> ...:
         ...
-    def update(self, arg0: float, arg1: float, arg2: int) -> str | None:
+    def update(self, arg0: float, arg1: list[float], arg2: int) -> str | None:
         ...
 def apply_edits(arg0: str, arg1: list) -> str:
     ...

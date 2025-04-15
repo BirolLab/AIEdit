@@ -1,5 +1,4 @@
 #include "kmer_model.hpp"
-
 #include <fstream>
 #include <iterator>
 #include <sstream>
@@ -25,7 +24,7 @@ CBFKmerModel::CBFKmerModel(const std::string& cbf_path, const std::vector<std::s
 
 float CBFKmerModel::score(const uint64_t* hashes) const
 {
-    return cbf->contains(hashes) > 0 ? 1.0 : 0.0; // TODO
+    return cbf->contains(hashes) > 0 ? 1.0 : 0.0;  // TODO
 }
 
 unsigned CBFKmerModel::get_num_hashes() const { return cbf->get_hash_num(); }

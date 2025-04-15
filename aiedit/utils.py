@@ -1,7 +1,8 @@
+import glob
+
 import torch
 
 from aiedit import core
-from aiedit.model import Model
 
 
 def load_seeds(path: str) -> list[str]:
@@ -10,14 +11,9 @@ def load_seeds(path: str) -> list[str]:
     return seeds
 
 
-def load_checkpoint(path: str) -> tuple[Model, torch.optim.Optimizer]:
-    checkpoint = torch.load(path, weights_only=True)
-    args = (checkpoint[k].item() for k in ["num_seeds", "max_edits", "model_dim"])
-    model = Model(*args)
-    model.load_state_dict(checkpoint["model"])
-    optimizer = torch.optim.AdamW(model.parameters())
-    optimizer.load_state_dict(checkpoint["optimizer"])
-    return model, optimizer
+def glob_seed_paths(pattern: str) -> list[list[str]]:
+    seed_paths = [p for w in pattern for p in glob.glob(w, recursive=True)]
+    return [load_seeds(path) for path in seed_paths]
 
 
 def encode_seeds(seeds: list[str]) -> torch.FloatTensor:
