@@ -5,11 +5,11 @@ import signal
 import time
 
 import btllib
-import torch
 
 from aiedit import core, utils
 from aiedit.model import Model
 from aiedit.polisher import Polisher
+from aiedit.variants_list import VariantsList
 
 
 def add_subparser(subparsers: argparse._SubParsersAction) -> None:
@@ -30,25 +30,41 @@ def main(args):
 
     print("Loading bloom filter... ", end="", flush=True)
     start_time = time.perf_counter()
-    kmer_model = core.CBFKmerModel(args.b, utils.load_seeds(args.s))
+    kmer_model = core.CBFKmerModel(args.b, args.k or "", utils.load_seeds(args.s))
     end_time = time.perf_counter()
     print(f"DONE ({end_time - start_time:.1f}s)")
 
     print("Loading edit model... ", end="", flush=True)
     start_time = time.perf_counter()
-    model, _ = utils.load_checkpoint(args.m)
+    model, _ = Model.from_checkpoint(args.m)
     model.eval()
     model.share_memory()
     end_time = time.perf_counter()
     print(f"DONE ({end_time - start_time:.1f}s)")
 
     file_name = pathlib.Path(args.input_file).stem
-    out_prefix = os.path.join(args.o, file_name) + "_"
-    print(f"Output prefix: {out_prefix}")
+    out_prefix = os.path.join(args.o, file_name) + "-aiedit-"
+    out_fasta_path = f"{out_prefix}edited.fa"
 
     polisher = Polisher(model, kmer_model, args.t)
 
     seq_reader = btllib.SeqReader(args.input_file, btllib.SeqReaderFlag.LONG_MODE)
+    seq_writer = btllib.SeqWriter(out_fasta_path)
+    variants_list = VariantsList()
     for record in seq_reader:
-        print(f"Polishing {record.id}")
+        seq_name = record.id + (" " + record.comment if record.comment else "")
+        print(f"[{seq_name}] Processing started")
+        start_time = time.perf_counter()
         edits = polisher.polish(record.seq)
+        end_time = time.perf_counter()
+        print(f"[{seq_name}] Found {len(edits)} edits in {end_time - start_time:.1f}")
+        variants_list.add(edits, record.seq, record.id, record.comment, len(record.seq))
+        print(f"[{seq_name}] Added variants to list")
+        edited = core.apply_edits(record.seq, edits)
+        print(f"[{seq_name}] Applied edits to sequence")
+        seq_writer.write(record.id, record.comment, edited)
+        print(f"[{seq_name}] Edited sequence saved to {out_fasta_path}")
+
+    out_vcf_path = f"{out_prefix}variants.vcf"
+    variants_list.save_vcf(out_vcf_path)
+    print(f"Variants saved to {out_vcf_path}")

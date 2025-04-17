@@ -31,7 +31,7 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
         "-d", "--model-dim", help="model dimensionality", type=int, default=32
     )
     parser.add_argument(
-        "-n", "--num-epochs", help="number of training epochs", type=int, default=10
+        "-e", "--num-epochs", help="number of training epochs", type=int, default=10
     )
     parser.add_argument(
         "-o", "--out-path", help="output model path", default="model.pt"
@@ -65,20 +65,33 @@ def train_epoch(model, optimizer, train_data) -> float:
 
 def check_prediction(y_pred: torch.FloatTensor, y_true: torch.FloatTensor) -> bool:
     if y_true[1] is not None and y_pred[0].item() <= 0:
-        return ((y_pred[1] >= 0) == y_true[1]).all()
+        return ((y_pred[1] >= 0) == y_true[1]).sum(), y_pred[1].size(1)
     elif y_true[2] is not None and y_pred[0].item() > 0:
-        return y_true[2].argmax() == y_pred[2].argmax()
-    return False
+        return y_true[2].argmax() == y_pred[2].argmax(), 1
+    return 0, 1
 
 
 @torch.no_grad
 def validate(model, val_data) -> tuple[float, float]:
-    loss, acc = 0.0, 0.0
+    loss, num_true, num_pred = 0.0, 0, 0
     for x, y_true in val_data:
         y_pred = model(*x)
         loss += calculate_loss(y_pred, y_true)
-        acc += int(check_prediction(y_pred, y_true))
-    return loss / len(val_data), acc / len(val_data)
+        nt, np = check_prediction(y_pred, y_true)
+        num_true += nt
+        num_pred += np
+    return loss / len(val_data), num_true / num_pred
+
+
+def create_dataset(name, seeds, max_mismatches, max_indels):
+    dataset = []
+    num_samples = 2 ** (max_mismatches - 1) + 2 * max_indels
+    pbar = tqdm.tqdm(desc=name, total=num_samples)
+    for seed in seeds:
+        for x in data.generate_dataset(seed, max_mismatches, max_indels):
+            dataset.append(x)
+            pbar.update()
+    return dataset
 
 
 def main(args):
@@ -106,13 +119,10 @@ def main(args):
         model.print_summary()
 
     print("Generating data...")
-    train_data = [x for s in seeds for x in data.generate_dataset(s, *max_edits)]
-    val_data = [x for s in val_seeds for x in data.generate_dataset(s, *max_edits)]
-    print(f"Number of training samples: {len(train_data)}")
-    print(f"Number of validation samples: {len(val_data)}")
+    train_data = create_dataset("Training data", seeds, *max_edits)
+    val_data = create_dataset("Validation data", val_seeds, *max_edits)
 
     print("Training...")
-
     for i_epoch in range(args.num_epochs):
         start_time = time.perf_counter()
         epoch_log = dict()

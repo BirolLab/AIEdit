@@ -17,7 +17,9 @@ unsigned BFKmerModel::get_kmer_size() const { return bf->get_k(); }
 
 const std::vector<std::string>& BFKmerModel::get_seeds() const { return bf->get_seeds(); };
 
-CBFKmerModel::CBFKmerModel(const std::string& cbf_path, const std::vector<std::string> seeds)
+CBFKmerModel::CBFKmerModel(const std::string& cbf_path,
+                           const std::string& hist_path,
+                           const std::vector<std::string> seeds)
   : cbf(std::make_shared<btllib::CountingBloomFilter8>(cbf_path))
   , seeds(seeds)
 {}

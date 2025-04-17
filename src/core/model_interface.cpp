@@ -56,7 +56,7 @@ inline float get_score(const std::string& prefix_kmer,
         hash_fn.roll(c);
         score += kmer_model->score(hash_fn.hashes());
     }
-    return score;
+    return score / editor.get_size();
 }
 
 inline std::optional<std::string>
@@ -83,7 +83,7 @@ find_insertions(const std::string& prefix_kmer,
             }
         }
     }
-    if (get_score(prefix_kmer, editor, kmer_model) < score) {
+    if (get_score(prefix_kmer, editor, kmer_model) <= score) {
         return {};
     } else {
         return result;
@@ -103,7 +103,7 @@ find_deletions(const std::string& prefix_kmer,
         editor.delete_base();
         result.push_back('-');
     }
-    if (get_score(prefix_kmer, editor, kmer_model) < score) {
+    if (get_score(prefix_kmer, editor, kmer_model) <= score) {
         return {};
     } else {
         return result;
@@ -114,36 +114,60 @@ inline std::optional<std::string>
 find_mismatches(const std::string& prefix_kmer,
                 aiedit::Editor& editor,
                 const std::shared_ptr<aiedit::KmerModel>& kmer_model,
-                std::vector<float> mismatches)
+                float* mismatches,
+                unsigned num_mis)
 {
     const auto score = get_score(prefix_kmer, editor, kmer_model);
     btllib::BlindNtHash hash_fn(prefix_kmer,
                                 kmer_model->get_num_hashes(),
                                 kmer_model->get_kmer_size());
     std::string result;
-    result.reserve(mismatches.size());
-    for (unsigned pos = 0; pos < mismatches.size() && editor.get_num_remaining() > 0; pos++) {
+    result.reserve(num_mis);
+    // TODO optimize
+    bool has_snp = false;
+    for (unsigned pos = 0; pos < num_mis && editor.get_num_remaining() > 0; pos++) {
         if (mismatches[pos] < 0) {
             hash_fn.roll(editor.get_current());
             result.push_back('*');
             editor.skip();
             continue;
         }
+        has_snp = true;
+        bool found = false;
         for (unsigned i = 0; i < 4; i++) {
-            hash_fn.peek(BASES[i]);
-            if (kmer_model->score(hash_fn.hashes()) > 0.5) {
-                editor.substitute(BASES[i]);
-                hash_fn.roll(BASES[i]);
-                result.push_back(BASES[i]);
-                break;
+            if (BASES[i] != editor.get_current()) {
+                hash_fn.peek(BASES[i]);
+                if (kmer_model->score(hash_fn.hashes()) > 0.5) {
+                    editor.substitute(BASES[i]);
+                    hash_fn.roll(BASES[i]);
+                    result.push_back(BASES[i]);
+                    found = true;
+                    break;
+                }
             }
         }
+        if (!found) {
+            return {};
+        }
     }
-    if (get_score(prefix_kmer, editor, kmer_model) < score) {
+    if (!has_snp || get_score(prefix_kmer, editor, kmer_model) <= score) {
         return {};
     } else {
         return result;
     }
+}
+
+inline size_t argmax(const float* array, size_t size)
+{
+    size_t i_max = 0;
+    float max_value = array[0];
+    for (size_t i = 1; i < size; i++) {
+        if (array[i] > max_value) {
+            max_value = array[i];
+            i_max = i;
+        }
+    }
+    return i_max;
 }
 
 }
@@ -172,15 +196,19 @@ Buffer2D ModelInterface::get_signature()
     return signature;
 }
 
-std::optional<std::string>
-ModelInterface::update(float indel_prob, std::vector<float> mismatches, unsigned indels)
+std::optional<std::string> ModelInterface::update(const std::vector<float*>& outputs,
+                                                  const std::vector<long>& sizes)
 {
+    const auto indel_prob = outputs[0][0];
+    const auto indels = argmax(outputs[2], sizes[2]);
+    const auto mismatches = outputs[1];
+    const auto max_mismatches = sizes[1];
     if (indel_prob > 0 && indels < max_indels) {
         return find_insertions(prefix_kmer, editor, kmer_model, indels + 1);
     } else if (indel_prob > 0) {
         return find_deletions(prefix_kmer, editor, kmer_model, indels - max_indels + 1);
     } else {
-        return find_mismatches(prefix_kmer, editor, kmer_model, mismatches);
+        return find_mismatches(prefix_kmer, editor, kmer_model, mismatches, max_mismatches);
     }
 }
 

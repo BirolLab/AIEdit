@@ -1,6 +1,6 @@
 import argparse
 
-from aiedit import generate_seeds, polish, train
+from aiedit import __version__, generate_seeds, polish, train
 
 AIEDIT_LOGO = """
            _____ ______    _ _ _            
@@ -12,7 +12,7 @@ AIEDIT_LOGO = """
 """
 
 print(AIEDIT_LOGO[1:-1])
-print("Version 1.0.0")
+print(f"Version {__version__}")
 print()
 
 parser = argparse.ArgumentParser("aiedit")

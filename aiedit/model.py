@@ -12,13 +12,12 @@ class Model(torch.nn.Module):
         self._max_mismatches = max_mismatches
         self._max_indels = max_indels
         self._model_dim = model_dim
+        num_features = num_seeds * (max_indels + 1) + 1
         self.seeds_encoder = torch.nn.GRU(num_seeds, model_dim)
-        self.signature_encoder = torch.nn.GRU(
-            num_seeds * (max_indels + 1) + 1, model_dim
-        )
-        self.indel_prob = torch.nn.Linear(2 * model_dim, 1)
-        self.mismatches = torch.nn.Linear(2 * model_dim, max_mismatches)
-        self.indels = torch.nn.Linear(2 * model_dim, 2 * max_indels)
+        self.signature_encoder = torch.nn.GRU(num_features, model_dim)
+        self.indel_prob = torch.nn.Linear(model_dim * 2, 1)
+        self.mismatches = torch.nn.Linear(model_dim * 2, max_mismatches)
+        self.indels = torch.nn.Linear(model_dim * 2, max_indels * 2)
 
     @staticmethod
     def from_checkpoint(path: str):

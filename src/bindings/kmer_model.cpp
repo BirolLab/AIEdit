@@ -27,7 +27,7 @@ REGISTER_BINDING(({
     pybind11::class_<aiedit::CBFKmerModel, std::shared_ptr<aiedit::CBFKmerModel>>(m,
                                                                                   "CBFKmerModel",
                                                                                   kmer_model)
-      .def(pybind11::init<const std::string&, const std::vector<std::string>>())
+      .def(pybind11::init<const std::string&, const std::string&, const std::vector<std::string>>())
       .def("get_seeds", &aiedit::CBFKmerModel::get_seeds)
       .def("get_num_hashes", &aiedit::CBFKmerModel::get_num_hashes)
       .def("get_kmer_size", &aiedit::CBFKmerModel::get_kmer_size)

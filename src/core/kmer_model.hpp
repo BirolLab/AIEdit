@@ -43,7 +43,9 @@ class CBFKmerModel : public KmerModel
 
   public:
 
-    CBFKmerModel(const std::string& cbf_path, const std::vector<std::string> seeds);
+    CBFKmerModel(const std::string& cbf_path,
+                 const std::string& hist_path,
+                 const std::vector<std::string> seeds);
 
     float score(const uint64_t* hashes) const;
 

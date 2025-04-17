@@ -3,7 +3,7 @@ import tempfile
 import typing
 
 import btllib
-import torch.utils.data
+import torch
 
 from aiedit import core, utils
 
@@ -26,7 +26,7 @@ def _get_mismatch_signature(
         bases = ["A", "C", "G", "T"]
         bases.remove(edited[seq_pos])
         edited[seq_pos] = random.choice(bases)
-    end = pattern.rindex("1") + kmer_model.get_kmer_size()
+    end = pattern.rindex("1") + kmer_model.get_kmer_size() + 1
     interface = core.ModelInterface("".join(edited), 1, end, max_indels, kmer_model)
     return utils.buffer2d_to_tensor(interface.get_signature())
 
@@ -35,7 +35,7 @@ def _get_insertion_sample(
     seq: str, num_ins: int, max_indels: int, kmer_model: core.BFKmerModel
 ) -> torch.FloatTensor:
     k = kmer_model.get_kmer_size()
-    edited = seq[:k] + "N" * num_ins + seq[k:]
+    edited = seq[:k] + random.choice("ACGT") * num_ins + seq[k:]
     interface = core.ModelInterface(edited, 1, num_ins + k, max_indels, kmer_model)
     return utils.buffer2d_to_tensor(interface.get_signature())
 
@@ -45,7 +45,8 @@ def _get_deletion_sample(
 ) -> torch.FloatTensor:
     k = kmer_model.get_kmer_size()
     edited = seq[:k] + seq[k + num_del :]
-    interface = core.ModelInterface(edited, 1, num_del + k, max_indels, kmer_model)
+    reg = next(iter(core.EditRegionFinder(edited, kmer_model, 0.5)), (1, num_del + k))
+    interface = core.ModelInterface(edited, *reg, max_indels, kmer_model)
     return utils.buffer2d_to_tensor(interface.get_signature())
 
 
