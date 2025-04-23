@@ -13,7 +13,8 @@ REGISTER_BINDING(({
       .def("insert", &aiedit::Editor::insert)
       .def("delete_base", &aiedit::Editor::delete_base)
       .def("skip", &aiedit::Editor::skip)
-      .def_property_readonly("size", &aiedit::Editor::get_size)
-      .def_property_readonly("position", &aiedit::Editor::get_position)
+      .def("get_num_remaining", &aiedit::Editor::get_num_remaining)
+      .def("get_current", &aiedit::Editor::get_current)
+      .def("get_size", &aiedit::Editor::get_size)
       .def("__iter__", editor__iter__, pybind11::keep_alive<0, 1>());
 }))

@@ -7,10 +7,12 @@ namespace {
 constexpr auto BASES = "ACGT";
 
 inline void fill_repeats_row(aiedit::Buffer2D& signature,
-                             const std::string& prefix_kmer,
+                             const std::string_view seq,
+                             size_t start_kmer,
+                             unsigned kmer_size,
                              aiedit::Editor& editor)
 {
-    char prev = prefix_kmer[prefix_kmer.size() - 1];
+    char prev = seq[start_kmer + kmer_size - 2];
     size_t pos = 0;
     for (const auto base : editor) {
         signature.set(pos++, 0, base == prev ? 1.0f : 0.0f);
@@ -20,19 +22,21 @@ inline void fill_repeats_row(aiedit::Buffer2D& signature,
 
 inline void fill_seed_row(aiedit::Buffer2D& signature,
                           unsigned i_seed,
-                          const std::string& prefix_kmer,
+                          const std::string_view seq,
+                          size_t start_kmer,
                           aiedit::Editor& editor,
                           const std::shared_ptr<aiedit::KmerModel>& kmer_model,
                           unsigned max_ins)
 {
-    btllib::BlindSeedNtHash hash_fn(prefix_kmer.data(),
+    btllib::BlindSeedNtHash hash_fn(seq.data(),
                                     {kmer_model->get_seeds()[i_seed]},
                                     kmer_model->get_num_hashes(),
-                                    kmer_model->get_kmer_size());
+                                    kmer_model->get_kmer_size(),
+                                    start_kmer - 1);
     for (unsigned num_ins = 0; num_ins <= max_ins; num_ins++) {
         btllib::BlindSeedNtHash hash_fn_copy(hash_fn);
         for (const auto base : editor) {
-            const auto pos = hash_fn_copy.get_pos();
+            const auto pos = hash_fn_copy.get_pos() - start_kmer + 1;
             if (pos >= signature.get_num_rows()) {
                 break;
             }
@@ -44,11 +48,14 @@ inline void fill_seed_row(aiedit::Buffer2D& signature,
     }
 }
 
-inline float get_score(const std::string& prefix_kmer,
+inline float get_score(const std::string_view seq,
+                       size_t start_kmer,
                        aiedit::Editor& editor,
                        const std::shared_ptr<aiedit::KmerModel>& kmer_model)
 {
     float score = 0;
+    const std::string prefix_kmer(seq.data() + start_kmer - 1,
+                                  seq.data() + start_kmer - 1 + kmer_model->get_kmer_size());
     btllib::BlindNtHash hash_fn(prefix_kmer,
                                 kmer_model->get_num_hashes(),
                                 kmer_model->get_kmer_size());
@@ -59,12 +66,14 @@ inline float get_score(const std::string& prefix_kmer,
     return score / editor.get_size();
 }
 
-inline std::string find_insertions(const std::string& prefix_kmer,
+inline std::string find_insertions(const std::string_view seq,
+                                   size_t start_kmer,
                                    aiedit::Editor& editor,
                                    const std::shared_ptr<aiedit::KmerModel>& kmer_model,
                                    unsigned num_ins)
 {
-    const auto score = get_score(prefix_kmer, editor, kmer_model);
+    const std::string prefix_kmer(seq.data() + start_kmer - 1,
+                                  seq.data() + start_kmer - 1 + kmer_model->get_kmer_size());
     btllib::BlindNtHash hash_fn(prefix_kmer,
                                 kmer_model->get_num_hashes(),
                                 kmer_model->get_kmer_size());
@@ -85,33 +94,31 @@ inline std::string find_insertions(const std::string& prefix_kmer,
     return result;
 }
 
-inline std::string find_deletions(const std::string& prefix_kmer,
-                                  aiedit::Editor& editor,
-                                  const std::shared_ptr<aiedit::KmerModel>& kmer_model,
-                                  unsigned num_del)
+inline std::string find_deletions(aiedit::Editor& editor, unsigned num_del)
 {
-    std::string result;
-    result.reserve(num_del);
+    std::string result(num_del, '-');
     while (num_del-- && editor.get_num_remaining() > 0) {
         editor.delete_base();
-        result.push_back('-');
     }
     return result;
 }
 
-inline std::string find_mismatches(const std::string& prefix_kmer,
+inline std::string find_mismatches(const std::string_view seq,
+                                   size_t start_kmer,
                                    aiedit::Editor& editor,
                                    const std::shared_ptr<aiedit::KmerModel>& kmer_model,
                                    float* mismatches,
                                    unsigned num_mis)
 {
+    const std::string prefix_kmer(seq.data() + start_kmer - 1,
+                                  seq.data() + start_kmer - 1 + kmer_model->get_kmer_size());
     btllib::BlindNtHash hash_fn(prefix_kmer,
                                 kmer_model->get_num_hashes(),
                                 kmer_model->get_kmer_size());
     std::string result;
     result.reserve(num_mis);
     // TODO optimize
-    for (unsigned pos = 0; pos < num_mis && editor.get_num_remaining() > 0; pos++) {
+    for (unsigned pos = 0; pos < num_mis && editor.get_num_remaining() >= 0; pos++) {
         if (mismatches[pos] < 0) {
             hash_fn.roll(editor.get_current());
             result.push_back('*');
@@ -160,7 +167,8 @@ ModelInterface::ModelInterface(const std::string_view seq,
                                size_t end,
                                unsigned max_indels,
                                const std::shared_ptr<KmerModel>& kmer_model)
-  : prefix_kmer(seq.substr(start - 1, kmer_model->get_kmer_size()))
+  : seq(seq)
+  , start_kmer(start)
   , editor(seq, start + kmer_model->get_kmer_size() - 1, end + kmer_model->get_kmer_size() - 1)
   , max_indels(max_indels)
   , kmer_model(kmer_model)
@@ -170,9 +178,9 @@ Buffer2D ModelInterface::get_signature()
 {
     const auto num_features = kmer_model->get_seeds().size() * (max_indels + 1) + 1;
     Buffer2D signature(editor.get_size(), num_features);
-    fill_repeats_row(signature, prefix_kmer, editor);
+    fill_repeats_row(signature, seq, start_kmer, kmer_model->get_kmer_size(), editor);
     for (unsigned i = 0; i < kmer_model->get_seeds().size(); i++) {
-        fill_seed_row(signature, i, prefix_kmer, editor, kmer_model, max_indels);
+        fill_seed_row(signature, i, seq, start_kmer, editor, kmer_model, max_indels);
     }
     return signature;
 }
@@ -180,20 +188,20 @@ Buffer2D ModelInterface::get_signature()
 std::tuple<std::string, float, bool> ModelInterface::update(const std::vector<float*>& outputs,
                                                             const std::vector<long>& sizes)
 {
-    const auto initial_score = get_score(prefix_kmer, editor, kmer_model);
+    const auto initial_score = get_score(seq, start_kmer, editor, kmer_model);
     const auto indel_prob = outputs[0][0];
     const auto indels = argmax(outputs[2], sizes[2]);
     const auto mismatches = outputs[1];
     const auto max_mismatches = sizes[1];
     std::string edit;
     if (indel_prob > 0 && indels < max_indels) {
-        edit = find_insertions(prefix_kmer, editor, kmer_model, indels + 1);
+        edit = find_insertions(seq, start_kmer, editor, kmer_model, indels + 1);
     } else if (indel_prob > 0) {
-        edit = find_deletions(prefix_kmer, editor, kmer_model, indels - max_indels + 1);
+        edit = find_deletions(editor, indels - max_indels + 1);
     } else {
-        edit = find_mismatches(prefix_kmer, editor, kmer_model, mismatches, max_mismatches);
+        edit = find_mismatches(seq, start_kmer, editor, kmer_model, mismatches, max_mismatches);
     }
-    const auto final_score = get_score(prefix_kmer, editor, kmer_model);
+    const auto final_score = get_score(seq, start_kmer, editor, kmer_model);
     return std::make_tuple(edit, final_score, final_score > initial_score);
 }
 

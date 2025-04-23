@@ -10,8 +10,8 @@ class TestData(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.seq = "AGGTCATCATGG"
-        cls.seeds = ["1110111", "1100011"]
+        cls.seq = "ACATACATGCTAGGCAGG"
+        cls.seeds = ["1110111", "1101011"]
         cls.kmer_model = aiedit.data._make_kmer_model(cls.seq, cls.seeds)
 
     def test_mismatch(self):

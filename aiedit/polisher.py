@@ -12,7 +12,7 @@ def _set_globals(km):
     kmer_model = km
 
 
-@torch.no_grad
+@torch.no_grad()
 def _get_edits(seq: str, model: Model, x_seeds: torch.FloatTensor, region: tuple[int]):
     global kmer_model
     start_pos = region[0] + kmer_model.get_kmer_size() - 1

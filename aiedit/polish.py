@@ -33,9 +33,9 @@ def main(args):
     kmer_model = core.CBFKmerModel(args.b, args.k or "", utils.load_seeds(args.s))
     end_time = time.perf_counter()
     print(f"DONE ({end_time - start_time:.1f}s)")
-    print(f"- Size (bytes):    {kmer_model.get_size():,}")
+    print(f"- Size (bytes)   : {kmer_model.get_size():,}")
     print(f"- Number of seeds: {len(kmer_model.get_seeds())}")
-    print(f"- K-mer size:      {kmer_model.get_kmer_size()}")
+    print(f"- K-mer size     : {kmer_model.get_kmer_size()}")
     print()
 
     print("Loading edit model... ", end="", flush=True)
@@ -46,7 +46,7 @@ def main(args):
     end_time = time.perf_counter()
     print(f"DONE ({end_time - start_time:.1f}s)")
     print(f"- Maximum consecutive substitutions: {model._max_mismatches}")
-    print(f"- Maximum insertion/deletion size:   {model._max_indels}")
+    print(f"- Maximum insertion/deletion size  : {model._max_indels}")
     print()
 
     file_name = pathlib.Path(args.input_file).stem
@@ -60,7 +60,7 @@ def main(args):
     variants_list = VariantsList()
     for record in seq_reader:
         seq_name = record.id + (" " + record.comment if record.comment else "")
-        print(f"[{seq_name}] Processing started")
+        print(f"[{seq_name}] Processing started ({len(record.seq):,}bp)")
         start_time = time.perf_counter()
         edits = polisher.polish(record.seq)
         end_time = time.perf_counter()
@@ -68,7 +68,6 @@ def main(args):
         num_passed = sum(edit[-1] for edit in edits)
         print(f"[{seq_name}] Found {len(edits)} edits in {elapsed:.1f}s")
         variants_list.add(edits, record.seq, record.id, record.comment, len(record.seq))
-        print(f"[{seq_name}] Added variants to list")
         edited = core.apply_edits(record.seq, edits)
         print(f"[{seq_name}] Applied {num_passed} passed edits ({len(edited):,}bp)")
         seq_writer.write(record.id, record.comment, edited)

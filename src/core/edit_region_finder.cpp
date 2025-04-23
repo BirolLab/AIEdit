@@ -11,6 +11,7 @@ EditRegionFinder::EditRegionFinder(const std::string_view seq,
   , hit_threshold(hit_threshold)
   , max_length(max_length)
 {
+    hash_fn.roll();
     next(true);
 }
 
@@ -25,7 +26,7 @@ std::optional<std::pair<size_t, size_t>> EditRegionFinder::get_next_region()
     }
     size_t end_pos = hash_fn.get_pos();
     if (end_pos - start_pos - kmer_model->get_kmer_size() + 1 > max_length) {
-        end_pos = start_pos + max_length;
+        end_pos = start_pos + kmer_model->get_kmer_size();
     }
     return std::make_pair(start_pos, end_pos);
 }

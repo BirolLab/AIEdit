@@ -17,16 +17,18 @@ std::string apply_edits(const std::string_view seq, const pybind11::list& edits)
             continue;
         }
         const auto edit = next_edit[2].cast<std::string>();
-        for (size_t i = 0; i < edit.size(); i++) {
-            if (edit[i] == '+') {
-                edited.push_back(edit[++i]);
-            } else if (edit[i] == '-') {
-                ++seq_pos;
-            } else if (edit[i] == '*') {
-                edited.push_back(seq[seq_pos++]);
-            } else {
-                edited.push_back(edit[i]);
-                ++seq_pos;
+        if (next_edit[4].cast<bool>()) {
+            for (size_t i = 0; i < edit.size(); i++) {
+                if (edit[i] == '+') {
+                    edited.push_back(edit[++i]);
+                } else if (edit[i] == '-') {
+                    ++seq_pos;
+                } else if (edit[i] == '*') {
+                    edited.push_back(seq[seq_pos++]);
+                } else {
+                    edited.push_back(edit[i]);
+                    ++seq_pos;
+                }
             }
         }
         if (++edit_index < edits.size()) {

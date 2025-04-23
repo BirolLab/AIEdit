@@ -24,8 +24,8 @@ class Variant:
     index: int
     seq_id: str
     position: int
-    ref: str
-    alt: str
+    original: str
+    edited: str
     kmer_score: int
     region_length: int
     status: str
@@ -38,24 +38,25 @@ class Variant:
         status = "PASS" if passed else "ks"
         edit = edit.rstrip("*")
         if len(edit) == 0:
-            ref, alt = ".", "."
+            edited, original = ".", "."
             status = "ml"
         elif edit[0] == "-":
-            ref = "."
-            alt = seq[position : position + edit.count("-")]
+            num_deleted = edit.count("-")
+            edited = seq[position - 1]
+            original = seq[position - 1 : position + num_deleted]
         elif edit[0] == "+":
-            ref = edit[1::2] + seq[position]
-            alt = seq[position]
+            edited = seq[position - 1] + edit[1::2]
+            original = seq[position - 1]
         else:
-            ref = (seq[position + i] if b == "*" else b for i, b in enumerate(edit))
-            ref = "".join(ref)
-            alt = seq[position : position + len(edit)]
+            edited = (seq[position + i] if b == "*" else b for i, b in enumerate(edit))
+            edited = "".join(edited)
+            original = seq[position : position + len(edit)]
         return Variant(
             index=index,
             seq_id=seq_id,
             position=position + 1,
-            ref=ref,
-            alt=alt,
+            original=original,
+            edited=edited,
             kmer_score=int(-10 * math.log10(1 - score + sys.float_info.epsilon)),
             region_length=region_length,
             status=status,
@@ -66,8 +67,8 @@ class Variant:
             self.seq_id,
             self.position,
             self.index,
-            self.ref,
-            self.alt,
+            self.original,
+            self.edited,
             self.kmer_score,
             self.status,
             self.region_length,
@@ -93,7 +94,7 @@ class VariantsList:
         for edit in edits:
             index = len(self._variants)
             variant = Variant.from_interface_output(edit, index, seq_id, seq)
-            if variant.ref != variant.alt:
+            if variant.edited != variant.original:
                 self._variants.append(variant)
 
     def save_vcf(self, path: str, assembly_path: str):

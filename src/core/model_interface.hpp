@@ -32,7 +32,8 @@ class ModelInterface
 
   private:
 
-    const std::string prefix_kmer;
+    const std::string_view seq;
+    const size_t start_kmer;
     Editor editor;
     const unsigned max_indels;
     std::shared_ptr<KmerModel> kmer_model;
