@@ -16,8 +16,8 @@ void Editor::substitute(char new_base)
     if (nexts.size() == 0) {
         throw std::runtime_error("[aiedit::Editor] No bases to substitute");
     }
-    consumed.push_back(new_base);
     nexts.pop_front();
+    nexts.push_front(new_base);
 }
 
 void Editor::insert(char base) { consumed.push_back(base); }

@@ -16,7 +16,7 @@ std::string apply_edits(const std::string_view seq, const pybind11::list& edits)
             edited.push_back(seq[seq_pos++]);
             continue;
         }
-        const auto edit = next_edit[1].cast<std::string>();
+        const auto edit = next_edit[2].cast<std::string>();
         for (size_t i = 0; i < edit.size(); i++) {
             if (edit[i] == '+') {
                 edited.push_back(edit[++i]);

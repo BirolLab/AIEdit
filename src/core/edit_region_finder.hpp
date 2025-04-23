@@ -17,7 +17,8 @@ class EditRegionFinder
 
     EditRegionFinder(const std::string_view seq,
                      const std::shared_ptr<KmerModel>& kmer_model,
-                     float hit_threshold);
+                     float hit_threshold,
+                     unsigned max_length);
 
     EditRegionFinder::Iterator begin();
     EditRegionFinder::Iterator end();
@@ -27,6 +28,7 @@ class EditRegionFinder
     btllib::NtHash hash_fn;
     std::shared_ptr<KmerModel> kmer_model;
     const float hit_threshold;
+    const unsigned max_length;
 
     std::optional<std::pair<size_t, size_t>> get_next_region();
     bool next(bool hit);

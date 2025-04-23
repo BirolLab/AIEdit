@@ -33,6 +33,10 @@ def main(args):
     kmer_model = core.CBFKmerModel(args.b, args.k or "", utils.load_seeds(args.s))
     end_time = time.perf_counter()
     print(f"DONE ({end_time - start_time:.1f}s)")
+    print(f"- Size (bytes):    {kmer_model.get_size():,}")
+    print(f"- Number of seeds: {len(kmer_model.get_seeds())}")
+    print(f"- K-mer size:      {kmer_model.get_kmer_size()}")
+    print()
 
     print("Loading edit model... ", end="", flush=True)
     start_time = time.perf_counter()
@@ -41,6 +45,9 @@ def main(args):
     model.share_memory()
     end_time = time.perf_counter()
     print(f"DONE ({end_time - start_time:.1f}s)")
+    print(f"- Maximum consecutive substitutions: {model._max_mismatches}")
+    print(f"- Maximum insertion/deletion size:   {model._max_indels}")
+    print()
 
     file_name = pathlib.Path(args.input_file).stem
     out_prefix = os.path.join(args.o, file_name) + "-aiedit-"
@@ -57,14 +64,17 @@ def main(args):
         start_time = time.perf_counter()
         edits = polisher.polish(record.seq)
         end_time = time.perf_counter()
-        print(f"[{seq_name}] Found {len(edits)} edits in {end_time - start_time:.1f}")
+        elapsed = end_time - start_time
+        num_passed = sum(edit[-1] for edit in edits)
+        print(f"[{seq_name}] Found {len(edits)} edits in {elapsed:.1f}s")
         variants_list.add(edits, record.seq, record.id, record.comment, len(record.seq))
         print(f"[{seq_name}] Added variants to list")
         edited = core.apply_edits(record.seq, edits)
-        print(f"[{seq_name}] Applied edits to sequence")
+        print(f"[{seq_name}] Applied {num_passed} passed edits ({len(edited):,}bp)")
         seq_writer.write(record.id, record.comment, edited)
         print(f"[{seq_name}] Edited sequence saved to {out_fasta_path}")
 
     out_vcf_path = f"{out_prefix}variants.vcf"
-    variants_list.save_vcf(out_vcf_path)
+    variants_list.save_vcf(out_vcf_path, args.input_file)
+    print()
     print(f"Variants saved to {out_vcf_path}")

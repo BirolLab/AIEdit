@@ -31,10 +31,8 @@ class TestEditRegionFinder(unittest.TestCase):
             hashes = np.array(hash_fn.hashes(), dtype=np.uint64)
             hits.append(self.__class__.kmer_model.score(hashes) >= 0.5)
         diffs = np.diff(np.array(hits).astype(int))
-        start_positions = np.where(diffs == -1)[0] + 1
-        end_positions = np.where(diffs == 1)[0] + 1
-        expected_regions = set(zip(start_positions, end_positions))
+        start_positions = set(np.where(diffs == -1)[0] + 1)
 
-        erf = aiedit.core.EditRegionFinder(self.__class__.seq, self.__class__.kmer_model, 0.5)
+        erf = aiedit.core.EditRegionFinder(self.__class__.seq, self.__class__.kmer_model, 0.5, 10)
         for region in erf:
-            self.assertIn(region, expected_regions)
+            self.assertIn(region[0], start_positions)

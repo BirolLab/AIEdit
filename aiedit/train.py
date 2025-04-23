@@ -5,8 +5,8 @@ import random
 import signal
 import time
 
+import torch
 import torch.nn.functional as F
-import torch.utils.data
 import tqdm
 
 from aiedit import data, utils
@@ -28,7 +28,7 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
         "-i", "--max-indels", help="indel window size", type=int, default=10
     )
     parser.add_argument(
-        "-d", "--model-dim", help="model dimensionality", type=int, default=32
+        "-d", "--model-dim", help="model dimensionality", type=int, default=8
     )
     parser.add_argument(
         "-e", "--num-epochs", help="number of training epochs", type=int, default=10
@@ -85,7 +85,7 @@ def validate(model, val_data) -> tuple[float, float]:
 
 def create_dataset(name, seeds, max_mismatches, max_indels):
     dataset = []
-    num_samples = 2 ** (max_mismatches - 1) + 2 * max_indels
+    num_samples = (2 ** (max_mismatches - 1) + 2 * max_indels) * len(seeds)
     pbar = tqdm.tqdm(desc=name, total=num_samples)
     for seed in seeds:
         for x in data.generate_dataset(seed, max_mismatches, max_indels):

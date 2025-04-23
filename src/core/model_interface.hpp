@@ -27,8 +27,8 @@ class ModelInterface
 
     Buffer2D get_signature();
 
-    std::optional<std::string> update(const std::vector<float*>& outputs,
-                                      const std::vector<long>& sizes);
+    std::tuple<std::string, float, bool> update(const std::vector<float*>& outputs,
+                                                const std::vector<long>& sizes);
 
   private:
 

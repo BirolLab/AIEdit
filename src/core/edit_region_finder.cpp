@@ -4,10 +4,12 @@ namespace aiedit {
 
 EditRegionFinder::EditRegionFinder(const std::string_view seq,
                                    const std::shared_ptr<KmerModel>& kmer_model,
-                                   float hit_threshold)
+                                   float hit_threshold,
+                                   unsigned max_length)
   : hash_fn(seq.data(), seq.size(), kmer_model->get_num_hashes(), kmer_model->get_kmer_size())
   , kmer_model(kmer_model)
   , hit_threshold(hit_threshold)
+  , max_length(max_length)
 {
     next(true);
 }
@@ -22,6 +24,9 @@ std::optional<std::pair<size_t, size_t>> EditRegionFinder::get_next_region()
         return {};
     }
     size_t end_pos = hash_fn.get_pos();
+    if (end_pos - start_pos - kmer_model->get_kmer_size() + 1 > max_length) {
+        end_pos = start_pos + max_length;
+    }
     return std::make_pair(start_pos, end_pos);
 }
 

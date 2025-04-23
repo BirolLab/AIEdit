@@ -15,13 +15,13 @@ def _set_globals(km):
 @torch.no_grad
 def _get_edits(seq: str, model: Model, x_seeds: torch.FloatTensor, region: tuple[int]):
     global kmer_model
-    start_pos = region[0] + kmer_model.get_kmer_size()
+    start_pos = region[0] + kmer_model.get_kmer_size() - 1
     interface = core.ModelInterface(seq, *region, model._max_indels, kmer_model)
     x_sig = utils.buffer2d_to_tensor(interface.get_signature())
     y_pred = model(x_seeds, x_sig)
     y_pred = [y.squeeze(0) for y in y_pred]
     outputs, sizes = [y.data_ptr() for y in y_pred], [y.size(0) for y in y_pred]
-    return (start_pos, interface.update(outputs, sizes))
+    return (start_pos, region[1] - start_pos, *interface.update(outputs, sizes))
 
 
 class Polisher:
@@ -34,9 +34,9 @@ class Polisher:
 
     def polish(self, seq: str):
         edits = []
-        regions = core.EditRegionFinder(seq, self._kmer_model, 0.5)
+        regions = core.EditRegionFinder(seq, self._kmer_model, 0.5, self._model._max_mismatches)
         func = functools.partial(_get_edits, seq, self._model, self._x_seeds)
-        for result in self._pool.imap(func, regions, 100):
-            if result[1] is not None:
-                edits.append(result)
+        for result in self._pool.imap(func, regions, 1000):
+            edits.append(result)
         return edits
+ 

@@ -1,6 +1,9 @@
 import dataclasses
 import datetime
+import math
 import os
+import pathlib
+import sys
 
 from aiedit import __version__
 
@@ -24,14 +27,20 @@ class Variant:
     ref: str
     alt: str
     kmer_score: int
-    model_score: int
+    region_length: int
     status: str
 
     @staticmethod
     def from_interface_output(output: tuple, index: int, seq_id: str, seq: str):
-        position, edit = output
+        position, region_length, edit, score, passed = output
+        if math.isnan(score):
+            score = 0
+        status = "PASS" if passed else "ks"
         edit = edit.rstrip("*")
-        if edit[0] == "-":
+        if len(edit) == 0:
+            ref, alt = ".", "."
+            status = "ml"
+        elif edit[0] == "-":
             ref = "."
             alt = seq[position : position + edit.count("-")]
         elif edit[0] == "+":
@@ -47,9 +56,9 @@ class Variant:
             position=position + 1,
             ref=ref,
             alt=alt,
-            kmer_score=0,
-            model_score=0,
-            status="PASS",
+            kmer_score=int(-10 * math.log10(1 - score + sys.float_info.epsilon)),
+            region_length=region_length,
+            status=status,
         )
 
     def vcf_row(self):
@@ -61,7 +70,7 @@ class Variant:
             self.alt,
             self.kmer_score,
             self.status,
-            self.model_score,
+            self.region_length,
         ]
         return "\t".join(map(str, row))
 
@@ -84,18 +93,21 @@ class VariantsList:
         for edit in edits:
             index = len(self._variants)
             variant = Variant.from_interface_output(edit, index, seq_id, seq)
-            self._variants.append(variant)
+            if variant.ref != variant.alt:
+                self._variants.append(variant)
 
-    def save_vcf(self, path: str):
+    def save_vcf(self, path: str, assembly_path: str):
         header = [
             "##fileformat=VCFv4.5",
             f"##fileDate={datetime.date.today().strftime('%Y%m%d')}",
             f"##source=AIEditV{__version__}",
+            f"##assembly={pathlib.Path(os.path.abspath(assembly_path)).as_uri()}",
         ]
         header += [contig.vcf_header() for contig in self._contigs]
         header += [
-            "##INFO=<ID=MS,Number=1,Type=Integer,Description=Model Score as Phred>",
-            "##FILTER=<ID=km,Description=K-mer score did not increase>",
+            "##INFO=<ID=RL,Number=1,Type=Integer,Description=Edit region length in bp>",
+            "##FILTER=<ID=ks,Description=K-mer score did not increase>",
+            "##FILTER=<ID=ml,Description=Model did not detect any edits>",
             "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO",
         ]
         with open(path, "w") as file:

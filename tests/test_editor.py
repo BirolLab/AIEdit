@@ -33,8 +33,8 @@ class TestEditor(unittest.TestCase):
         self.editor.delete_base()
         self.editor.skip()
         self.editor.insert("A")
-        self.assertEqual("".join(c for c in self.editor), "TTGACTAGACTGATAG")
-        self.assertEqual(self.editor.position, 4)
+        self.assertEqual("".join(c for c in self.editor), "TCAGCTAGACTGATAG")
+        self.assertEqual(self.editor.position, 3)
         self.assertEqual(self.editor.size, len(self.seq))
 
     def test_full_deletion(self):

@@ -17,6 +17,7 @@ class KmerModel
 
     virtual unsigned get_num_hashes() const = 0;
     virtual unsigned get_kmer_size() const = 0;
+    virtual size_t get_size() const = 0;
     virtual const std::vector<std::string>& get_seeds() const = 0;
 };
 
@@ -29,9 +30,10 @@ class BFKmerModel : public KmerModel
 
     float score(const uint64_t* hashes) const;
 
-    unsigned get_num_hashes() const;
-    unsigned get_kmer_size() const;
-    const std::vector<std::string>& get_seeds() const;
+    unsigned get_num_hashes() const override;
+    unsigned get_kmer_size() const override;
+    size_t get_size() const override;
+    const std::vector<std::string>& get_seeds() const override;
 
   private:
 
@@ -51,7 +53,8 @@ class CBFKmerModel : public KmerModel
 
     unsigned get_num_hashes() const override;
     unsigned get_kmer_size() const override;
-    const std::vector<std::string>& get_seeds() const;
+    size_t get_size() const override;
+    const std::vector<std::string>& get_seeds() const override;
 
   private:
 

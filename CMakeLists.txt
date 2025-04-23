@@ -35,6 +35,7 @@ pybind11_add_module(
     src/bindings/editor.cpp
     src/bindings/kmer_model.cpp
     src/bindings/model_interface.cpp
+    src/bindings/seed_generator.cpp
     src/bindings/utils.cpp
     src/core/buffer2d.cpp
     src/core/edit_region_finder.cpp
@@ -42,6 +43,7 @@ pybind11_add_module(
     src/core/editor.cpp
     src/core/kmer_model.cpp
     src/core/model_interface.cpp
+    src/core/seed_generator.cpp
     src/core/utils.cpp
 )
 

@@ -40,7 +40,7 @@ class TestModelInterface(unittest.TestCase):
 
         x_seeds = aiedit.utils.encode_seeds(self.__class__.seeds)
         signature = np.array(env.get_signature(), copy=False)
-        self.assertTrue(np.array_equal(signature[:, 1:], 1 - x_seeds))
+        self.assertTrue(np.array_equal(signature[:, 1:].round(), 1 - x_seeds))
 
         y_pred = (
             torch.tensor([-1.0]),
@@ -50,7 +50,7 @@ class TestModelInterface(unittest.TestCase):
         outputs = [y.data_ptr() for y in y_pred]
         sizes = [y.size(0) for y in y_pred]
 
-        applied_edit = env.update(outputs, sizes)
+        applied_edit, *_ = env.update(outputs, sizes)
         self.assertEqual(applied_edit, self.__class__.ref[k] + "****")
 
         signature = np.array(env.get_signature(), copy=False)
@@ -68,7 +68,7 @@ class TestModelInterface(unittest.TestCase):
         outputs = [y.data_ptr() for y in y_pred]
         sizes = [y.size(0) for y in y_pred]
 
-        applied_edit = env.update(outputs, sizes)
+        applied_edit, *_ = env.update(outputs, sizes)
         self.assertEqual(applied_edit, "+" + self.__class__.ref[k])
 
         signature = np.array(env.get_signature(), copy=False)
@@ -86,7 +86,7 @@ class TestModelInterface(unittest.TestCase):
         outputs = [y.data_ptr() for y in y_pred]
         sizes = [y.size(0) for y in y_pred]
 
-        applied_edit = env.update(outputs, sizes)
+        applied_edit, *_ = env.update(outputs, sizes)
         self.assertEqual(applied_edit, "-")
 
         signature = np.array(env.get_signature(), copy=False)
