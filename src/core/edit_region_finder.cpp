@@ -25,8 +25,8 @@ std::optional<std::pair<size_t, size_t>> EditRegionFinder::get_next_region()
         return {};
     }
     size_t end_pos = hash_fn.get_pos();
-    if (end_pos - start_pos - kmer_model->get_kmer_size() + 1 > max_length) {
-        end_pos = start_pos + kmer_model->get_kmer_size();
+    if (end_pos > start_pos + kmer_model->get_kmer_size() - 1 + max_length) {
+        end_pos = start_pos + kmer_model->get_kmer_size() / 2;
     }
     return std::make_pair(start_pos, end_pos);
 }

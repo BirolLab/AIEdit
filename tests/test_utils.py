@@ -14,4 +14,4 @@ class TestUtils(unittest.TestCase):
             (9, 1, "T", 0, False),
         ]
         expected = "AGCGGCGCATC"
-        self.assertEqual(aiedit.core.apply_edits(seq, edits), expected)
+        self.assertEqual(aiedit.core.apply_edits(seq, edits, 0.5), expected)

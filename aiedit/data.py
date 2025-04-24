@@ -35,7 +35,8 @@ def _get_insertion_sample(
     seq: str, num_ins: int, max_indels: int, kmer_model: core.BFKmerModel
 ) -> torch.FloatTensor:
     k = kmer_model.get_kmer_size()
-    edited = seq[:k] + random.choice("ACGT") * num_ins + seq[k:]
+    insertion = "".join(random.choices("ACGT", k=num_ins))
+    edited = seq[:k] + insertion + seq[k:]
     interface = core.ModelInterface(edited, 1, num_ins + k, max_indels, kmer_model)
     return utils.buffer2d_to_tensor(interface.get_signature())
 
@@ -45,8 +46,7 @@ def _get_deletion_sample(
 ) -> torch.FloatTensor:
     k = kmer_model.get_kmer_size()
     edited = seq[:k] + seq[k + num_del :]
-    reg = next(iter(core.EditRegionFinder(edited, kmer_model, 0.5)), (1, num_del + k))
-    interface = core.ModelInterface(edited, *reg, max_indels, kmer_model)
+    interface = core.ModelInterface(edited, 1, k, max_indels, kmer_model)
     return utils.buffer2d_to_tensor(interface.get_signature())
 
 

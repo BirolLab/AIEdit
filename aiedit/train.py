@@ -71,7 +71,7 @@ def check_prediction(y_pred: torch.FloatTensor, y_true: torch.FloatTensor) -> bo
     return 0, 1
 
 
-@torch.no_grad
+@torch.no_grad()
 def validate(model, val_data) -> tuple[float, float]:
     loss, num_true, num_pred = 0.0, 0, 0
     for x, y_true in val_data:

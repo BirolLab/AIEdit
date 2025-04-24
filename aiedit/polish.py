@@ -53,25 +53,24 @@ def main(args):
     out_prefix = os.path.join(args.o, file_name) + "-aiedit-"
     out_fasta_path = f"{out_prefix}edited.fa"
 
-    polisher = Polisher(model, kmer_model, args.t)
+    polisher = Polisher(model, kmer_model, args.t, args.p)
 
     seq_reader = btllib.SeqReader(args.input_file, btllib.SeqReaderFlag.LONG_MODE)
     seq_writer = btllib.SeqWriter(out_fasta_path)
-    variants_list = VariantsList()
+    variants_list = VariantsList(args.p)
     for record in seq_reader:
-        seq_name = record.id + (" " + record.comment if record.comment else "")
-        print(f"[{seq_name}] Processing started ({len(record.seq):,}bp)")
+        print(f"[{record.id}] Processing started ({len(record.seq):,}bp)")
         start_time = time.perf_counter()
         edits = polisher.polish(record.seq)
         end_time = time.perf_counter()
         elapsed = end_time - start_time
-        num_passed = sum(edit[-1] for edit in edits)
-        print(f"[{seq_name}] Found {len(edits)} edits in {elapsed:.1f}s")
+        num_passed = sum(edit[3] >= args.p for edit in edits)
+        print(f"[{record.id}] Found {len(edits)} edits in {elapsed:.1f}s")
         variants_list.add(edits, record.seq, record.id, record.comment, len(record.seq))
-        edited = core.apply_edits(record.seq, edits)
-        print(f"[{seq_name}] Applied {num_passed} passed edits ({len(edited):,}bp)")
+        edited = core.apply_edits(record.seq, edits, args.p)
+        print(f"[{record.id}] Applied {num_passed} passed edits ({len(edited):,}bp)")
         seq_writer.write(record.id, record.comment, edited)
-        print(f"[{seq_name}] Edited sequence saved to {out_fasta_path}")
+        print(f"[{record.id}] Edited sequence saved to {out_fasta_path}")
 
     out_vcf_path = f"{out_prefix}variants.vcf"
     variants_list.save_vcf(out_vcf_path, args.input_file)

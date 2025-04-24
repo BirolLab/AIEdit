@@ -31,14 +31,23 @@ class Variant:
     status: str
 
     @staticmethod
-    def from_interface_output(output: tuple, index: int, seq_id: str, seq: str):
-        position, region_length, edit, score, passed = output
+    def from_interface(
+        output: tuple[int, int, str, float],
+        index: int,
+        seq_id: str,
+        seq: str,
+        min_score: float,
+    ):
+        position, region_length, edit, score = output
         if math.isnan(score):
             score = 0
-        status = "PASS" if passed else "ks"
+        if score >= min_score:
+            status = "PASS"
+        else:
+            status = f"ks{int(-10 * math.log10(min_score))}"
         edit = edit.rstrip("*")
         if len(edit) == 0:
-            edited, original = ".", "."
+            edited, original = seq[position], seq[position]
             status = "ml"
         elif edit[0] == "-":
             num_deleted = edit.count("-")
@@ -78,7 +87,8 @@ class Variant:
 
 class VariantsList:
 
-    def __init__(self):
+    def __init__(self, score_threshold: float):
+        self._min_score = score_threshold
         self._contigs: list[Contig] = []
         self._variants: list[Variant] = []
 
@@ -93,9 +103,9 @@ class VariantsList:
         self._contigs.append(Contig(seq_id, seq_comment, seq_length))
         for edit in edits:
             index = len(self._variants)
-            variant = Variant.from_interface_output(edit, index, seq_id, seq)
-            if variant.edited != variant.original:
-                self._variants.append(variant)
+            var = Variant.from_interface(edit, index, seq_id, seq, self._min_score)
+            if var.edited != var.original:
+                self._variants.append(var)
 
     def save_vcf(self, path: str, assembly_path: str):
         header = [
@@ -105,9 +115,10 @@ class VariantsList:
             f"##assembly={pathlib.Path(os.path.abspath(assembly_path)).as_uri()}",
         ]
         header += [contig.vcf_header() for contig in self._contigs]
+        min_qual = int(-10 * math.log10(self._min_score))
         header += [
             "##INFO=<ID=RL,Number=1,Type=Integer,Description=Edit region length in bp>",
-            "##FILTER=<ID=ks,Description=K-mer score did not increase>",
+            f"##FILTER=<ID=qual{min_qual},Description=K-mer Phred score less than {min_qual} after edits>",
             "##FILTER=<ID=ml,Description=Model did not detect any edits>",
             "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO",
         ]

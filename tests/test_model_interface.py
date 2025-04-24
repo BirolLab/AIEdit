@@ -63,7 +63,7 @@ class TestModelInterface(unittest.TestCase):
         env = aiedit.core.ModelInterface(seq, 1, k + 1, 5, self.__class__.kmer_model)
 
         y_indel = torch.zeros(10)
-        y_indel[0] = 1.0
+        y_indel[5] = 1.0
         y_pred = (torch.tensor([1.0]), torch.zeros(1), y_indel)
         outputs = [y.data_ptr() for y in y_pred]
         sizes = [y.size(0) for y in y_pred]
@@ -81,13 +81,10 @@ class TestModelInterface(unittest.TestCase):
         env = aiedit.core.ModelInterface(seq, 1, k + 1, 5, self.__class__.kmer_model)
 
         y_indel = torch.zeros(10)
-        y_indel[5] = 1.0
+        y_indel[0] = 1.0
         y_pred = (torch.tensor([1.0]), torch.zeros(1), y_indel)
         outputs = [y.data_ptr() for y in y_pred]
         sizes = [y.size(0) for y in y_pred]
 
         applied_edit, *_ = env.update(outputs, sizes)
         self.assertEqual(applied_edit, "-")
-
-        signature = np.array(env.get_signature(), copy=False)
-        self.assertTrue(signature[:, 1].all())

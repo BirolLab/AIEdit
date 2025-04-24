@@ -1,5 +1,7 @@
 #include "model_interface.hpp"
 
+#include <math.h>
+#include <queue>
 #include <stdexcept>
 
 namespace {
@@ -61,9 +63,9 @@ inline float get_score(const std::string_view seq,
                                 kmer_model->get_kmer_size());
     for (const auto c : editor) {
         hash_fn.roll(c);
-        score += kmer_model->score(hash_fn.hashes());
+        score += std::log(kmer_model->score(hash_fn.hashes()));
     }
-    return score / editor.get_size();
+    return std::exp(score / editor.get_size());
 }
 
 inline std::string find_insertions(const std::string_view seq,
@@ -94,13 +96,22 @@ inline std::string find_insertions(const std::string_view seq,
     return result;
 }
 
-inline std::string find_deletions(aiedit::Editor& editor, unsigned num_del)
+inline std::pair<std::string, float>
+find_deletions(const std::string_view seq,
+               size_t start_kmer,
+               aiedit::Editor& editor,
+               const std::shared_ptr<aiedit::KmerModel>& kmer_model,
+               unsigned max_del)
 {
-    std::string result(num_del, '-');
-    while (num_del-- && editor.get_num_remaining() > 0) {
-        editor.delete_base();
+    aiedit::Editor editor_copy(editor);
+    std::priority_queue<std::pair<float, unsigned>> scores;
+    for (unsigned num_del = 1; num_del <= max_del && editor_copy.get_num_remaining() > 0;
+         num_del++) {
+        editor_copy.delete_base();
+        const auto score = get_score(seq, start_kmer, editor_copy, kmer_model);
+        scores.push(std::make_pair(score, num_del));
     }
-    return result;
+    return std::make_pair(std::string(scores.top().second, '-'), scores.top().first);
 }
 
 inline std::string find_mismatches(const std::string_view seq,
@@ -118,7 +129,7 @@ inline std::string find_mismatches(const std::string_view seq,
     std::string result;
     result.reserve(num_mis);
     // TODO optimize
-    for (unsigned pos = 0; pos < num_mis && editor.get_num_remaining() >= 0; pos++) {
+    for (unsigned pos = 0; pos < num_mis && editor.get_num_remaining() > 0; pos++) {
         if (mismatches[pos] < 0) {
             hash_fn.roll(editor.get_current());
             result.push_back('*');
@@ -126,15 +137,14 @@ inline std::string find_mismatches(const std::string_view seq,
             continue;
         }
         bool found = false;
+        char original = editor.get_current();
         for (unsigned i = 0; i < 4 && !found; i++) {
-            if (BASES[i] != editor.get_current()) {
-                hash_fn.peek(BASES[i]);
-                if (kmer_model->score(hash_fn.hashes()) > 0.5) {
-                    editor.substitute(BASES[i]);
-                    hash_fn.roll(BASES[i]);
-                    result.push_back(BASES[i]);
-                    found = true;
-                }
+            hash_fn.peek(BASES[i]);
+            if (kmer_model->score(hash_fn.hashes()) > 0.5) {
+                editor.substitute(BASES[i]);
+                hash_fn.roll(BASES[i]);
+                result.push_back(BASES[i] == original ? '*' : BASES[i]);
+                found = true;
             }
         }
         if (!found) {
@@ -185,24 +195,27 @@ Buffer2D ModelInterface::get_signature()
     return signature;
 }
 
-std::tuple<std::string, float, bool> ModelInterface::update(const std::vector<float*>& outputs,
-                                                            const std::vector<long>& sizes)
+std::pair<std::string, float> ModelInterface::update(const std::vector<float*>& outputs,
+                                                     const std::vector<long>& sizes)
 {
-    const auto initial_score = get_score(seq, start_kmer, editor, kmer_model);
     const auto indel_prob = outputs[0][0];
     const auto indels = argmax(outputs[2], sizes[2]);
     const auto mismatches = outputs[1];
     const auto max_mismatches = sizes[1];
     std::string edit;
+    float score = 0;
     if (indel_prob > 0 && indels < max_indels) {
-        edit = find_insertions(seq, start_kmer, editor, kmer_model, indels + 1);
+        const auto result = find_deletions(seq, start_kmer, editor, kmer_model, max_indels);
+        edit = result.first;
+        score = result.second;
     } else if (indel_prob > 0) {
-        edit = find_deletions(editor, indels - max_indels + 1);
+        edit = find_insertions(seq, start_kmer, editor, kmer_model, indels - max_indels + 1);
+        score = get_score(seq, start_kmer, editor, kmer_model);
     } else {
         edit = find_mismatches(seq, start_kmer, editor, kmer_model, mismatches, max_mismatches);
+        score = get_score(seq, start_kmer, editor, kmer_model);
     }
-    const auto final_score = get_score(seq, start_kmer, editor, kmer_model);
-    return std::make_tuple(edit, final_score, final_score > initial_score);
+    return std::make_pair(edit, score);
 }
 
 }

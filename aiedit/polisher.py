@@ -21,22 +21,27 @@ def _get_edits(seq: str, model: Model, x_seeds: torch.FloatTensor, region: tuple
     y_pred = model(x_seeds, x_sig)
     y_pred = [y.squeeze(0) for y in y_pred]
     outputs, sizes = [y.data_ptr() for y in y_pred], [y.size(0) for y in y_pred]
-    return (start_pos, region[1] - start_pos, *interface.update(outputs, sizes))
+    results = interface.update(outputs, sizes)
+    return (start_pos, region[1] - start_pos, *results)
 
 
 class Polisher:
 
-    def __init__(self, model: Model, kmer_model, num_threads: int):
+    def __init__(
+        self, model: Model, kmer_model, num_threads: int, score_threshold: float
+    ):
         self._model = model
         self._kmer_model = kmer_model
+        self._score_threshold = score_threshold
         self._pool = mp.Pool(num_threads, _set_globals, (kmer_model,))
         self._x_seeds = utils.encode_seeds(kmer_model.get_seeds()).share_memory_()
 
     def polish(self, seq: str):
         edits = []
-        regions = core.EditRegionFinder(seq, self._kmer_model, 0.5, self._model._max_mismatches)
+        regions = core.EditRegionFinder(
+            seq, self._kmer_model, self._score_threshold, self._model._max_mismatches
+        )
         func = functools.partial(_get_edits, seq, self._model, self._x_seeds)
         for result in self._pool.imap(func, regions, 1000):
             edits.append(result)
         return edits
- 
