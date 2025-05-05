@@ -1,13 +1,11 @@
 #pragma once
 
 #include <cstddef>
+#include <string>
 
 namespace aiedit {
 
-class Edit
-{
-  public:
-
+struct Edit {
     enum class Type
     {
         SUBSTITUTE,
@@ -15,18 +13,18 @@ class Edit
         DELETE,
     };
 
-    const size_t position;
-    const Type type;
-    const char new_base;
+    enum class Status
+    {
+        PASS,
+        LOW_KMER_SCORE,
+        MODEL_FAIL,
+    };
 
-    static constexpr char NO_BASE = '.';
-    static Edit substitution(size_t position, char new_base);
-    static Edit insertion(size_t position, char base);
-    static Edit deletion(size_t position);
-
-  private:
-
-    Edit(size_t position, Type type, char new_base);
+    size_t position;
+    Type type;
+    std::string edited;
+    float score;
+    Status status;
 };
 
 }

@@ -1,7 +1,7 @@
 from __future__ import annotations
 import numpy
 import typing
-__all__ = ['BFKmerModel', 'Buffer2D', 'CBFKmerModel', 'Edit', 'EditRegionFinder', 'EditType', 'Editor', 'KmerModel', 'ModelInterface', 'SeedGenerator', 'apply_edits']
+__all__ = ['BFKmerModel', 'Buffer2D', 'CBFKmerModel', 'Edit', 'EditList', 'EditRegionFinder', 'EditStatus', 'EditType', 'Editor', 'KmerModel', 'ModelInterface', 'Polisher', 'SeedGenerator']
 class BFKmerModel(KmerModel):
     def __init__(self, arg0: str) -> None:
         ...
@@ -42,28 +42,72 @@ class CBFKmerModel(KmerModel):
     def score(self, arg0: numpy.ndarray[numpy.uint64]) -> float:
         ...
 class Edit:
-    @staticmethod
-    def deletion(arg0: int) -> Edit:
+    edited: str
+    position: int
+    score: float
+    status: EditStatus
+    type: EditType
+    def __init__(self) -> None:
         ...
-    @staticmethod
-    def insertion(arg0: int, arg1: str) -> Edit:
+class EditList:
+    def __init__(self) -> None:
         ...
-    @staticmethod
-    def substitution(arg0: int, arg1: str) -> Edit:
+    def __iter__(self) -> typing.Iterator[Edit]:
         ...
-    @property
-    def new_base(self) -> str:
+    def __len__(self) -> int:
         ...
-    @property
-    def position(self) -> int:
+    def apply(self, arg0: str) -> str:
         ...
-    @property
-    def type(self) -> EditType:
+    def get_num_passed(self) -> int:
+        ...
+    def push(self, arg0: Edit) -> None:
+        ...
+    def sort(self) -> None:
         ...
 class EditRegionFinder:
     def __init__(self, arg0: str, arg1: KmerModel, arg2: float, arg3: int) -> None:
         ...
     def __iter__(self) -> typing.Iterator[tuple[int, int]]:
+        ...
+class EditStatus:
+    """
+    Members:
+    
+      PASS
+    
+      LOW_KMER_SCORE
+    
+      MODEL_FAIL
+    """
+    LOW_KMER_SCORE: typing.ClassVar[EditStatus]  # value = <EditStatus.LOW_KMER_SCORE: 1>
+    MODEL_FAIL: typing.ClassVar[EditStatus]  # value = <EditStatus.MODEL_FAIL: 2>
+    PASS: typing.ClassVar[EditStatus]  # value = <EditStatus.PASS: 0>
+    __members__: typing.ClassVar[dict[str, EditStatus]]  # value = {'PASS': <EditStatus.PASS: 0>, 'LOW_KMER_SCORE': <EditStatus.LOW_KMER_SCORE: 1>, 'MODEL_FAIL': <EditStatus.MODEL_FAIL: 2>}
+    def __eq__(self, other: typing.Any) -> bool:
+        ...
+    def __getstate__(self) -> int:
+        ...
+    def __hash__(self) -> int:
+        ...
+    def __index__(self) -> int:
+        ...
+    def __init__(self, value: int) -> None:
+        ...
+    def __int__(self) -> int:
+        ...
+    def __ne__(self, other: typing.Any) -> bool:
+        ...
+    def __repr__(self) -> str:
+        ...
+    def __setstate__(self, state: int) -> None:
+        ...
+    def __str__(self) -> str:
+        ...
+    @property
+    def name(self) -> str:
+        ...
+    @property
+    def value(self) -> int:
         ...
 class EditType:
     """
@@ -131,12 +175,19 @@ class ModelInterface:
         ...
     def get_signature(self) -> ...:
         ...
-    def update(self, arg0: list[int], arg1: list[int]) -> tuple[str, float]:
+    def update(self, arg0: list[int], arg1: list[int]) -> tuple[..., str, float]:
+        ...
+class Polisher:
+    def __init__(self, arg0: str, arg1: ..., arg2: int, arg3: float) -> None:
+        ...
+    def get_max_indels(self) -> int:
+        ...
+    def get_max_mismatches(self) -> int:
+        ...
+    def polish(self, arg0: str) -> ...:
         ...
 class SeedGenerator:
     def __init__(self, arg0: int, arg1: int, arg2: float) -> None:
         ...
     def generate(self, arg0: int, arg1: int, arg2: int, arg3: int) -> list[str]:
         ...
-def apply_edits(arg0: str, arg1: list, arg2: float) -> str:
-    ...

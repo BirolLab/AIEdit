@@ -50,8 +50,9 @@ class TestModelInterface(unittest.TestCase):
         outputs = [y.data_ptr() for y in y_pred]
         sizes = [y.size(0) for y in y_pred]
 
-        applied_edit, *_ = env.update(outputs, sizes)
-        self.assertEqual(applied_edit, self.__class__.ref[k] + "****")
+        edit_type, applied_edit, *_ = env.update(outputs, sizes)
+        self.assertEqual(edit_type, aiedit.core.EditType.SUBSTITUTE)
+        self.assertEqual(applied_edit, self.__class__.ref[k] + seq[k + 1 : k + 5])
 
         signature = np.array(env.get_signature(), copy=False)
         self.assertTrue(signature[:, 1].all())
@@ -68,8 +69,9 @@ class TestModelInterface(unittest.TestCase):
         outputs = [y.data_ptr() for y in y_pred]
         sizes = [y.size(0) for y in y_pred]
 
-        applied_edit, *_ = env.update(outputs, sizes)
-        self.assertEqual(applied_edit, "+" + self.__class__.ref[k])
+        edit_type, applied_edit, *_ = env.update(outputs, sizes)
+        self.assertEqual(edit_type, aiedit.core.EditType.INSERT)
+        self.assertEqual(applied_edit, self.__class__.ref[k])
 
         signature = np.array(env.get_signature(), copy=False)
         self.assertTrue(signature[:, 1].all())
@@ -86,5 +88,6 @@ class TestModelInterface(unittest.TestCase):
         outputs = [y.data_ptr() for y in y_pred]
         sizes = [y.size(0) for y in y_pred]
 
-        applied_edit, *_ = env.update(outputs, sizes)
+        edit_type, applied_edit, _ = env.update(outputs, sizes)
+        self.assertEqual(edit_type, aiedit.core.EditType.DELETE)
         self.assertEqual(applied_edit, "-")

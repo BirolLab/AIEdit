@@ -87,7 +87,6 @@ inline std::string find_insertions(const std::string_view seq,
             if (kmer_model->score(hash_fn.hashes()) > 0.5) {
                 editor.insert(BASES[i]);
                 hash_fn.roll(BASES[i]);
-                result.push_back('+');
                 result.push_back(BASES[i]);
                 break;
             }
@@ -114,6 +113,19 @@ find_deletions(const std::string_view seq,
     return std::make_pair(std::string(scores.top().second, '-'), scores.top().first);
 }
 
+inline unsigned get_num_mismatches(const float* probs, size_t max_mismatches)
+{
+    unsigned num_mis = max_mismatches;
+    while (num_mis >= 0) {
+        if (num_mis == 0 || probs[num_mis - 1] >= 0) {
+            return num_mis;
+        } else {
+            --num_mis;
+        }
+    }
+    return 0;
+}
+
 inline std::string find_mismatches(const std::string_view seq,
                                    size_t start_kmer,
                                    aiedit::Editor& editor,
@@ -132,7 +144,7 @@ inline std::string find_mismatches(const std::string_view seq,
     for (unsigned pos = 0; pos < num_mis && editor.get_num_remaining() > 0; pos++) {
         if (mismatches[pos] < 0) {
             hash_fn.roll(editor.get_current());
-            result.push_back('*');
+            result.push_back(editor.get_current());
             editor.skip();
             continue;
         }
@@ -143,7 +155,7 @@ inline std::string find_mismatches(const std::string_view seq,
             if (kmer_model->score(hash_fn.hashes()) > 0.5) {
                 editor.substitute(BASES[i]);
                 hash_fn.roll(BASES[i]);
-                result.push_back(BASES[i] == original ? '*' : BASES[i]);
+                result.push_back(BASES[i]);
                 found = true;
             }
         }
@@ -195,27 +207,31 @@ Buffer2D ModelInterface::get_signature()
     return signature;
 }
 
-std::pair<std::string, float> ModelInterface::update(const std::vector<float*>& outputs,
-                                                     const std::vector<long>& sizes)
+std::tuple<Edit::Type, std::string, float>
+ModelInterface::update(const std::vector<float*>& outputs, const std::vector<long>& sizes)
 {
     const auto indel_prob = outputs[0][0];
-    const auto indels = argmax(outputs[2], sizes[2]);
+    const auto num_indels = argmax(outputs[2], sizes[2]);
     const auto mismatches = outputs[1];
-    const auto max_mismatches = sizes[1];
+    const auto num_mismatches = get_num_mismatches(mismatches, sizes[1]);
+    Edit::Type edit_type;
     std::string edit;
-    float score = 0;
-    if (indel_prob > 0 && indels < max_indels) {
+    float score;
+    if (indel_prob > 0 && num_indels < max_indels) {
         const auto result = find_deletions(seq, start_kmer, editor, kmer_model, max_indels);
+        edit_type = Edit::Type::DELETE;
         edit = result.first;
         score = result.second;
     } else if (indel_prob > 0) {
-        edit = find_insertions(seq, start_kmer, editor, kmer_model, indels - max_indels + 1);
+        edit_type = Edit::Type::INSERT;
+        edit = find_insertions(seq, start_kmer, editor, kmer_model, num_indels - max_indels + 1);
         score = get_score(seq, start_kmer, editor, kmer_model);
     } else {
-        edit = find_mismatches(seq, start_kmer, editor, kmer_model, mismatches, max_mismatches);
+        edit_type = Edit::Type::SUBSTITUTE;
+        edit = find_mismatches(seq, start_kmer, editor, kmer_model, mismatches, num_mismatches);
         score = get_score(seq, start_kmer, editor, kmer_model);
     }
-    return std::make_pair(edit, score);
+    return std::tuple(edit_type, edit, score);
 }
 
 }

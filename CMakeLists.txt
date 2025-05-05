@@ -28,23 +28,24 @@ include_directories(src)
 
 pybind11_add_module(
     core
+    src/core/buffer2d.cpp
+    src/core/edit_list.cpp
+    src/core/edit_region_finder.cpp
+    src/core/editor.cpp
+    src/core/kmer_model.cpp
+    src/core/model_interface.cpp
+    src/core/polisher.cpp
+    src/core/seed_generator.cpp
     src/bind.cpp
     src/bindings/buffer2d.cpp
+    src/bindings/edit_list.cpp
     src/bindings/edit_region_finder.cpp
     src/bindings/edit.cpp
     src/bindings/editor.cpp
     src/bindings/kmer_model.cpp
     src/bindings/model_interface.cpp
+    src/bindings/polisher.cpp
     src/bindings/seed_generator.cpp
-    src/bindings/utils.cpp
-    src/core/buffer2d.cpp
-    src/core/edit_region_finder.cpp
-    src/core/edit.cpp
-    src/core/editor.cpp
-    src/core/kmer_model.cpp
-    src/core/model_interface.cpp
-    src/core/seed_generator.cpp
-    src/core/utils.cpp
 )
 
 set(aiedit_path ${PROJECT_SOURCE_DIR}/aiedit)

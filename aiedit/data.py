@@ -5,7 +5,17 @@ import typing
 import btllib
 import torch
 
-from aiedit import core, utils
+from aiedit import core
+
+
+def buffer2d_to_tensor(buffer: core.Buffer2D) -> torch.Tensor:
+    shape = (buffer.num_rows, buffer.num_cols)
+    return torch.frombuffer(buffer, dtype=torch.float).view(*shape)
+
+
+def encode_seeds(seeds: list[str]) -> torch.FloatTensor:
+    x_seeds = torch.tensor([list(map(int, seed)) for seed in seeds])
+    return x_seeds.permute(1, 0).float()
 
 
 def _make_kmer_model(seq: str, seeds: list[str]) -> core.BFKmerModel:
@@ -28,7 +38,7 @@ def _get_mismatch_signature(
         edited[seq_pos] = random.choice(bases)
     end = pattern.rindex("1") + kmer_model.get_kmer_size() + 1
     interface = core.ModelInterface("".join(edited), 1, end, max_indels, kmer_model)
-    return utils.buffer2d_to_tensor(interface.get_signature())
+    return buffer2d_to_tensor(interface.get_signature())
 
 
 def _get_insertion_sample(
@@ -38,7 +48,7 @@ def _get_insertion_sample(
     insertion = "".join(random.choices("ACGT", k=num_ins))
     edited = seq[:k] + insertion + seq[k:]
     interface = core.ModelInterface(edited, 1, num_ins + k, max_indels, kmer_model)
-    return utils.buffer2d_to_tensor(interface.get_signature())
+    return buffer2d_to_tensor(interface.get_signature())
 
 
 def _get_deletion_sample(
@@ -47,7 +57,7 @@ def _get_deletion_sample(
     k = kmer_model.get_kmer_size()
     edited = seq[:k] + seq[k + num_del :]
     interface = core.ModelInterface(edited, 1, k, max_indels, kmer_model)
-    return utils.buffer2d_to_tensor(interface.get_signature())
+    return buffer2d_to_tensor(interface.get_signature())
 
 
 def generate_dataset(
@@ -55,7 +65,7 @@ def generate_dataset(
 ) -> typing.Generator[tuple[tuple[typing.Optional[torch.FloatTensor]]], None, None]:
     seq = "".join(random.choices("ACGT", k=len(seeds[0]) * 2 + max_mismatches))
     kmer_model = _make_kmer_model(seq, seeds)
-    x_seeds = utils.encode_seeds(seeds)
+    x_seeds = encode_seeds(seeds)
     for i in range(0, 2 ** (max_mismatches - 1)):
         pattern = "1" + format(i, f"0{max_mismatches - 1}b")
         x_sig = _get_mismatch_signature(seq, pattern, max_indels, kmer_model)

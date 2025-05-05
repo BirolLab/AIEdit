@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "buffer2d.hpp"
+#include "edit.hpp"
 #include "editor.hpp"
 #include "kmer_model.hpp"
 
@@ -20,15 +21,15 @@ class ModelInterface
   public:
 
     ModelInterface(const std::string_view seq,
-                   size_t start_pos,
-                   size_t end_pos,
+                   size_t start_kmer,
+                   size_t end_kmer,
                    unsigned max_indels,
                    const std::shared_ptr<KmerModel>& kmer_model);
 
     Buffer2D get_signature();
 
-    std::pair<std::string, float> update(const std::vector<float*>& outputs,
-                                         const std::vector<long>& sizes);
+    std::tuple<Edit::Type, std::string, float> update(const std::vector<float*>& outputs,
+                                                      const std::vector<long>& sizes);
 
   private:
 

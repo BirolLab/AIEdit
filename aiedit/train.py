@@ -1,6 +1,7 @@
 import argparse
 import math
 import os
+import pathlib
 import random
 import signal
 import time
@@ -94,6 +95,11 @@ def create_dataset(name, seeds, max_mismatches, max_indels):
     return dataset
 
 
+def get_checkpoint_path(out_path: str):
+    path = pathlib.Path(out_path)
+    return path.parent.joinpath(path.stem).joinpath("_checkpoint.pt")
+
+
 def main(args):
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -107,9 +113,11 @@ def main(args):
     print(f"Loaded {len(val_seeds)} spaced seed sets for validation")
     print(f"Number of spaced seeds per set: {num_seeds}")
 
+    checkpoint_path = get_checkpoint_path(args.out_path)
+
     max_edits = args.max_mismatches, args.max_indels
-    if os.path.exists(args.out_path):
-        model, optimizer_state = Model.from_checkpoint(args.out_path)
+    if os.path.exists(checkpoint_path):
+        model, optimizer_state = Model.from_checkpoint(checkpoint_path)
         optimizer = torch.optim.AdamW(model.parameters())
         optimizer.load_state_dict(optimizer_state)
         print("Training state loaded from checkpoint")
@@ -139,3 +147,6 @@ def main(args):
         i_epoch_str = str(i_epoch + 1).rjust(int(math.log(args.num_epochs)))
         log_str = ", ".join(f"{k}={v}" for k, v in epoch_log.items())
         print(f"Epoch {i_epoch_str}:", log_str)
+
+    model_ts = torch.jit.script(model)
+    model_ts.save(args.out_path)

@@ -7,9 +7,7 @@ import time
 import btllib
 
 from aiedit import core, utils
-from aiedit.model import Model
-from aiedit.polisher import Polisher
-from aiedit.variants_list import VariantsList
+from aiedit.vcf_writer import VCFWriter
 
 
 def add_subparser(subparsers: argparse._SubParsersAction) -> None:
@@ -40,39 +38,35 @@ def main(args):
 
     print("Loading edit model... ", end="", flush=True)
     start_time = time.perf_counter()
-    model, _ = Model.from_checkpoint(args.m)
-    model.eval()
-    model.share_memory()
+    polisher = core.Polisher(args.m, kmer_model, args.t, args.p)
     end_time = time.perf_counter()
     print(f"DONE ({end_time - start_time:.1f}s)")
-    print(f"- Maximum consecutive substitutions: {model._max_mismatches}")
-    print(f"- Maximum insertion/deletion size  : {model._max_indels}")
+    print(f"- Maximum consecutive substitutions: {polisher.get_max_mismatches()}")
+    print(f"- Maximum insertion/deletion size  : {polisher.get_max_indels()}")
     print()
 
     file_name = pathlib.Path(args.input_file).stem
     out_prefix = os.path.join(args.o, file_name) + "-aiedit-"
     out_fasta_path = f"{out_prefix}edited.fa"
-
-    polisher = Polisher(model, kmer_model, args.t, args.p)
+    out_vcf_path = f"{out_prefix}variants.vcf"
 
     seq_reader = btllib.SeqReader(args.input_file, btllib.SeqReaderFlag.LONG_MODE)
     seq_writer = btllib.SeqWriter(out_fasta_path)
-    variants_list = VariantsList(args.p)
+    vcf_writer = VCFWriter(args.input_file, args.p)
     for record in seq_reader:
         print(f"[{record.id}] Processing started ({len(record.seq):,}bp)")
         start_time = time.perf_counter()
         edits = polisher.polish(record.seq)
         end_time = time.perf_counter()
         elapsed = end_time - start_time
-        num_passed = sum(edit[3] >= args.p for edit in edits)
         print(f"[{record.id}] Found {len(edits)} edits in {elapsed:.1f}s")
-        variants_list.add(edits, record.seq, record.id, record.comment, len(record.seq))
-        edited = core.apply_edits(record.seq, edits, args.p)
+        vcf_writer.add(record.id, record.comment, record.seq, edits)
+        edited = edits.apply(record.seq)
+        num_passed = edits.get_num_passed()
         print(f"[{record.id}] Applied {num_passed} passed edits ({len(edited):,}bp)")
         seq_writer.write(record.id, record.comment, edited)
         print(f"[{record.id}] Edited sequence saved to {out_fasta_path}")
 
-    out_vcf_path = f"{out_prefix}variants.vcf"
-    variants_list.save_vcf(out_vcf_path, args.input_file)
+    vcf_writer.write(out_vcf_path)
     print()
     print(f"Variants saved to {out_vcf_path}")

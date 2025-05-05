@@ -12,6 +12,10 @@ class Model(torch.nn.Module):
         self._max_mismatches = max_mismatches
         self._max_indels = max_indels
         self._model_dim = model_dim
+        self.num_seeds = torch.jit.Attribute(num_seeds, int)
+        self.max_mismatches = torch.jit.Attribute(max_mismatches, int)
+        self.max_indels = torch.jit.Attribute(max_indels, int)
+        self.model_dim = torch.jit.Attribute(model_dim, int)
         num_features = num_seeds * (max_indels + 1) + 1
         self.seeds_encoder = torch.nn.GRU(num_seeds, model_dim)
         self.signature_encoder = torch.nn.GRU(num_features, model_dim)
@@ -40,7 +44,15 @@ class Model(torch.nn.Module):
         torch.save(checkpoint, path)
 
     def forward(self, x_seeds, x_signature):
-        _, h_seeds = self.seeds_encoder(x_seeds)
+        h_seeds = self.encode_seeds(x_seeds)
+        return self.predict(h_seeds, x_signature)
+
+    @torch.jit.export
+    def encode_seeds(self, x_seeds):
+        return self.seeds_encoder(x_seeds)[1]
+
+    @torch.jit.export
+    def predict(self, h_seeds, x_signature):
         _, h_signature = self.signature_encoder(x_signature)
         hidden = torch.cat([h_seeds, h_signature], dim=-1)
         return self.indel_prob(hidden), self.mismatches(hidden), self.indels(hidden)
