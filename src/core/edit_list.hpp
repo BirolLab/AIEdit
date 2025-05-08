@@ -16,7 +16,7 @@ class EditList : public ThreadSafeQueue<Edit>
 
     EditList();
 
-    void push(Edit edit);
+    void add(Edit edit);
 
     size_t get_num_passed() const;
 

@@ -1,17 +1,17 @@
 import argparse
+import glob
 import math
 import os
 import pathlib
 import random
-import signal
 import time
 
 import torch
 import torch.nn.functional as F
 import tqdm
 
-from aiedit import data, utils
 from aiedit.model import Model
+from aiedit.training import data
 
 
 def add_subparser(subparsers: argparse._SubParsersAction) -> None:
@@ -38,6 +38,15 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
         "-o", "--out-path", help="output model path", default="model.pt"
     )
     parser.set_defaults(func=main)
+
+
+def load_seed_sets(pattern: str) -> list[list[str]]:
+    seed_paths = [p for w in pattern for p in glob.glob(w, recursive=True)]
+    seeds = []
+    for path in seed_paths:
+        with open(path) as fp:
+            seeds.append(list(map(str.strip, fp.readlines())))
+    return seeds
 
 
 def calculate_loss(
@@ -95,17 +104,10 @@ def create_dataset(name, seeds, max_mismatches, max_indels):
     return dataset
 
 
-def get_checkpoint_path(out_path: str):
-    path = pathlib.Path(out_path)
-    return path.parent.joinpath(path.stem).joinpath("_checkpoint.pt")
-
-
 def main(args):
-    signal.signal(signal.SIGINT, signal.SIG_DFL)
-
     print("Loading spaced seed files...")
-    seeds = utils.glob_seed_paths(args.seeds)
-    val_seeds = utils.glob_seed_paths(args.val_seeds)
+    seeds = load_seed_sets(args.seeds)
+    val_seeds = load_seed_sets(args.val_seeds)
     seed_lengths = set(map(len, seeds)) | set(map(len, val_seeds))
     assert len(seed_lengths) == 1, "All files must have the same number of seeds"
     num_seeds = next(iter(seed_lengths))
@@ -113,7 +115,8 @@ def main(args):
     print(f"Loaded {len(val_seeds)} spaced seed sets for validation")
     print(f"Number of spaced seeds per set: {num_seeds}")
 
-    checkpoint_path = get_checkpoint_path(args.out_path)
+    out_path = pathlib.Path(args.out_path)
+    checkpoint_path = out_path.parent.joinpath(out_path.stem).joinpath("-checkpoint.pt")
 
     max_edits = args.max_mismatches, args.max_indels
     if os.path.exists(checkpoint_path):
@@ -141,7 +144,7 @@ def main(args):
             val_loss, acc = validate(model, val_data)
             epoch_log["val_loss"] = f"{val_loss:.3f}"
             epoch_log["acc"] = f"{acc:.4f}"
-        model.save(args.out_path, optimizer.state_dict())
+        model.save(checkpoint_path, optimizer.state_dict())
         end_time = time.perf_counter()
         epoch_log["time"] = f"{end_time - start_time:.3f}s"
         i_epoch_str = str(i_epoch + 1).rjust(int(math.log(args.num_epochs)))

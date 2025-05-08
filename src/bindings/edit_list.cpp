@@ -11,7 +11,7 @@ auto edits_list__iter__(const aiedit::EditList& container)
 REGISTER_BINDING(({
     pybind11::class_<aiedit::EditList, std::shared_ptr<aiedit::EditList>>(m, "EditList")
       .def(pybind11::init<>())
-      .def("push", &aiedit::EditList::push)
+      .def("add", &aiedit::EditList::add)
       .def("sort", &aiedit::EditList::sort)
       .def("apply", &aiedit::EditList::apply)
       .def("get_num_passed", &aiedit::EditList::get_num_passed)

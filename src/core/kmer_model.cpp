@@ -5,38 +5,77 @@
 
 namespace aiedit {
 
-BFKmerModel::BFKmerModel(const std::string& bf_path)
-  : bf(std::make_shared<btllib::SeedBloomFilter>(bf_path))
+KmerModel::KmerModel(const std::string& seeds_bf_path)
+  : seeds_bf(std::make_unique<btllib::SeedBloomFilter>(seeds_bf_path))
+{}
+
+bool KmerModel::query_seed(const uint64_t* seed_hashes) const
+{
+    return seeds_bf->contains(seed_hashes);
+}
+
+const std::vector<std::string>& KmerModel::get_seeds() const { return seeds_bf->get_seeds(); };
+
+BFKmerModel::BFKmerModel(const std::string& seeds_bf_path, const std::string& bf_path)
+  : KmerModel::KmerModel(seeds_bf_path)
+  , bf(std::make_unique<btllib::KmerBloomFilter>(bf_path))
 {}
 
 float BFKmerModel::score(const uint64_t* hashes) const { return bf->contains(hashes) ? 1.0 : 0.0; }
 
-unsigned BFKmerModel::get_num_hashes() const { return bf->get_hash_num_per_seed(); }
+unsigned BFKmerModel::get_num_hashes() const { return bf->get_hash_num(); }
 
 unsigned BFKmerModel::get_kmer_size() const { return bf->get_k(); }
 
 size_t BFKmerModel::get_size() const { return bf->get_bytes(); }
 
-const std::vector<std::string>& BFKmerModel::get_seeds() const { return bf->get_seeds(); };
-
-CBFKmerModel::CBFKmerModel(const std::string& cbf_path,
-                           const std::string& hist_path,
-                           const std::vector<std::string> seeds)
-  : cbf(std::make_shared<btllib::CountingBloomFilter8>(cbf_path))
-  , seeds(seeds)
-{}
-
-float CBFKmerModel::score(const uint64_t* hashes) const
+CBFKmerModel::CBFKmerModel(const std::string& seeds_bf_path,
+                           const std::string& cbf_path,
+                           const std::string& hist_path)
+  : KmerModel::KmerModel(seeds_bf_path)
+  , cbf(std::make_unique<btllib::KmerCountingBloomFilter8>(cbf_path))
 {
-    return cbf->contains(hashes) > 0 ? 1.0 : 0.0;  // TODO
+    std::ifstream hist_file(hist_path);
+    if (!hist_file) {
+        throw std::runtime_error("Unable to open seeds file: " + hist_path);
+    }
+    const auto counter_limit = std::numeric_limits<decltype(cbf->contains(nullptr))>::max();
+    probs = std::vector<float>(counter_limit + 1, 0.0);
+    std::string line;
+    std::getline(hist_file, line);
+    auto min_count = counter_limit;
+    while (std::getline(hist_file, line)) {
+        std::stringstream ss(line);
+        std::vector<std::string> row{std::istream_iterator<std::string>(ss),
+                                     std::istream_iterator<std::string>()};
+        const auto count = std::stoul(row[0]);
+        if (count < probs.size()) {
+            const auto p0 = std::stod(row[2]), p1 = std::stod(row[3]), p2 = std::stod(row[4]);
+            probs[count] = p0 / (p0 + p1 + p2);
+            min_count = std::min((unsigned long)min_count, count);
+        }
+    }
+    for (unsigned long i = 0; i < min_count; i++) {
+        probs[i] = 1.0;
+    }
 }
+
+CBFKmerModel::CBFKmerModel(const std::string& seeds_bf_path,
+                           const std::string& cbf_path)
+  : KmerModel::KmerModel(seeds_bf_path)
+  , cbf(std::make_unique<btllib::KmerCountingBloomFilter8>(cbf_path))
+{
+    const auto counter_limit = std::numeric_limits<decltype(cbf->contains(nullptr))>::max();
+    probs = std::vector<float>(counter_limit + 1, 1.0);
+    probs[0] = 0.0;
+}
+
+float CBFKmerModel::score(const uint64_t* hashes) const { return probs[cbf->contains(hashes)]; }
 
 unsigned CBFKmerModel::get_num_hashes() const { return cbf->get_hash_num(); }
 
-unsigned CBFKmerModel::get_kmer_size() const { return seeds[0].size(); }
+unsigned CBFKmerModel::get_kmer_size() const { return cbf->get_k(); }
 
 size_t CBFKmerModel::get_size() const { return cbf->get_bytes(); }
-
-const std::vector<std::string>& CBFKmerModel::get_seeds() const { return seeds; };
 
 }

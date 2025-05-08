@@ -13,12 +13,20 @@ class KmerModel
 
   public:
 
+    KmerModel(const std::string& seeds_bf_path);
+
     virtual float score(const uint64_t* hashes) const = 0;
 
     virtual unsigned get_num_hashes() const = 0;
     virtual unsigned get_kmer_size() const = 0;
     virtual size_t get_size() const = 0;
-    virtual const std::vector<std::string>& get_seeds() const = 0;
+
+    bool query_seed(const uint64_t* seed_hashes) const;
+    const std::vector<std::string>& get_seeds() const;
+
+  protected:
+
+    const std::unique_ptr<btllib::SeedBloomFilter> seeds_bf;
 };
 
 class BFKmerModel : public KmerModel
@@ -26,18 +34,17 @@ class BFKmerModel : public KmerModel
 
   public:
 
-    BFKmerModel(const std::string& bf_path);
+    BFKmerModel(const std::string& seeds_bf_path, const std::string& bf_path);
 
     float score(const uint64_t* hashes) const;
 
     unsigned get_num_hashes() const override;
     unsigned get_kmer_size() const override;
     size_t get_size() const override;
-    const std::vector<std::string>& get_seeds() const override;
 
   private:
 
-    const std::shared_ptr<btllib::SeedBloomFilter> bf;
+    const std::unique_ptr<btllib::KmerBloomFilter> bf;
 };
 
 class CBFKmerModel : public KmerModel
@@ -45,21 +52,22 @@ class CBFKmerModel : public KmerModel
 
   public:
 
-    CBFKmerModel(const std::string& cbf_path,
-                 const std::string& hist_path,
-                 const std::vector<std::string> seeds);
+    CBFKmerModel(const std::string& seeds_bf_path,
+                 const std::string& cbf_path,
+                 const std::string& hist_path);
+
+    CBFKmerModel(const std::string& seeds_bf_path, const std::string& cbf_path);
 
     float score(const uint64_t* hashes) const;
 
     unsigned get_num_hashes() const override;
     unsigned get_kmer_size() const override;
     size_t get_size() const override;
-    const std::vector<std::string>& get_seeds() const override;
 
   private:
 
-    const std::vector<std::string> seeds;
-    const std::shared_ptr<btllib::CountingBloomFilter8> cbf;
+    std::vector<float> probs;
+    const std::unique_ptr<btllib::KmerCountingBloomFilter8> cbf;
 };
 
 }

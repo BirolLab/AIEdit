@@ -44,7 +44,7 @@ inline void fill_seed_row(aiedit::Buffer2D& signature,
             }
             hash_fn_copy.roll(base);
             const auto col = i_seed * (max_ins + 1) + num_ins + 1;
-            signature.set(pos, col, kmer_model->score(hash_fn_copy.hashes()));
+            signature.set(pos, col, kmer_model->query_seed(hash_fn_copy.hashes()));
         }
         hash_fn.roll('N');
     }

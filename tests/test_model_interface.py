@@ -38,7 +38,7 @@ class TestModelInterface(unittest.TestCase):
         seq = seq[:k] + subs[seq[k]] + seq[k + 1 :]
         env = aiedit.core.ModelInterface(seq, 1, k + 1, 0, self.__class__.kmer_model)
 
-        x_seeds = aiedit.utils.encode_seeds(self.__class__.seeds)
+        x_seeds = aiedit.data.encode_seeds(self.__class__.seeds)
         signature = np.array(env.get_signature(), copy=False)
         self.assertTrue(np.array_equal(signature[:, 1:].round(), 1 - x_seeds))
 
@@ -52,7 +52,7 @@ class TestModelInterface(unittest.TestCase):
 
         edit_type, applied_edit, *_ = env.update(outputs, sizes)
         self.assertEqual(edit_type, aiedit.core.EditType.SUBSTITUTE)
-        self.assertEqual(applied_edit, self.__class__.ref[k] + seq[k + 1 : k + 5])
+        self.assertEqual(applied_edit, self.__class__.ref[k])
 
         signature = np.array(env.get_signature(), copy=False)
         self.assertTrue(signature[:, 1].all())

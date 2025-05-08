@@ -72,7 +72,7 @@ std::shared_ptr<EditList> Polisher::polish(const std::string_view seq)
         ++pending_tasks;
         tasks.push([&, seq, region]() {
             auto edit = process_region(seq, region);
-            results->push(edit);
+            results->add(edit);
             --pending_tasks;
             if (pending_tasks == 0 && tasks.size() == 0) {
                 std::lock_guard<std::mutex> lock(results_ready_mutex);

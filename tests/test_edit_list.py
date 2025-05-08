@@ -11,7 +11,7 @@ class TestVariants(unittest.TestCase):
         edit.position = 1
         edit.type = aiedit.core.EditType.SUBSTITUTE
         edit.edited = "G"
-        edit_list = aiedit.core.EditsList()
+        edit_list = aiedit.core.EditList()
         edit_list.add(edit)
         self.assertEqual(alt, edit_list.apply(ref))
 
@@ -21,7 +21,7 @@ class TestVariants(unittest.TestCase):
         edit.position = 1
         edit.type = aiedit.core.EditType.INSERT
         edit.edited = "T"
-        edit_list = aiedit.core.EditsList()
+        edit_list = aiedit.core.EditList()
         edit_list.add(edit)
         self.assertEqual(alt, edit_list.apply(ref))
 
@@ -31,6 +31,6 @@ class TestVariants(unittest.TestCase):
         edit.position = 1
         edit.type = aiedit.core.EditType.DELETE
         edit.edited = "-"
-        edit_list = aiedit.core.EditsList()
+        edit_list = aiedit.core.EditList()
         edit_list.add(edit)
         self.assertEqual(alt, edit_list.apply(ref))
