@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "buffer2d.hpp"
-#include "edit.hpp"
+#include "edit_list.hpp"
 #include "editor.hpp"
 #include "kmer_model.hpp"
 

@@ -40,7 +40,6 @@ pybind11_add_module(
     src/bindings/buffer2d.cpp
     src/bindings/edit_list.cpp
     src/bindings/edit_region_finder.cpp
-    src/bindings/edit.cpp
     src/bindings/editor.cpp
     src/bindings/kmer_model.cpp
     src/bindings/model_interface.cpp

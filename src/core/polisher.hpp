@@ -12,7 +12,6 @@
 #include <torch/jit.h>
 #include <vector>
 
-#include "edit.hpp"
 #include "edit_list.hpp"
 #include "kmer_model.hpp"
 #include "thread_safe_queue.hpp"

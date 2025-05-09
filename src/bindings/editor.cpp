@@ -8,9 +8,12 @@ auto editor__iter__(const aiedit::Editor& container)
 
 REGISTER_BINDING(({
     pybind11::class_<aiedit::Editor>(m, "Editor")
-      .def(pybind11::init<const std::string_view, size_t, size_t>())
-      .def("substitute", &aiedit::Editor::substitute)
-      .def("insert", &aiedit::Editor::insert)
+      .def(pybind11::init<const std::string_view, size_t, size_t>(),
+           pybind11::arg("seq"),
+           pybind11::arg("start_pos"),
+           pybind11::arg("end_pos"))
+      .def("substitute", &aiedit::Editor::substitute, pybind11::arg("new_base"))
+      .def("insert", &aiedit::Editor::insert, pybind11::arg("base"))
       .def("delete_base", &aiedit::Editor::delete_base)
       .def("skip", &aiedit::Editor::skip)
       .def("get_num_remaining", &aiedit::Editor::get_num_remaining)

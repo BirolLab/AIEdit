@@ -6,9 +6,14 @@ PythonBindings& PythonBindings::instance()
     return instance;
 }
 
-void PythonBindings::register_binding(const std::function<void(pybind11::module_&)>& func)
+void PythonBindings::register_binding(const std::function<void(pybind11::module_&)>& func,
+                                      bool is_dependency)
 {
-    bindings.push_back(func);
+    if (is_dependency) {
+        bindings.emplace(bindings.begin(), std::move(func));
+    } else {
+        bindings.emplace_back(std::move(func));
+    }
 }
 
 void PythonBindings::bind_all(pybind11::module_& m)
@@ -18,7 +23,4 @@ void PythonBindings::bind_all(pybind11::module_& m)
     }
 }
 
-PYBIND11_MODULE(core, m)
-{
-    PythonBindings::instance().bind_all(m);
-}
+PYBIND11_MODULE(core, m) { PythonBindings::instance().bind_all(m); }

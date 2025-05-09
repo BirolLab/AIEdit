@@ -7,12 +7,20 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#define REGISTER_BINDING(CODE)                                                           \
-    namespace {                                                                          \
-    static const auto _ = []() {                                                         \
-        PythonBindings::instance().register_binding([](pybind11::module_& m) { CODE; }); \
-        return 0;                                                                        \
-    }();                                                                                 \
+#define REGISTER_BINDING(CODE)                                                                  \
+    namespace {                                                                                 \
+    static const auto _ = []() {                                                                \
+        PythonBindings::instance().register_binding([](pybind11::module_& m) { CODE; }, false); \
+        return 0;                                                                               \
+    }();                                                                                        \
+    }
+
+#define REGISTER_DEPENDENCY(CODE)                                                              \
+    namespace {                                                                                \
+    static const auto _ = []() {                                                               \
+        PythonBindings::instance().register_binding([](pybind11::module_& m) { CODE; }, true); \
+        return 0;                                                                              \
+    }();                                                                                       \
     }
 
 class PythonBindings
@@ -21,7 +29,7 @@ class PythonBindings
 
     static PythonBindings& instance();
 
-    void register_binding(const std::function<void(pybind11::module_&)>& func);
+    void register_binding(const std::function<void(pybind11::module_&)>& func, bool is_dependency);
 
     void bind_all(pybind11::module_& m);
 

@@ -21,7 +21,7 @@ auto buffer2d__buffer(aiedit::Buffer2D& signature)
                                  {sizeof(float) * signature.get_num_cols(), sizeof(float)});
 }
 
-REGISTER_BINDING(({
+REGISTER_DEPENDENCY(({
     pybind11::class_<aiedit::Buffer2D, std::shared_ptr<aiedit::Buffer2D>>(
       m,
       "Buffer2D",

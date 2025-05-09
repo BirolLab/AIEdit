@@ -20,7 +20,12 @@ REGISTER_BINDING(({
                           size_t,
                           size_t,
                           unsigned,
-                          const std::shared_ptr<aiedit::KmerModel>&>())
+                          const std::shared_ptr<aiedit::KmerModel>&>(),
+           pybind11::arg("seq"),
+           pybind11::arg("start_kmer"),
+           pybind11::arg("end_kmer"),
+           pybind11::arg("max_indels"),
+           pybind11::arg("kmer_model"))
       .def("get_signature", &aiedit::ModelInterface::get_signature)
-      .def("update", &update_model_interface);
+      .def("update", &update_model_interface, pybind11::arg("outputs"), pybind11::arg("sizes"));
 }))
