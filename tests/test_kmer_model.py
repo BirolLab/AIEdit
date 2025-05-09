@@ -11,13 +11,15 @@ class TestKmerModel(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         data_path = os.path.join(os.path.dirname(__file__), "data")
-        cbf_path = os.path.join(data_path, "counts.cbf")
-        hist_path = os.path.join(data_path, "probs.tsv")
-        seeds = aiedit.utils.load_seeds(os.path.join(data_path, "seeds.txt"))
-        cls.kmer_model = aiedit.core.CBFKmerModel(cbf_path, hist_path, seeds)
+        kmers_path = os.path.join(data_path, "kmers.bf")
+        seeds_path = os.path.join(data_path, "seeds.bf")
+        cls.kmer_model = aiedit.core.BFKmerModel(seeds_path, kmers_path)
+        reference_path = os.path.join(data_path, "reference.fa")
+        with btllib.SeqReader(reference_path, btllib.SeqReaderFlag.SHORT_MODE) as sr:
+            cls.reference = next(iter(sr)).seq
 
     def test_reference_kmer(self):
-        kmer = "GTGGCTCCCGGTACCTAGGCGCTGA"
+        kmer = self.__class__.reference[: self.__class__.kmer_model.get_kmer_size()]
         nthash = btllib.NtHash(
             kmer, self.__class__.kmer_model.get_num_hashes(), len(kmer)
         )
@@ -26,7 +28,7 @@ class TestKmerModel(unittest.TestCase):
         self.assertGreaterEqual(self.__class__.kmer_model.score(hashes), 0.5)
 
     def test_error_kmer(self):
-        kmer = "ATGGCTCCCGGTACCTAGGCGCTGA"
+        kmer = "A" * self.__class__.kmer_model.get_kmer_size()
         nthash = btllib.NtHash(
             kmer, self.__class__.kmer_model.get_num_hashes(), len(kmer)
         )

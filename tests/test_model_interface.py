@@ -5,20 +5,19 @@ import btllib
 import numpy as np
 import torch
 
-import aiedit
-import aiedit.utils
+import aiedit.core
+import aiedit.train.main
 
 
 class TestModelInterface(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        data_path = os.path.join(os.path.dirname(__file__), "data")
-        cbf_path = os.path.join(data_path, "counts.cbf")
-        hist_path = os.path.join(data_path, "probs.tsv")
-        cls.seeds = aiedit.utils.load_seeds(os.path.join(data_path, "seeds.txt"))
-        cls.kmer_model = aiedit.core.CBFKmerModel(cbf_path, hist_path, cls.seeds)
-        reference_path = os.path.join(data_path, "reference.fa")
+        cls.data_path = os.path.join(os.path.dirname(__file__), "data")
+        kmers_path = os.path.join(cls.data_path, "kmers.bf")
+        seeds_path = os.path.join(cls.data_path, "seeds.bf")
+        cls.kmer_model = aiedit.core.BFKmerModel(seeds_path, kmers_path)
+        reference_path = os.path.join(cls.data_path, "reference.fa")
         sr = btllib.SeqReader(reference_path, btllib.SeqReaderFlag.LONG_MODE)
         cls.ref = next(iter(sr)).seq
 
@@ -38,7 +37,7 @@ class TestModelInterface(unittest.TestCase):
         seq = seq[:k] + subs[seq[k]] + seq[k + 1 :]
         env = aiedit.core.ModelInterface(seq, 1, k + 1, 0, self.__class__.kmer_model)
 
-        x_seeds = aiedit.data.encode_seeds(self.__class__.seeds)
+        x_seeds = aiedit.train.data.encode_seeds(self.__class__.kmer_model.get_seeds())
         signature = np.array(env.get_signature(), copy=False)
         self.assertTrue(np.array_equal(signature[:, 1:].round(), 1 - x_seeds))
 

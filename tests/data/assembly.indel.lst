@@ -1,6 +1,0 @@
-# File "assembly.indel.lst": generated at Wed Feb 26 15:41:31 2025 by the command:
-#     pirs diploid -s 0.0025 -d 0.0025 -v 0 -o assembly reference.fa
-# seq_id	orig_position	new_position	type	indel_length	indel_sequence
-1	219	220	+	1	C
-1	751	753	+	1	A
-1	821	822	-	2	CC

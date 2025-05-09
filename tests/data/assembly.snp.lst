@@ -1,6 +1,0 @@
-# File "assembly.snp.lst": generated at Wed Feb 26 15:41:31 2025 by the command:
-#     pirs diploid -s 0.0025 -d 0.0025 -v 0 -o assembly reference.fa
-# seq_id	orig_position	new_position	orig_base	new_base
-1	299	300	A	G
-1	356	357	A	C
-1	966	966	G	A

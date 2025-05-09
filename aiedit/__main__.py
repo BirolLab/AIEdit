@@ -32,5 +32,5 @@ def main():
     args = parser.parse_args()
 
     signal.signal(signal.SIGINT, signal.SIG_DFL)
-    subcommand = importlib.import_module(f"aiedit.{args.command}").main
+    subcommand = importlib.import_module(f"aiedit.{args.command}.main")
     subcommand.main(args)

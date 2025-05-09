@@ -8,7 +8,7 @@ class TestVariants(unittest.TestCase):
     def test_substitution(self):
         ref, alt = "CTA", "GTA"
         edit = aiedit.core.Edit()
-        edit.position = 1
+        edit.position = 0
         edit.type = aiedit.core.EditType.SUBSTITUTE
         edit.edited = "G"
         edit_list = aiedit.core.EditList()

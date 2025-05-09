@@ -2,7 +2,6 @@ import os
 import unittest
 
 import aiedit
-import aiedit.utils
 import btllib
 import numpy as np
 
@@ -12,10 +11,9 @@ class TestEditRegionFinder(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         data_path = os.path.join(os.path.dirname(__file__), "data")
-        cbf_path = os.path.join(data_path, "counts.cbf")
-        hist_path = os.path.join(data_path, "probs.tsv")
-        seeds = aiedit.utils.load_seeds(os.path.join(data_path, "seeds.txt"))
-        cls.kmer_model = aiedit.core.CBFKmerModel(cbf_path, hist_path, seeds)
+        kmers_path = os.path.join(data_path, "kmers.bf")
+        seeds_path = os.path.join(data_path, "seeds.bf")
+        cls.kmer_model = aiedit.core.BFKmerModel(seeds_path, kmers_path)
         assembly_path = os.path.join(data_path, "assembly.fa")
         sr = btllib.SeqReader(assembly_path, btllib.SeqReaderFlag.LONG_MODE)
         cls.seq = next(iter(sr)).seq

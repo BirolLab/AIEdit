@@ -19,11 +19,14 @@ def encode_seeds(seeds: list[str]) -> torch.FloatTensor:
 
 
 def _make_kmer_model(seq: str, seeds: list[str]) -> core.BFKmerModel:
-    bf = btllib.SeedBloomFilter(1024 * 1024, len(seeds[0]), seeds, 7)
-    bf.insert(seq)
-    with tempfile.NamedTemporaryFile() as fp:
-        bf.save(fp.name)
-        kmer_model = core.BFKmerModel(fp.name)
+    bf_seeds = btllib.SeedBloomFilter(1024 * 1024, len(seeds[0]), seeds, 7)
+    bf_seeds.insert(seq)
+    bf_kmers = btllib.KmerBloomFilter(1024 * 1024, len(seeds[0]), 7)
+    bf_kmers.insert(seq)
+    with tempfile.NamedTemporaryFile() as fp1, tempfile.NamedTemporaryFile() as fp2:
+        bf_seeds.save(fp1.name)
+        bf_kmers.save(fp2.name)
+        kmer_model = core.BFKmerModel(fp1.name, fp2.name)
     return kmer_model
 
 
