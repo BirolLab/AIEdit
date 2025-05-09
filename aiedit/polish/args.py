@@ -2,7 +2,7 @@ import argparse
 import importlib.resources
 import os
 
-DEFAULT_MODEL_PATH = importlib.resources.files("aiedit.models").joinpath("s9m5i5.pt")
+DEFAULT_MODEL = importlib.resources.files("aiedit.pretrained").joinpath("s9m5i5.pt")
 
 
 def add_subparser(subparsers: argparse._SubParsersAction) -> None:
@@ -37,7 +37,7 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
         "-m",
         "--model",
         help="path to pretrained edit pattern model (default: %(default)s)",
-        default=str(DEFAULT_MODEL_PATH),
+        default=str(DEFAULT_MODEL),
     )
     parser.add_argument(
         "-p",

@@ -53,8 +53,10 @@ set_target_properties(core PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${aiedit_path})
 
 add_custom_command(
     TARGET core
-    POST_BUILD
+    DEPENDS core POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${aiedit_path} pybind11-stubgen --output-dir
-            ${aiedit_path} core DEPENDS core
+            ${aiedit_path} core
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${aiedit_path} black ${aiedit_path}/core.pyi
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${aiedit_path} isort ${aiedit_path}/core.pyi
     COMMENT "Generating Python stubs"
 )
