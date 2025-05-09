@@ -1,3 +1,8 @@
+import importlib.metadata
+
 import aiedit.core as core
 
-__version__ = "1.0.0"
+try:
+    __version__ = importlib.metadata.version("aiedit")
+except importlib.metadata.PackageNotFoundError:
+    __version__ = "dev"

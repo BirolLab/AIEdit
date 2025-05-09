@@ -15,18 +15,20 @@ AIEDIT_LOGO = """
  /_/    \_\_____|______\__,_|_|\__|
 """
 
-print(AIEDIT_LOGO[1:-1])
-print(f"Version {__version__}")
-print()
 
-parser = argparse.ArgumentParser("aiedit")
-subparsers = parser.add_subparsers(help="subcommand help", required=True)
+def main():
+    print(AIEDIT_LOGO[1:-1])
+    print(f"Version {__version__}")
+    print()
 
-aiedit.polishing.args.add_subparser(subparsers)
-aiedit.training.train.add_subparser(subparsers)
-aiedit.training.generate_seeds.add_subparser(subparsers)
+    parser = argparse.ArgumentParser("aiedit")
+    subparsers = parser.add_subparsers(help="subcommand help", required=True)
 
-args = parser.parse_args()
+    aiedit.polishing.args.add_subparser(subparsers)
+    aiedit.training.train.add_subparser(subparsers)
+    aiedit.training.generate_seeds.add_subparser(subparsers)
 
-signal.signal(signal.SIGINT, signal.SIG_DFL)
-args.func(args)
+    args = parser.parse_args()
+
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    args.func(args)
