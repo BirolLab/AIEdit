@@ -1,4 +1,3 @@
-import argparse
 import glob
 import math
 import os
@@ -10,34 +9,8 @@ import torch
 import torch.nn.functional as F
 import tqdm
 
-from aiedit.model import Model
-from aiedit.training import data
-
-
-def add_subparser(subparsers: argparse._SubParsersAction) -> None:
-    parser: argparse.ArgumentParser = subparsers.add_parser("train")
-    parser.add_argument(
-        "-s", "--seeds", help="training spaced seed files", required=True, nargs="+"
-    )
-    parser.add_argument(
-        "-v", "--val-seeds", help="validation spaced seed files", nargs="+", default=[]
-    )
-    parser.add_argument(
-        "-m", "--max-mismatches", help="mismatch window size", type=int, default=5
-    )
-    parser.add_argument(
-        "-i", "--max-indels", help="indel window size", type=int, default=10
-    )
-    parser.add_argument(
-        "-d", "--model-dim", help="model dimensionality", type=int, default=8
-    )
-    parser.add_argument(
-        "-e", "--num-epochs", help="number of training epochs", type=int, default=10
-    )
-    parser.add_argument(
-        "-o", "--out-path", help="output model path", default="model.pt"
-    )
-    parser.set_defaults(func=main)
+from aiedit.train import data
+from aiedit.train.model import Model
 
 
 def load_seed_sets(pattern: str) -> list[list[str]]:
@@ -87,9 +60,9 @@ def validate(model, val_data) -> tuple[float, float]:
     for x, y_true in val_data:
         y_pred = model(*x)
         loss += calculate_loss(y_pred, y_true)
-        nt, np = check_prediction(y_pred, y_true)
-        num_true += nt
-        num_pred += np
+        pred_results = check_prediction(y_pred, y_true)
+        num_true += pred_results[0]
+        num_pred += pred_results[1]
     return loss / len(val_data), num_true / num_pred
 
 

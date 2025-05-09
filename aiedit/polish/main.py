@@ -6,8 +6,8 @@ import time
 import btllib
 
 from aiedit import core
-from aiedit.polishing import external_commands
-from aiedit.polishing.vcf_writer import VCFWriter
+from aiedit.polish import external_commands
+from aiedit.polish.vcf_writer import VCFWriter
 
 
 def load_kmer_model(

@@ -1,9 +1,10 @@
 import argparse
+import importlib
 import signal
 
-import aiedit.polishing.args
-import aiedit.training.generate_seeds
-import aiedit.training.train
+import aiedit.generate_seeds.args
+import aiedit.polish.args
+import aiedit.train.args
 from aiedit import __version__
 
 AIEDIT_LOGO = """
@@ -22,13 +23,14 @@ def main():
     print()
 
     parser = argparse.ArgumentParser("aiedit")
-    subparsers = parser.add_subparsers(help="subcommand help", required=True)
+    subparsers = parser.add_subparsers(dest="command", required=True)
 
-    aiedit.polishing.args.add_subparser(subparsers)
-    aiedit.training.train.add_subparser(subparsers)
-    aiedit.training.generate_seeds.add_subparser(subparsers)
+    aiedit.polish.args.add_subparser(subparsers)
+    aiedit.train.args.add_subparser(subparsers)
+    aiedit.generate_seeds.args.add_subparser(subparsers)
 
     args = parser.parse_args()
 
     signal.signal(signal.SIGINT, signal.SIG_DFL)
-    args.func(args)
+    subcommand = importlib.import_module(f"aiedit.{args.command}").main
+    subcommand.main(args)
