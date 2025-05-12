@@ -111,9 +111,10 @@ def run_ntstat_seeds(
     if os.path.exists(bf_path):
         print(f"ntStat output detected: {bf_path}")
         return bf_path
-    print("Running ntStat for k-mers Bloom filter...")
+    print("Running ntStat for seeds Bloom filter...")
     torch = importlib.import_module("torch")
     model = torch.jit.load(model_path)
+    print("Generating seeds...")
     seeds = core.SeedGenerator(100, 100, 0.5).generate(
         model.num_seeds, kmer_size, model.max_mismatches, model.max_indels
     )
@@ -121,6 +122,7 @@ def run_ntstat_seeds(
     seeds_file = tempfile.NamedTemporaryFile(prefix="aiedit-seeds-", suffix=".txt")
     seeds_file.write(os.linesep.join(seeds).encode())
     seeds_file.seek(0)
+    print(f"Temporary file containing spaced seed patterns: {seeds_file.name}")
     reads = " ".join(reads_paths)
     command = f"filter -s {seeds_file.name} -cmin 0 -t {num_threads} -f {hist_path} -o {bf_path} {reads}"
     print(f"Command: ntstat {command}")

@@ -1,9 +1,10 @@
 import os
 import unittest
 
-import aiedit
 import btllib
 import numpy as np
+
+import aiedit
 
 
 class TestKmerModel(unittest.TestCase):

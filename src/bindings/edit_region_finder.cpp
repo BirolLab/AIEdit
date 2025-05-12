@@ -1,5 +1,5 @@
 #include "core/edit_region_finder.hpp"
-#include "bind.hpp"
+#include "bindings/bind.hpp"
 
 auto edit_region_finder__iter__(aiedit::EditRegionFinder& container)
 {

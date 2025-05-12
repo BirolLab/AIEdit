@@ -1,9 +1,10 @@
 import os
 import unittest
 
-import aiedit
 import btllib
 import numpy as np
+
+import aiedit
 
 
 class TestEditRegionFinder(unittest.TestCase):
@@ -31,6 +32,8 @@ class TestEditRegionFinder(unittest.TestCase):
         diffs = np.diff(np.array(hits).astype(int))
         start_positions = set(np.where(diffs == -1)[0] + 1)
 
-        erf = aiedit.core.EditRegionFinder(self.__class__.seq, self.__class__.kmer_model, 0.5, 10)
+        erf = aiedit.core.EditRegionFinder(
+            self.__class__.seq, self.__class__.kmer_model, 0.5, 10
+        )
         for region in erf:
             self.assertIn(region[0], start_positions)

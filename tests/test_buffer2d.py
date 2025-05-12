@@ -1,8 +1,9 @@
 import unittest
 
-import aiedit
 import numpy as np
 import torch
+
+import aiedit
 
 
 class TestBuffer2D(unittest.TestCase):

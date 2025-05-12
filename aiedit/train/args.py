@@ -16,10 +16,10 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
         "-i", "--max-indels", help="indel window size", type=int, default=10
     )
     parser.add_argument(
-        "-d", "--model-dim", help="model dimensionality", type=int, default=8
+        "-d", "--model-dim", help="model dimensionality", type=int, default=32
     )
     parser.add_argument(
-        "-e", "--num-epochs", help="number of training epochs", type=int, default=10
+        "-e", "--num-epochs", help="number of training epochs", type=int, default=50
     )
     parser.add_argument(
         "-o", "--out-path", help="output model path", default="model.pt"
