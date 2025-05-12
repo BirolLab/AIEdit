@@ -37,7 +37,7 @@ CBFKmerModel::CBFKmerModel(const std::string& seeds_bf_path,
 {
     std::ifstream hist_file(hist_path);
     if (!hist_file) {
-        throw std::runtime_error("Unable to open seeds file: " + hist_path);
+        throw std::runtime_error("Unable to open k-mer count model file: " + hist_path);
     }
     const auto counter_limit = std::numeric_limits<decltype(cbf->contains(nullptr))>::max();
     probs = std::vector<float>(counter_limit + 1, 0.0);
@@ -60,8 +60,7 @@ CBFKmerModel::CBFKmerModel(const std::string& seeds_bf_path,
     }
 }
 
-CBFKmerModel::CBFKmerModel(const std::string& seeds_bf_path,
-                           const std::string& cbf_path)
+CBFKmerModel::CBFKmerModel(const std::string& seeds_bf_path, const std::string& cbf_path)
   : KmerModel::KmerModel(seeds_bf_path)
   , cbf(std::make_unique<btllib::KmerCountingBloomFilter8>(cbf_path))
 {
