@@ -26,7 +26,8 @@ class Polisher
     Polisher(const std::string_view model_path,
              const std::shared_ptr<KmerModel>& kmer_model,
              unsigned num_threads,
-             float min_score);
+             float min_score,
+             unsigned num_tries);
 
     ~Polisher();
 
@@ -40,6 +41,7 @@ class Polisher
     torch::jit::Module model;
     std::shared_ptr<KmerModel> kmer_model;
     const float min_score;
+    const unsigned num_tries;
     at::Tensor h_seeds;
 
     std::vector<std::thread> threads;

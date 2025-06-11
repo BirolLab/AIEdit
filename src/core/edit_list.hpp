@@ -25,9 +25,12 @@ struct Edit {
     };
 
     size_t position;
+    unsigned num_kmers;
     Type type;
     std::string edited;
-    float score;
+    float kmer_score;
+    float model_confidence;
+    unsigned i_try;
     Status status;
 };
 
@@ -52,6 +55,7 @@ class EditList : public ThreadSafeQueue<Edit>
   private:
 
     std::atomic_size_t num_passed;
+    std::atomic_int length_diff;
 };
 
 }

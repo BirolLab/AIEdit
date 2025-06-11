@@ -22,9 +22,12 @@ REGISTER_DEPENDENCY(({
     pybind11::class_<aiedit::Edit, std::shared_ptr<aiedit::Edit>>(m, "Edit")
       .def(pybind11::init<>())
       .def_readwrite("position", &aiedit::Edit::position)
+      .def_readwrite("num_kmers", &aiedit::Edit::num_kmers)
       .def_readwrite("type", &aiedit::Edit::type)
       .def_readwrite("edited", &aiedit::Edit::edited)
-      .def_readwrite("score", &aiedit::Edit::score)
+      .def_readwrite("kmer_score", &aiedit::Edit::kmer_score)
+      .def_readwrite("model_confidence", &aiedit::Edit::model_confidence)
+      .def_readwrite("i_try", &aiedit::Edit::i_try)
       .def_readwrite("status", &aiedit::Edit::status);
 
     pybind11::class_<aiedit::EditList, std::shared_ptr<aiedit::EditList>>(m, "EditList")

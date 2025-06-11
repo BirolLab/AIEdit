@@ -30,9 +30,11 @@ namespace aiedit {
 Polisher::Polisher(const std::string_view model_path,
                    const std::shared_ptr<KmerModel>& kmer_model,
                    unsigned num_threads,
-                   float min_score)
+                   float min_score,
+                   unsigned num_tries)
   : kmer_model(kmer_model)
   , min_score(min_score)
+  , num_tries(num_tries)
   , is_terminated(false)
 {
     c10::NoGradGuard no_grad;
@@ -66,6 +68,9 @@ unsigned Polisher::get_max_indels() const { return model.attr("max_indels").toIn
 std::shared_ptr<EditList> Polisher::polish(const std::string_view seq)
 {
     auto results = std::make_shared<EditList>();
+    if (seq.size() < kmer_model->get_kmer_size()) {
+        return results;
+    }
     EditRegionFinder erf(seq, kmer_model, min_score, get_max_mismatches());
     pending_tasks = 0;
     for (const auto region : erf) {
@@ -88,33 +93,36 @@ std::shared_ptr<EditList> Polisher::polish(const std::string_view seq)
 
 Edit Polisher::process_region(const std::string_view seq, std::pair<size_t, size_t> region)
 {
+    Edit edit;
+    const auto start = region.first, end = region.second;
+    edit.position = start + kmer_model->get_kmer_size() - 1;
+    edit.num_kmers = end - start;
     c10::NoGradGuard no_grad;
-    ModelInterface interface(seq, region.first, region.second, get_max_indels(), kmer_model);
+    ModelInterface interface(seq, start, end, get_max_mismatches(), get_max_indels(), kmer_model);
     const auto sig = interface.get_signature();
     auto x_sig = at::from_blob(sig.data(), {(long)sig.get_num_rows(), (long)sig.get_num_cols()});
-    auto y_pred = model.run_method("predict", h_seeds, x_sig);
-    const auto& outputs = y_pred.toTuple();
-    std::vector<float*> data_ptrs;
-    std::vector<long> sizes;
-    for (const auto& output : outputs->elements()) {
-        const auto& output_tensor = output.toTensor().squeeze(0);
-        data_ptrs.push_back(output_tensor.data_ptr<float>());
-        sizes.push_back(static_cast<long>(output_tensor.size(0)));
+    auto y_pred = model.run_method("predict", h_seeds, x_sig).toTensor();
+    y_pred = y_pred.exp().div(y_pred.exp().sum());
+    auto top_preds = y_pred.argsort(1, true);
+    edit.status = Edit::Status::MODEL_FAIL;
+    for (unsigned i_try = 0; i_try < num_tries; i_try++) {
+        edit.i_try = i_try + 1;
+        const auto i_edit = top_preds.data_ptr<int64_t>()[i_try];
+        const auto result = interface.update(i_edit);
+        edit.type = std::get<0>(result);
+        edit.edited = std::get<1>(result);
+        edit.kmer_score = std::get<2>(result);
+        edit.model_confidence = y_pred.data_ptr<float>()[i_edit];
+        if (!edit.edited.empty() && edit.kmer_score < min_score) {
+            edit.status = Edit::Status::LOW_KMER_SCORE;
+        } else if (std::get<1>(result).empty()) {
+            edit.status = Edit::Status::MODEL_FAIL;
+        } else {
+            edit.status = Edit::Status::PASS;
+            break;
+        }
     }
-    const auto position = region.first + kmer_model->get_kmer_size() - 1;
-    const auto result = interface.update(data_ptrs, sizes);
-    const auto edit_type = std::get<0>(result);
-    const auto edited = std::get<1>(result);
-    const auto score = std::get<2>(result);
-    Edit::Status status;
-    if (!edited.empty() && score < min_score) {
-        status = Edit::Status::LOW_KMER_SCORE;
-    } else if (edited.empty()) {
-        status = Edit::Status::MODEL_FAIL;
-    } else {
-        status = Edit::Status::PASS;
-    }
-    return Edit{position, edit_type, edited, score, status};
+    return edit;
 }
 
 void Polisher::thread()

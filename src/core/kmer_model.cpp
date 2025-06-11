@@ -1,6 +1,9 @@
 #include "kmer_model.hpp"
+
+#include <btllib/nthash.hpp>
 #include <fstream>
 #include <iterator>
+#include <math.h>
 #include <sstream>
 
 namespace aiedit {
@@ -12,6 +15,21 @@ KmerModel::KmerModel(const std::string& seeds_bf_path)
 bool KmerModel::query_seed(const uint64_t* seed_hashes) const
 {
     return seeds_bf->contains(seed_hashes);
+}
+
+float KmerModel::get_seeds_fpr() const { return seeds_bf->get_fpr(); }
+
+float KmerModel::mean_score(const std::string_view seq) const
+{
+    float q_sum = 0;
+    size_t num_kmers = 0;
+    btllib::NtHash hash_fn(seq.data(), seq.length(), get_num_hashes(), get_kmer_size());
+    while (hash_fn.roll()) {
+        const auto kmer_score = score(hash_fn.hashes());
+        q_sum += kmer_score > 0.0 ? std::log(kmer_score) : 0.0;
+        ++num_kmers;
+    }
+    return std::exp(q_sum / (float)num_kmers);
 }
 
 const std::vector<std::string>& KmerModel::get_seeds() const { return seeds_bf->get_seeds(); };
@@ -28,6 +46,8 @@ unsigned BFKmerModel::get_num_hashes() const { return bf->get_hash_num(); }
 unsigned BFKmerModel::get_kmer_size() const { return bf->get_k(); }
 
 size_t BFKmerModel::get_size() const { return bf->get_bytes(); }
+
+float BFKmerModel::get_kmers_fpr() const { return bf->get_fpr(); }
 
 CBFKmerModel::CBFKmerModel(const std::string& seeds_bf_path,
                            const std::string& cbf_path,
@@ -76,5 +96,7 @@ unsigned CBFKmerModel::get_num_hashes() const { return cbf->get_hash_num(); }
 unsigned CBFKmerModel::get_kmer_size() const { return cbf->get_k(); }
 
 size_t CBFKmerModel::get_size() const { return cbf->get_bytes(); }
+
+float CBFKmerModel::get_kmers_fpr() const { return cbf->get_fpr(); }
 
 }

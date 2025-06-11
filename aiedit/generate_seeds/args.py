@@ -21,32 +21,34 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
         "--max-indels",
         help="indel window size (default: %(default)d)",
         type=int,
-        default=10,
+        default=5,
+    )
+    parser.add_argument(
+        "-r", "--random-seed", help="random number generator seed", type=int
     )
     parser.add_argument(
         "-p",
         "--pop-size",
         help="genetic algorithm's population size",
         type=int,
-        default=100,
+        default=10,
     )
     parser.add_argument(
         "-g",
         "--num-gens",
-        help="genetic algorithm's number of generations'",
+        help="genetic algorithm's number of generations",
         type=int,
-        default=100,
+        default=20,
     )
     parser.add_argument(
         "-u",
         "--mutation",
         help="genetic algorithm's mutation probability",
         type=float,
-        default=0.5,
+        default=0.25,
     )
     parser.add_argument(
         "-o",
         "--out-file",
-        help="path to store spaced seeds file  (default: %(default)s)",
-        default="seeds.txt",
+        help="path to store spaced seeds file",
     )

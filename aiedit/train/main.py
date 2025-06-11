@@ -6,7 +6,6 @@ import random
 import time
 
 import torch
-import torch.nn.functional as F
 import tqdm
 
 from aiedit.train import data
@@ -22,23 +21,11 @@ def load_seed_sets(pattern: str) -> list[list[str]]:
     return seeds
 
 
-def calculate_loss(
-    y_pred: torch.FloatTensor, y_true: torch.FloatTensor
-) -> torch.FloatTensor:
-    loss = F.binary_cross_entropy_with_logits(y_pred[0], y_true[0])
-    is_mismatch = y_true[1] is not None
-    if is_mismatch:
-        loss += F.binary_cross_entropy_with_logits(y_pred[1], y_true[1])
-    else:
-        loss += F.cross_entropy(y_pred[2], y_true[2])
-    return loss
-
-
 def train_epoch(model, optimizer, train_data) -> float:
     total_loss = 0
-    for x, y_true in train_data:
-        y_pred = model(*x)
-        loss = calculate_loss(y_pred, y_true)
+    for x_seed, x_sig, y_true in tqdm.tqdm(train_data, disable=None, leave=False):
+        y_pred = model(x_seed, x_sig)
+        loss = torch.nn.functional.cross_entropy(y_pred, y_true)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -46,30 +33,21 @@ def train_epoch(model, optimizer, train_data) -> float:
     return total_loss / len(train_data)
 
 
-def check_prediction(y_pred: torch.FloatTensor, y_true: torch.FloatTensor) -> bool:
-    if y_true[1] is not None and y_pred[0].item() <= 0:
-        return ((y_pred[1] >= 0) == y_true[1]).sum(), y_pred[1].size(1)
-    elif y_true[2] is not None and y_pred[0].item() > 0:
-        return y_true[2].argmax() == y_pred[2].argmax(), 1
-    return 0, 1
-
-
 @torch.no_grad()
 def validate(model, val_data) -> tuple[float, float]:
     loss, num_true, num_pred = 0.0, 0, 0
-    for x, y_true in val_data:
-        y_pred = model(*x)
-        loss += calculate_loss(y_pred, y_true)
-        pred_results = check_prediction(y_pred, y_true)
-        num_true += pred_results[0]
-        num_pred += pred_results[1]
+    for x_seed, x_sig, y_true in val_data:
+        y_pred = model(x_seed, x_sig)
+        loss += torch.nn.functional.cross_entropy(y_pred, y_true)
+        num_true += int(y_pred.argmax() == y_true.argmax())
+        num_pred += 1
     return loss / len(val_data), num_true / num_pred
 
 
 def create_dataset(name, seeds, max_mismatches, max_indels):
     dataset = []
     num_samples = (2 ** (max_mismatches - 1) + 2 * max_indels) * len(seeds)
-    pbar = tqdm.tqdm(desc=name, total=num_samples)
+    pbar = tqdm.tqdm(desc=name, total=num_samples, disable=None)
     for seed in seeds:
         for x in data.generate_dataset(seed, max_mismatches, max_indels):
             dataset.append(x)
@@ -89,15 +67,16 @@ def main(args):
     print(f"Number of spaced seeds per set: {num_seeds}")
 
     out_path = pathlib.Path(args.out_path)
-    checkpoint_path = out_path.parent.joinpath(out_path.stem).joinpath("-checkpoint.pt")
+    checkpoint_path = out_path.parent.joinpath(out_path.stem + "-checkpoint.pt")
 
-    max_edits = args.max_mismatches, args.max_indels
     if os.path.exists(checkpoint_path):
         model, optimizer_state = Model.from_checkpoint(checkpoint_path)
         optimizer = torch.optim.AdamW(model.parameters())
         optimizer.load_state_dict(optimizer_state)
+        max_edits = model._max_mismatches, model._max_indels
         print("Training state loaded from checkpoint")
     else:
+        max_edits = args.max_mismatches, args.max_indels
         model = Model(len(seeds[0]), *max_edits, args.model_dim)
         optimizer = torch.optim.AdamW(model.parameters())
         model.print_summary()
@@ -126,3 +105,4 @@ def main(args):
 
     model_ts = torch.jit.script(model)
     model_ts.save(args.out_path)
+    print(f"Final model saved to {args.out_path}")

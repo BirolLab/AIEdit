@@ -25,7 +25,10 @@ REGISTER_DEPENDENCY(({
       .def("get_num_hashes", &aiedit::BFKmerModel::get_num_hashes)
       .def("get_kmer_size", &aiedit::BFKmerModel::get_kmer_size)
       .def("get_size", &aiedit::BFKmerModel::get_size)
-      .def("score", &bf_kmer_model_score, pybind11::arg("hashes"));
+      .def("get_kmers_fpr", &aiedit::BFKmerModel::get_kmers_fpr)
+      .def("get_seeds_fpr", &aiedit::BFKmerModel::get_seeds_fpr)
+      .def("score", &bf_kmer_model_score, pybind11::arg("hashes"))
+      .def("mean_score", &aiedit::BFKmerModel::mean_score);
 
     pybind11::class_<aiedit::CBFKmerModel, std::shared_ptr<aiedit::CBFKmerModel>>(m,
                                                                                   "CBFKmerModel",
@@ -41,5 +44,8 @@ REGISTER_DEPENDENCY(({
       .def("get_num_hashes", &aiedit::CBFKmerModel::get_num_hashes)
       .def("get_kmer_size", &aiedit::CBFKmerModel::get_kmer_size)
       .def("get_size", &aiedit::CBFKmerModel::get_size)
-      .def("score", &cbf_kmer_model_score, pybind11::arg("hashes"));
+      .def("get_kmers_fpr", &aiedit::CBFKmerModel::get_kmers_fpr)
+      .def("get_seeds_fpr", &aiedit::CBFKmerModel::get_seeds_fpr)
+      .def("score", &cbf_kmer_model_score, pybind11::arg("hashes"))
+      .def("mean_score", &aiedit::CBFKmerModel::mean_score);
 }))

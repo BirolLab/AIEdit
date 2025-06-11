@@ -21,6 +21,9 @@ std::optional<std::pair<size_t, size_t>> EditRegionFinder::get_next_region()
         return {};
     }
     size_t start_pos = hash_fn.get_pos();
+    for (unsigned i = 0; i < max_length; i++) {
+        hash_fn.roll();
+    }
     if (!next(true)) {
         return {};
     }

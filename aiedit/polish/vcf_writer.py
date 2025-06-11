@@ -46,6 +46,9 @@ class VCFWriter:
             "##INFO=<ID=RL,Number=1,Type=Integer,Description=Edit region length in bp>",
             f"##FILTER=<ID=qual{self._min_qual},Description=K-mer Phred score less than {self._min_qual} after edits>",
             "##FILTER=<ID=fail,Description=Model did not detect any edits>",
+            "##INFO=<ID=NK,Number=1,Type=Integer,Description=Number of k-mers in edit region>",
+            "##INFO=<ID=TN,Number=1,Type=Integer,Description=Edit try index>",
+            "##INFO=<ID=MC,Number=1,Type=Float,Description=Model confidence for selected edit>",
             "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO",
         ]
 
@@ -54,15 +57,15 @@ class VCFWriter:
         self._file_lines[4] += os.linesep if self._file_lines[4] else ""
         self._file_lines[4] += head
         for edit in edits:
-            kmer_score = edit.score if not math.isnan(edit.score) else 0
+            kmer_score = edit.kmer_score if not math.isnan(edit.kmer_score) else 0
             row = (
                 seq_id,
-                edit.position,
+                edit.position + 1,
                 len(self._file_lines) - 9,
                 *_get_ref_alt(seq, edit),
                 int(-10 * math.log10(1 - kmer_score + sys.float_info.epsilon)),
                 _get_status_filter(edit.status, self._min_qual),
-                ".",
+                f"NK={edit.num_kmers};TN={edit.i_try};MC={edit.model_confidence:.3f}",
             )
             self._file_lines.append("\t".join(map(str, row)))
 

@@ -7,6 +7,7 @@ namespace aiedit {
 
 EditList::EditList()
   : num_passed(0)
+  , length_diff(0)
 {}
 
 void EditList::add(Edit edit)
@@ -14,6 +15,11 @@ void EditList::add(Edit edit)
     ThreadSafeQueue::push(edit);
     if (edit.status == Edit::Status::PASS) {
         ++num_passed;
+    }
+    if (edit.type == Edit::Type::DELETE) {
+        length_diff -= edit.edited.size();
+    } else if (edit.type == Edit::Type::INSERT) {
+        length_diff += edit.edited.size();
     }
 }
 
@@ -32,7 +38,7 @@ std::string EditList::apply(const std::string_view seq)
         return std::string{seq};
     }
     std::string edited;
-    edited.reserve(seq.size() + seq.size() / 10);
+    edited.reserve(seq.size() + length_diff);
     size_t seq_pos = 0;
     size_t edit_index = 0;
     while (seq_pos < seq.size()) {
@@ -40,15 +46,16 @@ std::string EditList::apply(const std::string_view seq)
             edited.push_back(seq[seq_pos++]);
             continue;
         }
-        if (items[edit_index].status == Edit::Status::PASS &&
-            items[edit_index].type == Edit::Type::SUBSTITUTE) {
+        if (items[edit_index].status != Edit::Status::PASS) {
+            ++edit_index;
+            continue;
+        }
+        if (items[edit_index].type == Edit::Type::SUBSTITUTE) {
             edited.append(items[edit_index].edited);
             seq_pos += items[edit_index].edited.size();
-        } else if (items[edit_index].status == Edit::Status::PASS &&
-                   items[edit_index].type == Edit::Type::INSERT) {
+        } else if (items[edit_index].type == Edit::Type::INSERT) {
             edited.append(items[edit_index].edited);
-        } else if (items[edit_index].status == Edit::Status::PASS &&
-                   items[edit_index].type == Edit::Type::DELETE) {
+        } else if (items[edit_index].type == Edit::Type::DELETE) {
             seq_pos += items[edit_index].edited.size();
         }
         ++edit_index;
