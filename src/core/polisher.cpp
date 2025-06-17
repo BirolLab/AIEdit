@@ -32,9 +32,9 @@ aiedit::Edit make_gap(size_t start, size_t end, unsigned kmer_size)
     const unsigned num_kmers = end - start;
     unsigned num_del;
     if (num_kmers >= kmer_size) {
-        num_del = kmer_size + 1;
+        num_del = num_kmers - kmer_size + 1;
     } else {
-        num_del = kmer_size - num_kmers;
+        num_del = kmer_size - num_kmers + 1;
     }
     return {start + kmer_size - 1,
             num_kmers,
@@ -123,7 +123,8 @@ void Polisher::process_region(const std::string_view seq,
     const auto start = region.first;
     auto end = region.second;
     const auto max_region_size = std::max(get_max_mismatches(), get_max_indels());
-    if (end - start > kmer_model->get_kmer_size() + max_region_size) {
+    bool region_too_long = end - start > kmer_model->get_kmer_size() + max_region_size;
+    if (region_too_long) {
         end = start + kmer_model->get_kmer_size() / 2;
     }
     edit.position = start + kmer_model->get_kmer_size() - 1;
@@ -154,20 +155,21 @@ void Polisher::process_region(const std::string_view seq,
         }
     }
     results->add(edit);
-    if (edit.status != Edit::Status::PASS && gap_filler.get_max_size() > 0) {
-        const auto max_size = get_max_mismatches() + get_max_indels();
+    if (edit.status != Edit::Status::PASS && gap_filler.get_max_size() > 0 && !region_too_long) {
         const auto filled = gap_filler.fill(seq, region.first, region.second);
-        if (std::get<0>(filled) > 0 && !std::get<1>(filled).empty()) {
+        if (std::get<0>(filled) > 0) {
             auto gap = make_gap(region.first, region.second, kmer_model->get_kmer_size());
             results->add(gap);
-            Edit insertion;
-            insertion.position = gap.position + gap.edited.size();
-            insertion.type = Edit::Type::INSERT;
-            insertion.num_kmers = gap.num_kmers;
-            insertion.edited = std::get<1>(filled);
-            insertion.kmer_score = std::get<0>(filled);
-            insertion.status = Edit::Status::PASS;
-            results->add(insertion);
+            if (!std::get<1>(filled).empty()) {
+                Edit insertion;
+                insertion.position = gap.position + gap.edited.size();
+                insertion.type = Edit::Type::INSERT;
+                insertion.num_kmers = gap.num_kmers;
+                insertion.edited = std::get<1>(filled);
+                insertion.kmer_score = std::get<0>(filled);
+                insertion.status = Edit::Status::PASS;
+                results->add(insertion);
+            }
         }
     }
 }
