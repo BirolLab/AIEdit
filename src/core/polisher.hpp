@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "edit_list.hpp"
+#include "gap_filler.hpp"
 #include "kmer_model.hpp"
 #include "thread_safe_queue.hpp"
 
@@ -27,7 +28,8 @@ class Polisher
              const std::shared_ptr<KmerModel>& kmer_model,
              unsigned num_threads,
              float min_score,
-             unsigned num_tries);
+             unsigned num_tries,
+             unsigned max_gap);
 
     ~Polisher();
 
@@ -51,8 +53,12 @@ class Polisher
     std::mutex results_ready_mutex;
     bool is_terminated;
 
+    const GapFiller gap_filler;
+
     void thread();
-    Edit process_region(const std::string_view seq, std::pair<size_t, size_t> region);
+    void process_region(const std::string_view seq,
+                        std::pair<size_t, size_t> region,
+                        const std::shared_ptr<EditList>& results);
 };
 
 }

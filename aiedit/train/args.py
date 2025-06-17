@@ -13,7 +13,7 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
         "-m", "--max-mismatches", help="mismatch window size", type=int, default=5
     )
     parser.add_argument(
-        "-i", "--max-indels", help="indel window size", type=int, default=10
+        "-i", "--max-indels", help="indel window size", type=int, default=5
     )
     parser.add_argument(
         "-d", "--model-dim", help="model dimensionality", type=int, default=32

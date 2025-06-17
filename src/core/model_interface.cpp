@@ -216,7 +216,7 @@ std::tuple<Edit::Type, std::string, float> ModelInterface::update(unsigned i_edi
         edit = find_insertions(seq, start_kmer, editor, kmer_model, num_ins);
         kmer_score = get_score(seq, start_kmer, editor, kmer_model);
     }
-    return std::tuple(edit_type, edit, kmer_score);
+    return {edit_type, edit, kmer_score};
 }
 
 }

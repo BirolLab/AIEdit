@@ -42,12 +42,12 @@ std::string EditList::apply(const std::string_view seq)
     size_t seq_pos = 0;
     size_t edit_index = 0;
     while (seq_pos < seq.size()) {
-        if (edit_index >= items.size() || seq_pos != items[edit_index].position) {
-            edited.push_back(seq[seq_pos++]);
+        if (edit_index < items.size() && items[edit_index].status != Edit::Status::PASS) {
+            ++edit_index;
             continue;
         }
-        if (items[edit_index].status != Edit::Status::PASS) {
-            ++edit_index;
+        if (edit_index >= items.size() || seq_pos != items[edit_index].position) {
+            edited.push_back(seq[seq_pos++]);
             continue;
         }
         if (items[edit_index].type == Edit::Type::SUBSTITUTE) {

@@ -1,14 +1,18 @@
 #include "polisher.hpp"
 
 #include "edit_region_finder.hpp"
+#include "gap_filler.hpp"
 #include "model_interface.hpp"
 
 #include <ATen/ops/from_blob.h>
 #include <atomic>
+#include <btllib/nthash.hpp>
 #include <c10/core/GradMode.h>
 #include <torch/csrc/jit/serialization/import.h>
 
 namespace {
+
+constexpr auto BASES = "ACGT";
 
 at::Tensor seeds_to_tensor(const std::vector<std::string>& seeds)
 {
@@ -23,6 +27,25 @@ at::Tensor seeds_to_tensor(const std::vector<std::string>& seeds)
     return at::from_blob(buffer.data(), {num_rows, num_cols}).clone();
 }
 
+aiedit::Edit make_gap(size_t start, size_t end, unsigned kmer_size)
+{
+    const unsigned num_kmers = end - start;
+    unsigned num_del;
+    if (num_kmers >= kmer_size) {
+        num_del = kmer_size + 1;
+    } else {
+        num_del = kmer_size - num_kmers;
+    }
+    return {start + kmer_size - 1,
+            num_kmers,
+            aiedit::Edit::Type::DELETE,
+            std::string(num_del, '-'),
+            1.0,
+            0.0,
+            0,
+            aiedit::Edit::Status::PASS};
+}
+
 }
 
 namespace aiedit {
@@ -31,10 +54,12 @@ Polisher::Polisher(const std::string_view model_path,
                    const std::shared_ptr<KmerModel>& kmer_model,
                    unsigned num_threads,
                    float min_score,
-                   unsigned num_tries)
+                   unsigned num_tries,
+                   unsigned max_gap)
   : kmer_model(kmer_model)
   , min_score(min_score)
   , num_tries(num_tries)
+  , gap_filler(kmer_model, max_gap, min_score)
   , is_terminated(false)
 {
     c10::NoGradGuard no_grad;
@@ -71,13 +96,12 @@ std::shared_ptr<EditList> Polisher::polish(const std::string_view seq)
     if (seq.size() < kmer_model->get_kmer_size()) {
         return results;
     }
-    EditRegionFinder erf(seq, kmer_model, min_score, get_max_mismatches());
+    EditRegionFinder edit_regions(seq, kmer_model, min_score);
     pending_tasks = 0;
-    for (const auto region : erf) {
+    for (const auto region : edit_regions) {
         ++pending_tasks;
         tasks.push([&, seq, region]() {
-            auto edit = process_region(seq, region);
-            results->add(edit);
+            process_region(seq, region, results);
             --pending_tasks;
             if (pending_tasks == 0 && tasks.size() == 0) {
                 std::lock_guard<std::mutex> lock(results_ready_mutex);
@@ -91,10 +115,17 @@ std::shared_ptr<EditList> Polisher::polish(const std::string_view seq)
     return results;
 }
 
-Edit Polisher::process_region(const std::string_view seq, std::pair<size_t, size_t> region)
+void Polisher::process_region(const std::string_view seq,
+                              std::pair<size_t, size_t> region,
+                              const std::shared_ptr<EditList>& results)
 {
     Edit edit;
-    const auto start = region.first, end = region.second;
+    const auto start = region.first;
+    auto end = region.second;
+    const auto max_region_size = std::max(get_max_mismatches(), get_max_indels());
+    if (end - start > kmer_model->get_kmer_size() + max_region_size) {
+        end = start + kmer_model->get_kmer_size() / 2;
+    }
     edit.position = start + kmer_model->get_kmer_size() - 1;
     edit.num_kmers = end - start;
     c10::NoGradGuard no_grad;
@@ -122,7 +153,23 @@ Edit Polisher::process_region(const std::string_view seq, std::pair<size_t, size
             break;
         }
     }
-    return edit;
+    results->add(edit);
+    if (edit.status != Edit::Status::PASS && gap_filler.get_max_size() > 0) {
+        const auto max_size = get_max_mismatches() + get_max_indels();
+        const auto filled = gap_filler.fill(seq, region.first, region.second);
+        if (std::get<0>(filled) > 0 && !std::get<1>(filled).empty()) {
+            auto gap = make_gap(region.first, region.second, kmer_model->get_kmer_size());
+            results->add(gap);
+            Edit insertion;
+            insertion.position = gap.position + gap.edited.size();
+            insertion.type = Edit::Type::INSERT;
+            insertion.num_kmers = gap.num_kmers;
+            insertion.edited = std::get<1>(filled);
+            insertion.kmer_score = std::get<0>(filled);
+            insertion.status = Edit::Status::PASS;
+            results->add(insertion);
+        }
+    }
 }
 
 void Polisher::thread()

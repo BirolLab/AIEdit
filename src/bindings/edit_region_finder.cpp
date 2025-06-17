@@ -12,7 +12,6 @@ REGISTER_BINDING(({
       "EditRegionFinder")
       .def(pybind11::init<const std::string_view,
                           const std::shared_ptr<aiedit::KmerModel>&,
-                          float,
-                          unsigned>())
+                          float>())
       .def("__iter__", &edit_region_finder__iter__, pybind11::keep_alive<0, 1>());
 }))
