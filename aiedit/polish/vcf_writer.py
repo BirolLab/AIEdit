@@ -27,7 +27,7 @@ def _get_status_filter(status: core.EditStatus, min_qual: int):
     if status == core.EditStatus.PASS:
         return "PASS"
     elif status == core.EditStatus.MODEL_FAIL:
-        return "fail"
+        return "model"
     elif status == core.EditStatus.LOW_KMER_SCORE:
         return f"qual{min_qual}"
     return "."
@@ -45,10 +45,10 @@ class VCFWriter:
             "",  # contigs to be added at runtime
             "##INFO=<ID=RL,Number=1,Type=Integer,Description=Edit region length in bp>",
             f"##FILTER=<ID=qual{self._min_qual},Description=K-mer Phred score less than {self._min_qual} after edits>",
-            "##FILTER=<ID=fail,Description=Model did not detect any edits>",
+            "##FILTER=<ID=model,Description=Model did not detect any edits>",
             "##INFO=<ID=NK,Number=1,Type=Integer,Description=Number of k-mers in edit region>",
-            "##INFO=<ID=TN,Number=1,Type=Integer,Description=Edit try index>",
-            "##INFO=<ID=MC,Number=1,Type=Float,Description=Model confidence for selected edit>",
+            "##INFO=<ID=TN,Number=1,Type=Integer,Description=Number of top patterns tried>",
+            "##INFO=<ID=MC,Number=1,Type=Float,Description=Model confidence for the selected edit>",
             "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO",
         ]
 

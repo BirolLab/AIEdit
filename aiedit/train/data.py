@@ -65,7 +65,9 @@ def _get_deletion_signature(
 
 def generate_dataset(
     seeds: list[str], max_mismatches: int, max_indels: int
-) -> typing.Generator[tuple[torch.FloatTensor, torch.FloatTensor, torch.FloatTensor], None, None]:
+) -> typing.Generator[
+    tuple[torch.FloatTensor, torch.FloatTensor, torch.FloatTensor], None, None
+]:
     seq = "".join(random.choices("ACGT", k=len(seeds[0]) * 2 + max_mismatches))
     kmer_model = _make_kmer_model(seq, seeds)
     x_seeds = encode_seeds(seeds)
@@ -75,12 +77,15 @@ def generate_dataset(
         y_out = torch.zeros(1, 2 ** (max_mismatches - 1) + 2 * max_indels)
         y_out[0, i] = 1.0
         yield x_seeds, x_sig, y_out
+        yield x_seeds, x_sig[: x_sig.size(0) // 2, :], y_out
     for n in range(1, max_indels + 1):
         x_sig = _get_insertion_signature(seq, n, max_indels, kmer_model)
         y_out = torch.zeros(1, 2 ** (max_mismatches - 1) + 2 * max_indels)
         y_out[0, 2 ** (max_mismatches - 1) + n - 1] = 1.0
         yield x_seeds, x_sig, y_out
+        yield x_seeds, x_sig[: x_sig.size(0) // 2, :], y_out
         x_sig = _get_deletion_signature(seq, n, max_indels, kmer_model)
         y_out = torch.zeros(1, 2 ** (max_mismatches - 1) + 2 * max_indels)
         y_out[0, 2 ** (max_mismatches - 1) + max_indels + n - 1] = 1.0
         yield x_seeds, x_sig, y_out
+        yield x_seeds, x_sig[: x_sig.size(0) // 2, :], y_out

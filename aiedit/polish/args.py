@@ -56,13 +56,6 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
         default=3,
     )
     parser.add_argument(
-        "-g",
-        "--max-gap",
-        help="maximum gap fill size (default: %(default)d)",
-        type=int,
-        default=20,
-    )
-    parser.add_argument(
         "-t",
         "--threads",
         help="number of threads (default: %(default)d)",

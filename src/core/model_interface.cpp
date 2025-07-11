@@ -4,6 +4,8 @@
 #include <queue>
 #include <stdexcept>
 
+#include "gap_filler.hpp"
+
 namespace {
 
 constexpr auto BASES = "ACGT";
@@ -58,9 +60,9 @@ inline float get_score(const std::string_view seq,
                                 kmer_model->get_kmer_size());
     for (const auto c : editor) {
         hash_fn.roll(c);
-        score += std::log(kmer_model->score(hash_fn.hashes()));
+        score += kmer_model->score(hash_fn.hashes());
     }
-    return std::exp(score / editor.get_size());
+    return score / (float)editor.get_size();
 }
 
 inline std::string find_insertions(const std::string_view seq,
@@ -90,22 +92,18 @@ inline std::string find_insertions(const std::string_view seq,
     return result;
 }
 
-inline std::pair<std::string, float>
-find_deletions(const std::string_view seq,
-               size_t start_kmer,
-               aiedit::Editor& editor,
-               const std::shared_ptr<aiedit::KmerModel>& kmer_model,
-               unsigned max_del)
+inline std::string find_deletions(const std::string_view seq,
+                                  size_t start_kmer,
+                                  aiedit::Editor& editor,
+                                  const std::shared_ptr<aiedit::KmerModel>& kmer_model,
+                                  unsigned max_del)
 {
     aiedit::Editor editor_copy(editor);
-    std::priority_queue<std::pair<float, unsigned>> scores;
-    for (unsigned num_del = 1; num_del <= max_del && editor_copy.get_num_remaining() > 0;
-         num_del++) {
+    unsigned num_del = 0;
+    while (num_del++ < max_del && editor_copy.get_num_remaining() > 0) {
         editor_copy.delete_base();
-        const auto score = get_score(seq, start_kmer, editor_copy, kmer_model);
-        scores.push(std::make_pair(score, num_del));
     }
-    return std::make_pair(std::string(scores.top().second, '-'), scores.top().first);
+    return std::string(num_del, '-');
 }
 
 inline std::vector<bool> get_mismatch_pattern(unsigned i_edit)
@@ -181,8 +179,10 @@ ModelInterface::ModelInterface(const std::string_view seq,
 
 Buffer2D ModelInterface::get_signature()
 {
+    const size_t max_length = kmer_model->get_kmer_size() + max_indels;
+    const auto num_kmers = std::min(end_kmer - start_kmer, max_length);
     const auto num_features = kmer_model->get_seeds().size() * (max_indels + 1) + 1;
-    Buffer2D signature(end_kmer - start_kmer, num_features);
+    Buffer2D signature(num_kmers, num_features);
     fill_repeats_row(signature, seq, start_kmer, kmer_model->get_kmer_size());
     for (unsigned i = 0; i < kmer_model->get_seeds().size(); i++) {
         fill_seed_row(signature, i, seq, start_kmer, kmer_model, max_indels);
@@ -194,7 +194,6 @@ std::tuple<Edit::Type, std::string, float> ModelInterface::update(unsigned i_edi
 {
     Edit::Type edit_type;
     std::string edit;
-    float kmer_score;
     Editor editor(seq,
                   start_kmer + kmer_model->get_kmer_size() - 1,
                   end_kmer + kmer_model->get_kmer_size() - 1);
@@ -203,19 +202,16 @@ std::tuple<Edit::Type, std::string, float> ModelInterface::update(unsigned i_edi
         edit_type = Edit::Type::SUBSTITUTE;
         const auto mismatches = get_mismatch_pattern(i_edit);
         edit = find_mismatches(seq, start_kmer, editor, kmer_model, mismatches);
-        kmer_score = get_score(seq, start_kmer, editor, kmer_model);
     } else if (i_edit < mismatch_indices + max_indels) {
         edit_type = Edit::Type::DELETE;
         const auto num_del = i_edit - mismatch_indices + 1;
-        const auto result = find_deletions(seq, start_kmer, editor, kmer_model, num_del);
-        edit = result.first;
-        kmer_score = result.second;
+        const auto edit = find_deletions(seq, start_kmer, editor, kmer_model, num_del);
     } else {
         edit_type = Edit::Type::INSERT;
         const auto num_ins = i_edit - mismatch_indices - max_indels + 1;
         edit = find_insertions(seq, start_kmer, editor, kmer_model, num_ins);
-        kmer_score = get_score(seq, start_kmer, editor, kmer_model);
     }
+    const auto kmer_score = get_score(seq, start_kmer, editor, kmer_model);
     return {edit_type, edit, kmer_score};
 }
 

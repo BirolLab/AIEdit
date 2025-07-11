@@ -54,12 +54,10 @@ Polisher::Polisher(const std::string_view model_path,
                    const std::shared_ptr<KmerModel>& kmer_model,
                    unsigned num_threads,
                    float min_score,
-                   unsigned num_tries,
-                   unsigned max_gap)
+                   unsigned num_tries)
   : kmer_model(kmer_model)
   , min_score(min_score)
   , num_tries(num_tries)
-  , gap_filler(kmer_model, max_gap, min_score)
   , is_terminated(false)
 {
     c10::NoGradGuard no_grad;
@@ -122,11 +120,6 @@ void Polisher::process_region(const std::string_view seq,
     Edit edit;
     const auto start = region.first;
     auto end = region.second;
-    const auto max_region_size = std::max(get_max_mismatches(), get_max_indels());
-    bool region_too_long = end - start > kmer_model->get_kmer_size() + max_region_size;
-    if (region_too_long) {
-        end = start + kmer_model->get_kmer_size() / 2;
-    }
     edit.position = start + kmer_model->get_kmer_size() - 1;
     edit.num_kmers = end - start;
     c10::NoGradGuard no_grad;
@@ -154,8 +147,10 @@ void Polisher::process_region(const std::string_view seq,
             break;
         }
     }
-    results->add(edit);
-    if (edit.status != Edit::Status::PASS && gap_filler.get_max_size() > 0 && !region_too_long) {
+    if (edit.status == Edit::Status::PASS) {
+        results->add(edit);
+    } else {
+        GapFiller gap_filler(kmer_model, get_max_indels(), min_score, kmer_model->get_kmer_size());
         const auto filled = gap_filler.fill(seq, region.first, region.second);
         if (std::get<0>(filled) > 0) {
             auto gap = make_gap(region.first, region.second, kmer_model->get_kmer_size());
@@ -170,6 +165,8 @@ void Polisher::process_region(const std::string_view seq,
                 insertion.status = Edit::Status::PASS;
                 results->add(insertion);
             }
+        } else {
+            results->add(edit);
         }
     }
 }

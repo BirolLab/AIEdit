@@ -28,8 +28,7 @@ class Polisher
              const std::shared_ptr<KmerModel>& kmer_model,
              unsigned num_threads,
              float min_score,
-             unsigned num_tries,
-             unsigned max_gap);
+             unsigned num_tries);
 
     ~Polisher();
 
@@ -52,8 +51,6 @@ class Polisher
     std::condition_variable results_ready;
     std::mutex results_ready_mutex;
     bool is_terminated;
-
-    const GapFiller gap_filler;
 
     void thread();
     void process_region(const std::string_view seq,

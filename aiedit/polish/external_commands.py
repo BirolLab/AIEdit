@@ -115,7 +115,7 @@ def run_ntstat_seeds(
     torch = importlib.import_module("torch")
     model = torch.jit.load(model_path)
     print("Generating seeds...")
-    seeds = core.SeedGenerator(10, 20, 0.25, 32).generate(
+    seeds = core.SeedGenerator(10, 20, 0.25, 64).generate(
         model.num_seeds, kmer_size, model.max_mismatches, model.max_indels
     )
     seeds = sorted(seeds, key=lambda seed: seed.count("0"))

@@ -50,13 +50,10 @@ def load_polisher(
     num_threads: int,
     hit_prob: float,
     num_tries: int,
-    max_gap: int,
 ) -> core.Polisher:
     print("Loading edit pattern model... ", end="", flush=True)
     start_time = time.perf_counter()
-    polisher = core.Polisher(
-        model_path, kmer_model, num_threads, hit_prob, num_tries, max_gap
-    )
+    polisher = core.Polisher(model_path, kmer_model, num_threads, hit_prob, num_tries)
     end_time = time.perf_counter()
     print(f"DONE ({end_time - start_time:.1f}s)")
     print(f"- Maximum consecutive substitutions: {polisher.get_max_mismatches()}")
@@ -110,7 +107,6 @@ def main(args):
         args.threads,
         args.hit_prob,
         args.num_tries,
-        args.max_gap,
     )
 
     out_fasta_path = f"{out_prefix}_edited.fa"
@@ -143,4 +139,5 @@ def main(args):
             args.kmers, out_fasta_path, args.threads, out_prefix
         )
 
+    print()
     print(f"Edited sequences saved to {out_fasta_path}")
