@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aiedit"
+version = "1.0.0"
+description = "ML-based alignment-free genome assembly polisher"
+authors = [{ name = "Parham Kazemi", email = "pkazemi@bcgsc.ca" }]
+readme = "README.md"
+requires-python = ">=3.10"
+
+[project.scripts]
+aiedit = "aiedit.__main__:main"

@@ -1,0 +1,63 @@
+import torch
+import torchinfo
+
+
+class Model(torch.nn.Module):
+
+    def __init__(
+        self, num_seeds: int, max_mismatches: int, max_indels: int, model_dim: int
+    ):
+        super().__init__()
+        self._num_seeds = num_seeds
+        self._max_mismatches = max_mismatches
+        self._max_indels = max_indels
+        self._model_dim = model_dim
+        self.num_seeds = torch.jit.Attribute(num_seeds, int)
+        self.max_mismatches = torch.jit.Attribute(max_mismatches, int)
+        self.max_indels = torch.jit.Attribute(max_indels, int)
+        self.model_dim = torch.jit.Attribute(model_dim, int)
+        num_features = num_seeds * (max_indels + 1) + 1
+        self.seeds_encoder = torch.nn.GRU(num_seeds, model_dim)
+        self.signature_encoder = torch.nn.GRU(num_features, model_dim)
+        self.out = torch.nn.Linear(2 * model_dim, 2 ** (max_mismatches - 1) + 2 * max_indels)
+
+    @staticmethod
+    def from_checkpoint(path: str):
+        checkpoint = torch.load(path, weights_only=True)
+        model_args = ["num_seeds", "max_mismatches", "max_indels", "model_dim"]
+        args = (checkpoint[k].item() for k in model_args)
+        model = Model(*args)
+        model.load_state_dict(checkpoint["model"])
+        return model, checkpoint["optimizer"]
+
+    def save(self, path: str, optimizer_state_dict):
+        checkpoint = {
+            "num_seeds": torch.tensor(self._num_seeds, dtype=torch.int),
+            "max_mismatches": torch.tensor(self._max_mismatches, dtype=torch.int),
+            "max_indels": torch.tensor(self._max_indels, dtype=torch.int),
+            "model_dim": torch.tensor(self._model_dim, dtype=torch.int),
+        }
+        checkpoint["model"] = self.state_dict()
+        checkpoint["optimizer"] = optimizer_state_dict
+        torch.save(checkpoint, path)
+
+    def forward(self, x_seeds, x_signature):
+        h_seeds = self.encode_seeds(x_seeds)
+        return self.predict(h_seeds, x_signature)
+
+    @torch.jit.export
+    def encode_seeds(self, x_seeds):
+        return self.seeds_encoder(x_seeds)[1]
+
+    @torch.jit.export
+    def predict(self, h_seeds, x_signature):
+        _, h_signature = self.signature_encoder(x_signature)
+        hidden = torch.cat([h_seeds, h_signature], dim=-1)
+        return self.out(hidden)
+
+    def print_summary(self) -> None:
+        input_shape = [
+            (30, self._num_seeds),
+            (32, self._num_seeds * (self._max_indels + 1) + 1),
+        ]
+        torchinfo.summary(self, input_shape, col_width=15)

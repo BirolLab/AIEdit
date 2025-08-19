@@ -7,3 +7,5 @@ build
 
 # Python
 __pycache__
+
+aiedit/*.so
