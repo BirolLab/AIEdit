@@ -26,13 +26,14 @@
 - Python 3.10+
 - [cmake](https://mesonbuild.com/)
 - [btllib](https://github.com/bcgsc/btllib)
-- [PyTorch and libtorch](https://pytorch.org/)
+- [libtorch for CPU](https://pytorch.org/)
 - [pybind11](https://github.com/pybind/pybind11)
 - [ntStat](https://github.com/bcgsc/ntStat)
 - [ntCard](https://github.com/bcgsc/ntCard)
 - [ntEdit](https://github.com/bcgsc/ntEdit)
 
 If you would like to train models too:
+- [PyTorch](https://pytorch.org/)
 - [torchinfo](https://github.com/TylerYep/torchinfo)
 - [tqdm](https://github.com/tqdm/tqdm)
 
