@@ -3,7 +3,6 @@ import unittest
 
 import btllib
 import numpy as np
-import torch
 
 import aiedit.core
 import aiedit.train.main

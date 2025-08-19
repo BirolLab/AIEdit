@@ -51,7 +51,7 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
     parser.add_argument(
         "-y",
         "--num-tries",
-        help="number of edit patterns to try (default: %(default)d)",
+        help="number of top-ranking edit patterns to try (default: %(default)d)",
         type=int,
         default=3,
     )
@@ -61,6 +61,13 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
         help="number of threads (default: %(default)d)",
         type=int,
         default=os.cpu_count() // 2,
+    )
+    parser.add_argument(
+        "-rng",
+        "--random-seed",
+        help="random number generator seed value (default: %(default)d, 0 for nondeterminism)",
+        type=int,
+        default=64,
     )
     parser.add_argument(
         "--ntedit",

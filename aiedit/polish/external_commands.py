@@ -92,6 +92,7 @@ def run_ntstat_seeds(
     model_path: str,
     kmer_size: int,
     num_threads: int,
+    random_seed: int,
     out_prefix: str,
 ) -> str:
     """Runs ntStat to make a BF for seeds. Skips if BF file is already present.
@@ -115,7 +116,7 @@ def run_ntstat_seeds(
     torch = importlib.import_module("torch")
     model = torch.jit.load(model_path)
     print("Generating seeds...")
-    seeds = core.SeedGenerator(10, 20, 0.25, 64).generate(
+    seeds = core.SeedGenerator(10, 20, 0.25, random_seed).generate(
         model.num_seeds, kmer_size, model.max_mismatches, model.max_indels
     )
     seeds = sorted(seeds, key=lambda seed: seed.count("0"))

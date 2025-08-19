@@ -12,8 +12,6 @@
 
 namespace {
 
-constexpr auto BASES = "ACGT";
-
 at::Tensor seeds_to_tensor(const std::vector<std::string>& seeds)
 {
     const long num_rows = seeds[0].size();
@@ -27,23 +25,58 @@ at::Tensor seeds_to_tensor(const std::vector<std::string>& seeds)
     return at::from_blob(buffer.data(), {num_rows, num_cols}).clone();
 }
 
-aiedit::Edit make_gap(size_t start, size_t end, unsigned kmer_size)
+std::vector<aiedit::Edit> align(const std::string_view ref, const std::string_view alt)
 {
-    const unsigned num_kmers = end - start;
-    unsigned num_del;
-    if (num_kmers >= kmer_size) {
-        num_del = num_kmers - kmer_size + 1;
-    } else {
-        num_del = kmer_size - num_kmers + 1;
+    std::vector<aiedit::Edit> edits;
+    constexpr auto PASS = aiedit::Edit::Status::PASS;
+    constexpr auto INSERT = aiedit::Edit::Type::INSERT;
+    constexpr auto DELETE = aiedit::Edit::Type::DELETE;
+    constexpr auto SUBSTITUTE = aiedit::Edit::Type::SUBSTITUTE;
+    if (ref == alt) {
+        return edits;
+    } else if (ref.empty()) {
+        aiedit::Edit edit{0, 0, INSERT, std::string(alt), 0, 0, 0, PASS};
+        edits.emplace_back(edit);
+        return edits;
+    } else if (alt.empty()) {
+        aiedit::Edit edit{0, 0, DELETE, std::string(ref), 0, 0, 0, PASS};
+        edits.emplace_back(edit);
+        return edits;
     }
-    return {start + kmer_size - 1,
-            num_kmers,
-            aiedit::Edit::Type::DELETE,
-            std::string(num_del, '-'),
-            1.0,
-            0.0,
-            0,
-            aiedit::Edit::Status::PASS};
+    std::vector<std::vector<int>> dp(ref.size() + 1, std::vector<int>(alt.size() + 1));
+    for (size_t i = 0; i <= ref.size() + 1; ++i) {
+        dp[i][0] = i;
+    }
+    for (size_t j = 0; j <= alt.size(); ++j) {
+        dp[0][j] = j;
+    }
+    for (size_t i = 1; i <= ref.size(); ++i) {
+        for (size_t j = 1; j <= alt.size(); ++j) {
+            if (ref[i - 1] == alt[j - 1])
+                dp[i][j] = dp[i - 1][j - 1];
+            else
+                dp[i][j] = std::min({dp[i - 1][j - 1], dp[i][j - 1], dp[i - 1][j]}) + 1;
+        }
+    }
+    size_t i = ref.size(), j = alt.size();
+    while (i > 0 || j > 0) {
+        if (i > 0 && j > 0 && dp[i][j] == dp[i - 1][j - 1] + 1) {
+            aiedit::Edit edit{i - 1, 0, SUBSTITUTE, std::string{alt[j - 1]}, 0, 0, 0, PASS};
+            edits.emplace_back(edit);
+            --i;
+            --j;
+        } else if (j > 0 && dp[i][j] == dp[i][j - 1] + 1) {
+            aiedit::Edit edit{i, 0, INSERT, std::string{alt[j - 1]}, 0, 0, 0, PASS};
+            edits.emplace_back(edit);
+            --j;
+        } else {
+            aiedit::Edit edit{i - 1, 0, DELETE, "-", 0, 0, 0, PASS};
+            edits.emplace_back(edit);
+            --i;
+        }
+    }
+    std::reverse(edits.begin(), edits.end());
+    return edits;
 }
 
 }
@@ -152,18 +185,17 @@ void Polisher::process_region(const std::string_view seq,
     } else {
         GapFiller gap_filler(kmer_model, get_max_indels(), min_score, kmer_model->get_kmer_size());
         const auto filled = gap_filler.fill(seq, region.first, region.second);
-        if (std::get<0>(filled) > 0) {
-            auto gap = make_gap(region.first, region.second, kmer_model->get_kmer_size());
-            results->add(gap);
-            if (!std::get<1>(filled).empty()) {
-                Edit insertion;
-                insertion.position = gap.position + gap.edited.size();
-                insertion.type = Edit::Type::INSERT;
-                insertion.num_kmers = gap.num_kmers;
-                insertion.edited = std::get<1>(filled);
-                insertion.kmer_score = std::get<0>(filled);
-                insertion.status = Edit::Status::PASS;
-                results->add(insertion);
+        if (std::get<0>(filled) >= min_score) {
+            std::string_view ref;
+            if (region.second - region.first >= kmer_model->get_kmer_size()) {
+                const auto num_bases = region.second - region.first - kmer_model->get_kmer_size();
+                ref = seq.substr(region.first, num_bases);
+            }
+            for (auto edit : align(ref, std::get<1>(filled))) {
+                edit.position += region.first + kmer_model->get_kmer_size();
+                edit.num_kmers = region.second - region.first;
+                edit.kmer_score = std::get<0>(filled);
+                results->add(edit);
             }
         } else {
             results->add(edit);

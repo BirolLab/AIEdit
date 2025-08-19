@@ -79,14 +79,20 @@ inline std::string find_insertions(const std::string_view seq,
     std::string result;
     result.reserve(2 * num_ins);
     while (num_ins--) {
-        for (unsigned i = 0; i < 4; i++) {
+        bool found = false;
+        for (unsigned i = 0; i < 4 && !found; i++) {
             hash_fn.peek(BASES[i]);
             if (kmer_model->score(hash_fn.hashes()) > 0.5) {
                 editor.insert(BASES[i]);
                 hash_fn.roll(BASES[i]);
                 result.push_back(BASES[i]);
-                break;
+                found = true;
             }
+        }
+        if (!found) {
+            editor.insert('N');
+            hash_fn.roll('N');
+            result.push_back('N');
         }
     }
     return result;
@@ -100,8 +106,9 @@ inline std::string find_deletions(const std::string_view seq,
 {
     aiedit::Editor editor_copy(editor);
     unsigned num_del = 0;
-    while (num_del++ < max_del && editor_copy.get_num_remaining() > 0) {
+    while (num_del < max_del && editor_copy.get_num_remaining() > 0) {
         editor_copy.delete_base();
+        ++num_del;
     }
     return std::string(num_del, '-');
 }
@@ -205,7 +212,7 @@ std::tuple<Edit::Type, std::string, float> ModelInterface::update(unsigned i_edi
     } else if (i_edit < mismatch_indices + max_indels) {
         edit_type = Edit::Type::DELETE;
         const auto num_del = i_edit - mismatch_indices + 1;
-        const auto edit = find_deletions(seq, start_kmer, editor, kmer_model, num_del);
+        edit = find_deletions(seq, start_kmer, editor, kmer_model, num_del);
     } else {
         edit_type = Edit::Type::INSERT;
         const auto num_ins = i_edit - mismatch_indices - max_indels + 1;

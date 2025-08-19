@@ -1,4 +1,3 @@
-import math
 import os
 import pathlib
 import re
@@ -70,11 +69,7 @@ def get_common_prefix(file_names: list[str]) -> str:
         if len(set(name[common_index] for name in file_names)) != 1:
             break
         common_index += 1
-    return file_names[0][:common_index]
-
-
-def remove_trailing_symbols(file_name: str) -> str:
-    return re.sub(r"[^a-zA-Z0-9]+$", "", file_name)
+    return re.sub(r"[^a-zA-Z0-9]+$", "", file_names[0][:common_index])
 
 
 def main(args):
@@ -86,7 +81,7 @@ def main(args):
         sys.exit(1)
 
     if str.isdigit(args.kmers):
-        reads_common = remove_trailing_symbols(get_common_prefix(args.reads)) or "reads"
+        reads_common = get_common_prefix(args.reads) or "reads"
         reads_out_prefix = os.path.join(args.out_path, pathlib.Path(reads_common).stem)
         kmer_size = int(args.kmers)
         hist_path = external_commands.run_ntcard(
@@ -96,7 +91,13 @@ def main(args):
             args.reads, hist_path, kmer_size, args.threads, reads_out_prefix
         )
         args.seeds = external_commands.run_ntstat_seeds(
-            args.reads, hist_path, args.model, kmer_size, args.threads, reads_out_prefix
+            args.reads,
+            hist_path,
+            args.model,
+            kmer_size,
+            args.threads,
+            args.random_seed if args.random_seed > 0 else None,
+            reads_out_prefix,
         )
         print()
 
@@ -116,19 +117,16 @@ def main(args):
     seq_writer = btllib.SeqWriter(out_fasta_path)
     vcf_writer = VCFWriter(args.assembly, args.hit_prob)
     for record in seq_reader:
-        print("Processing", record.id)
         start_time = time.perf_counter()
         edits = polisher.polish(record.seq)
-        end_time = time.perf_counter()
-        elapsed = end_time - start_time
-        print(f"- Found {len(edits)} edits ({elapsed:.1f}s)")
         vcf_writer.add(record.id, record.comment, record.seq, edits)
         edited = edits.apply(record.seq)
-        num_passed = edits.get_num_passed()
         seq_writer.write(record.id, record.comment, edited)
-        print(f"- Applied {num_passed} passed edits")
-        print(f"- Sequence length: {len(record.seq):,}bp -> {len(edited):,}bp")
-        print()
+        elapsed = time.perf_counter() - start_time
+        num_passed = edits.get_num_passed()
+        print(f"[{record.id}] Applied {num_passed}/{len(edits)} edits", end=" ")
+        print(f"in {elapsed:.1f}s", end=" ")
+        print(f"({len(record.seq):,}bp -> {len(edited):,}bp)")
 
     vcf_writer.write(out_vcf_path)
     print(f"Edits saved to {out_vcf_path}")
