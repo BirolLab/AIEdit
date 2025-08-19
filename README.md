@@ -14,6 +14,7 @@
   - [Using `conda` (recommended)](#using-conda-recommended)
   - [Manually](#manually)
 - [Usage](#usage)
+  - [Models](#models)
 - [Output Files](#output-files)
 - [Running Tests](#running-tests)
 - [License](#license)
@@ -86,6 +87,10 @@ Run `aiedit polish --help` for more details on the input parameters.
 For polishing assemblies with ONT reads, we suggest setting `-y 10 -p 0.8`.
 
 AIEdit uses half of the available CPUs on the machine by default. This can be adjusted with the `-t` parameter.
+
+## Models
+
+The default model supports 5bp edit windows using 3 spaced seeds (`aiedit/pretrained/s3m5i5.pt`). More models are available in the `pretrained` directory. Additionally, new models can be trained using the `aiedit train` command. We recommend using the default model for balanced computational performance and polishing accuracy—feel free to train and experiment with other models.
 
 # Output Files
 
