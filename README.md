@@ -32,10 +32,12 @@
 - [ntCard](https://github.com/bcgsc/ntCard)
 - [ntEdit](https://github.com/bcgsc/ntEdit)
 
-If you would like to train models too:
+If you would like to train new models:
 - [PyTorch](https://pytorch.org/)
 - [torchinfo](https://github.com/TylerYep/torchinfo)
 - [tqdm](https://github.com/tqdm/tqdm)
+
+For development, install [pybind11-stubgen](https://github.com/sizmailov/pybind11-stubgen) so the aiedit/core.pyi file will be updated in case of changes in the C++ bindings.
 
 # Installation
 
@@ -46,6 +48,8 @@ AIEdit is available on Bioconda:
 ```shell
 conda install bioconda::aiedit
 ```
+
+This will make the `aiedit` command available in the environment.
 
 ## Manually
 
@@ -61,6 +65,8 @@ This will put a `core*.so` file in the `aiedit` package, which can now be used b
 ```shell
 python -m aiedit
 ```
+
+Running `cmake --install build` will install AIEdit to your Python environment's `site-packages`, making `python -m aiedit` available without requiring changes to `$PYTHONPATH`.
 
 If PyTorch/libtorch are installed in a conda environment, you might have you update the `CMAKE_PREFIX_PATH` environment variable. To find PyTorch's CMake prefix path, run:
 
@@ -79,7 +85,7 @@ cmake --build build
 
 AIEdit will run all required polishing stages given a set of reads `READS` and an assembly `ASSEMBLY`. Results will be stored in the output path specified by `-o`, which is the current working directory by default:
 
-```
+```shell
 aiedit polish -r READS -a ASSEMBLY
 ```
 
@@ -90,6 +96,12 @@ For polishing assemblies with ONT reads, we suggest setting `-y 10 -p 0.8`.
 AIEdit uses half of the available CPUs on the machine by default. This can be adjusted with the `-t` parameter.
 
 ## Models
+
+To list available pretrained models with their configurations, run:
+
+```shell
+aiedit list_models
+```
 
 The default model supports 5bp edit windows using 3 spaced seeds (`aiedit/pretrained/s3m5i5.pt`). More models are available in the `pretrained` directory. Additionally, new models can be trained using the `aiedit train` command. We recommend using the default model for balanced computational performance and polishing accuracy—feel free to train and experiment with other models.
 

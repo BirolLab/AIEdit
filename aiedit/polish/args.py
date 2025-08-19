@@ -60,7 +60,7 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
         "--threads",
         help="number of threads (default: %(default)d)",
         type=int,
-        default=os.cpu_count() // 2,
+        default=(os.cpu_count() or 2) // 2,
     )
     parser.add_argument(
         "-rng",
