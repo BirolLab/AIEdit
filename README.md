@@ -25,12 +25,12 @@
 - C++ compiler with C++17 support
 - Python 3.10+
 - [cmake](https://mesonbuild.com/)
-- [btllib](https://github.com/bcgsc/btllib)
+- [btllib](https://github.com/BirolLab/btllib)
 - [libtorch for CPU](https://pytorch.org/)
 - [pybind11](https://github.com/pybind/pybind11)
-- [ntStat](https://github.com/bcgsc/ntStat)
-- [ntCard](https://github.com/bcgsc/ntCard)
-- [ntEdit](https://github.com/bcgsc/ntEdit)
+- [ntStat](https://github.com/BirolLab/ntStat)
+- [ntCard](https://github.com/BirolLab/ntCard)
+- [ntEdit](https://github.com/BirolLab/ntEdit)
 
 If you would like to train new models:
 - [PyTorch](https://pytorch.org/)
