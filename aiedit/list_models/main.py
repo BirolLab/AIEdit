@@ -1,4 +1,3 @@
-import argparse
 import importlib.resources
 
 import torch
@@ -6,8 +5,6 @@ import torch
 from aiedit.polish.args import DEFAULT_MODEL
 
 
-def add_subparser(subparsers: argparse._SubParsersAction) -> None:
-    subparsers.add_parser("list_models", add_help=False)
 
 
 def main(_):

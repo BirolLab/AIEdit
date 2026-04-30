@@ -3,12 +3,12 @@ import importlib
 import signal
 
 import aiedit.generate_seeds.args
-import aiedit.list_models.main
+import aiedit.list_models.args
 import aiedit.polish.args
 import aiedit.train.args
 from aiedit import __version__
 
-AIEDIT_LOGO = """
+AIEDIT_LOGO = r"""
            _____ ______    _ _ _            
      /\   |_   _|  ____|  | /_\ |          
     /  \    | | | |__   __| | | |_         
@@ -29,7 +29,7 @@ def main():
     aiedit.polish.args.add_subparser(subparsers)
     aiedit.train.args.add_subparser(subparsers)
     aiedit.generate_seeds.args.add_subparser(subparsers)
-    aiedit.list_models.main.add_subparser(subparsers)
+    aiedit.list_models.args.add_subparser(subparsers)
 
     args = parser.parse_args()
 
