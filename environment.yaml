@@ -9,7 +9,7 @@ dependencies:
   - cmake
   - python>=3.10
   - btllib>=1.7.2
-  - libtorch
+  - libtorch=*=cpu*
   - pybind11
   - ntcard
   - ntstat

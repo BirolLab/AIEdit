@@ -1,6 +1,5 @@
 set(PYBIND11_FINDPYTHON ON)
 find_package(pybind11 CONFIG REQUIRED)
-find_library(TORCH_PYTHON_LIBRARY torch_python PATH "${TORCH_INSTALL_PREFIX}/lib")
 find_package(Threads REQUIRED)
 find_package(Torch REQUIRED)
 find_library(BTLLIB btllib REQUIRED)
@@ -15,7 +14,6 @@ target_link_libraries(
             pybind11::module
             Threads::Threads
             ${TORCH_LIBRARIES}
-            ${TORCH_PYTHON_LIBRARY}
             ${BTLLIB}
 )
 
