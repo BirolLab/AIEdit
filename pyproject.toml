@@ -11,4 +11,4 @@ readme = "README.md"
 requires-python = ">=3.10"
 
 [project.scripts]
-aiedit = "aiedit.__main__:main"
+aiedit = "aiedit.main:main"

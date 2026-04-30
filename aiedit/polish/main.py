@@ -88,13 +88,19 @@ def main(args):
             args.reads, kmer_size, args.threads, reads_out_prefix
         )
         args.kmers = external_commands.run_nstat_kmer(
-            args.reads, hist_path, kmer_size, args.threads, reads_out_prefix
+            args.reads,
+            hist_path,
+            kmer_size,
+            args.min_count,
+            args.threads,
+            reads_out_prefix,
         )
         args.seeds = external_commands.run_ntstat_seeds(
             args.reads,
             hist_path,
             args.model,
             kmer_size,
+            args.min_count,
             args.threads,
             args.random_seed if args.random_seed > 0 else None,
             reads_out_prefix,
@@ -118,14 +124,15 @@ def main(args):
     vcf_writer = VCFWriter(args.assembly, args.hit_prob)
     for record in seq_reader:
         start_time = time.perf_counter()
+        print(f"[{record.id}] ", end="", flush=True)
         edits = polisher.polish(record.seq)
+        print(f"Found {len(edits):,} edits", end="", flush=True)
         vcf_writer.add(record.id, record.comment, record.seq, edits)
         edited = edits.apply(record.seq)
         seq_writer.write(record.id, record.comment, edited)
         elapsed = time.perf_counter() - start_time
         num_passed = edits.get_num_passed()
-        print(f"[{record.id}] Applied {num_passed}/{len(edits)} edits", end=" ")
-        print(f"in {elapsed:.1f}s", end=" ")
+        print(f", applied {num_passed:,} in {elapsed:.1f}s ", end="", flush=True)
         print(f"({len(record.seq):,}bp -> {len(edited):,}bp)")
 
     vcf_writer.write(out_vcf_path)

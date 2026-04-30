@@ -1,0 +1,16 @@
+name: aiedit
+
+channels:
+  - conda-forge
+  - bioconda
+
+dependencies:
+  - compilers
+  - cmake
+  - python>=3.10
+  - btllib>=1.7.2
+  - libtorch
+  - pybind11
+  - ntcard
+  - ntstat
+  - ntedit

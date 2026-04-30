@@ -171,7 +171,7 @@ void Polisher::process_region(const std::string_view seq,
         edit.edited = std::get<1>(result);
         edit.kmer_score = std::get<2>(result);
         edit.model_confidence = y_pred.data_ptr<float>()[i_edit];
-        if (!edit.edited.empty() && edit.kmer_score < min_score) {
+        if (!edit.edited.empty() && edit.kmer_score <= min_score) {
             edit.status = Edit::Status::LOW_KMER_SCORE;
         } else if (std::get<1>(result).empty()) {
             edit.status = Edit::Status::MODEL_FAIL;
@@ -182,15 +182,16 @@ void Polisher::process_region(const std::string_view seq,
     }
     if (edit.status == Edit::Status::PASS) {
         results->add(edit);
-    } else {
+    } else if (region.second - region.first <= kmer_model->get_kmer_size() * kmer_model->get_kmer_size()) {
         GapFiller gap_filler(kmer_model, get_max_indels(), min_score, kmer_model->get_kmer_size());
         const auto filled = gap_filler.fill(seq, region.first, region.second);
-        if (std::get<0>(filled) >= min_score) {
-            std::string_view ref;
-            if (region.second - region.first >= kmer_model->get_kmer_size()) {
-                const auto num_bases = region.second - region.first - kmer_model->get_kmer_size();
-                ref = seq.substr(region.first, num_bases);
+        if (std::get<0>(filled) > min_score) {
+            unsigned num_bases = 0;
+            if (region.second - region.first > kmer_model->get_kmer_size()) {
+                num_bases = region.second - region.first - kmer_model->get_kmer_size();
             }
+            std::string_view ref = seq.substr(region.first, num_bases);
+            edit.model_confidence = 0;
             for (auto edit : align(ref, std::get<1>(filled))) {
                 edit.position += region.first + kmer_model->get_kmer_size();
                 edit.num_kmers = region.second - region.first;

@@ -36,7 +36,7 @@ def _get_status_filter(status: core.EditStatus, min_qual: int):
 class VCFWriter:
 
     def __init__(self, assembly_path: str, min_score: float):
-        self._min_qual = int(-10 * math.log10(min_score))
+        self._min_qual = int(-10 * math.log10(1 - min_score))
         self._file_lines = [
             "##fileformat=VCFv4.5",
             f"##fileDate={datetime.date.today().strftime('%Y%m%d')}",

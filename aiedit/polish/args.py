@@ -44,9 +44,16 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
     parser.add_argument(
         "-p",
         "--hit-prob",
-        help="hit probability threshold (default: %(default).2f)",
+        help="hit probability/count threshold (default: %(default).2f)",
         type=float,
         default=0.5,
+    )
+    parser.add_argument(
+        "-c",
+        "--min-count",
+        help="k-mer count threshold (default: %(default)d, 0 for auto)",
+        type=int,
+        default=0,
     )
     parser.add_argument(
         "-y",
