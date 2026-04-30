@@ -1,11 +1,4 @@
-```
-           _____ ______    _ _ _            
-     /\   |_   _|  ____|  | /_\ |          
-    /  \    | | | |__   __| | | |_         
-   / /\ \   | | |  __| / _` | | __|       
-  / ____ \ _| |_| |___| (_| | | |_         
- /_/    \_\_____|______\__,_|_|\__|
- ```
+![AIEdit logo](logo.png?raw=true)
 
  Alignment-free genome assembly polisher with an ML model trained on spaced seed hit/miss patterns.
 
