@@ -18,25 +18,16 @@ target_link_libraries(
 )
 
 set(aiedit_path ${PROJECT_SOURCE_DIR}/aiedit)
-set_target_properties(core PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${aiedit_path})
-
-set(_PY_SITE ${Python_SITEARCH})
-if(NOT _PY_SITE)
-    set(_PY_SITE ${Python_SITELIB})
-endif()
-if(NOT _PY_SITE)
-    message(FATAL_ERROR "Could not determine Python site-packages.")
-endif()
 
 install(
     TARGETS core
-    LIBRARY DESTINATION ${_PY_SITE}/aiedit
-    RUNTIME DESTINATION ${_PY_SITE}/aiedit
+    LIBRARY DESTINATION aiedit
+    RUNTIME DESTINATION aiedit
 )
 
 install(
     DIRECTORY ${CMAKE_SOURCE_DIR}/aiedit/
-    DESTINATION ${_PY_SITE}/aiedit
+    DESTINATION aiedit
     FILES_MATCHING
     PATTERN "*.py"
     PATTERN "*.pt"
@@ -46,9 +37,9 @@ find_program(PYBIND11_STUBGEN NAMES pybind11-stubgen)
 if(PYBIND11_STUBGEN)
     add_custom_command(
         TARGET core
-        DEPENDS core POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${aiedit_path} ${PYBIND11_STUBGEN} --output-dir
-                ${aiedit_path} core
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=$<TARGET_FILE_DIR:core> 
+                ${PYBIND11_STUBGEN} --output-dir ${CMAKE_SOURCE_DIR}/aiedit core
         COMMENT "Generating Python stubs"
     )
 endif()
