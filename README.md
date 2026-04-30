@@ -13,6 +13,7 @@
 - [Installation](#installation)
   - [Using `conda` (recommended)](#using-conda-recommended)
   - [Manually](#manually)
+  - [For Developers](#for-developers)
 - [Usage](#usage)
   - [Models](#models)
 - [Output Files](#output-files)
@@ -24,20 +25,27 @@
 
 - C++ compiler with C++17 support
 - Python 3.10+
-- [cmake](https://mesonbuild.com/)
+- [cmake](https://cmake.org/)
 - [btllib](https://github.com/BirolLab/btllib)
 - [libtorch for CPU](https://pytorch.org/)
 - [pybind11](https://github.com/pybind/pybind11)
+- [scikit-build-core](https://github.com/scikit-build/scikit-build-core)
 - [ntStat](https://github.com/BirolLab/ntStat)
 - [ntCard](https://github.com/BirolLab/ntCard)
 - [ntEdit](https://github.com/BirolLab/ntEdit)
+
+
+The `environment.yaml` file contains all the necessary dependencies for compiling AIEdit manually in a Conda environment:
+
+```shell
+conda env create -f environment.yaml
+conda activate aiedit
+```
 
 If you would like to train new models:
 - [PyTorch](https://pytorch.org/)
 - [torchinfo](https://github.com/TylerYep/torchinfo)
 - [tqdm](https://github.com/tqdm/tqdm)
-
-For development, install [pybind11-stubgen](https://github.com/sizmailov/pybind11-stubgen) so the aiedit/core.pyi file will be updated in case of changes in the C++ bindings.
 
 # Installation
 
@@ -55,31 +63,19 @@ This will make the `aiedit` command available in the environment.
 
 Build AIEdit in the `build` folder by running the following in the project's root folder:
 
-```
-cmake -S . -B build
-cmake --build build
+```shell
+pip install . --no-build-isolation
 ```
 
-This will put a `core*.so` file in the `aiedit` package, which can now be used by adding the project root to `$PYTHONPATH` and running:
+## For Developers
+
+If you are modifying the C++ or Python code and want your changes to reflect immediately, use an editable install:
 
 ```shell
-python -m aiedit
+pip install -e . --no-build-isolation
 ```
 
-Running `cmake --install build` will install AIEdit to your Python environment's `site-packages`, making `python -m aiedit` available without requiring changes to `$PYTHONPATH`.
-
-If PyTorch/libtorch are installed in a conda environment, you might have you update the `CMAKE_PREFIX_PATH` environment variable. To find PyTorch's CMake prefix path, run:
-
-```shell
-python -c "import torch; print(torch.utils.cmake_prefix_path)"
-```
-
-Then, pass the result to CMake:
-
-```shell
-cmake -DCMAKE_PREFIX_PATH=<TORCH_PREFIX_PATH> -S . -B build
-cmake --build build
-```
+Install [pybind11-stubgen](https://github.com/sizmailov/pybind11-stubgen) so the aiedit/core.pyi file will be updated in case of changes in the C++ bindings.
 
 # Usage
 
